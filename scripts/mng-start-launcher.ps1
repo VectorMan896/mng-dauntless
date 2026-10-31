@@ -5,7 +5,8 @@
 #   http://100.80.1.2:3000     a server on another PC (Tailscale, home network or the internet)
 # Edit or delete that file to switch servers. The launcher has its server built in, so the first start after a switch
 # recompiles it (a few minutes).
-param([switch]$ChangeServer)
+# [31 Oct] -Server <address|local> uses that server for this start only (Start-Test.bat: -Server local).
+param([switch]$ChangeServer, [string]$Server = "")
 
 $ErrorActionPreference = "Stop"
 $Repo = Split-Path -Parent $PSScriptRoot
@@ -21,8 +22,8 @@ function Normalize([string]$Value) {
     return $Value
 }
 
-$Server = ""
-if ((Test-Path $ServerFile) -and -not $ChangeServer) {
+if ($Server) { $Server = Normalize $Server }
+if (-not $Server -and (Test-Path $ServerFile) -and -not $ChangeServer) {
     $Saved = Get-Content $ServerFile | Where-Object { $_.Trim() -and -not $_.StartsWith("#") } | Select-Object -First 1
     if ($Saved) { $Server = Normalize $Saved }
 }
@@ -42,6 +43,9 @@ if ($Server -eq "local") {
     }
 } else {
     $Api = $Server
+    # [31 Oct] Players are on the live server: test changes on this PC's own server (Start-Test.bat), not on theirs.
+    Write-Host "Note: this development launcher is connected to $Api. If that is the LIVE server, test there only what is" -ForegroundColor Yellow
+    Write-Host "already released; try changes with Start-Test.bat (this PC's own server) first." -ForegroundColor Yellow
     try {
         Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 "$Api/launcher/v1/status" | Out-Null
         Write-Host "Server $Api answers."

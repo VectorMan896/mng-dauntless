@@ -109,6 +109,12 @@ Server, data, tools, the runtime (client feed 0.1.4) and the launcher's look. Fo
   (MNG builds are never there, so it always showed "Not on GitHub" / "Not verified").
 - Game downloader: fixed the free-space check crashing in Windows PowerShell 5.1 ("Cannot convert ... to Int32").
 
+**Testing flow (31 Oct)**
+- docs/MNG_TESTING.md: test every change on this PC (its own server, database and the development launcher) before an
+  update pack goes to the live server; the flow, a checklist, testing as a new player, reproducing a live problem.
+- New Start-Test.bat: this PC's server and the development launcher connected to it (mng-start-launcher.ps1 -Server local).
+  launcher-server.txt is back on "local"; the development launcher warns when it is pointed at another server.
+
 **HTTPS and the public launcher (31 Oct)**
 - Server name dauntless.maning-gaming.com (Hostinger DNS A record -> the server PC). New Set-Up-HTTPS.bat
   (scripts/mng-setup-https.ps1 + ParadoxBackend/scripts/mng-https.cjs): stops the server, opens TCP 443/80 in the firewall,

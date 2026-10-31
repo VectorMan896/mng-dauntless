@@ -3,6 +3,12 @@
 Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under "Unreleased" in CHANGELOG-MNG.md.
 
 ## Now
+- [ ] **Players do not see the events** (found 31 Oct): Ramsgate's event dressing and Ozz's stall need the event feature
+      flags in each player's own Game.ini. Only Start-Launcher.bat / Start-Test.bat write them (scripts/mng-seasonal-events.mjs,
+      this PC); the released launcher does not, so players on other PCs see no decorations and no Ozz (no event shop).
+      Fix in the runtime (it auto-updates, no new launcher needed): set the CDOs' bEnabled for the running event's flags
+      (city_event_*_bpff, city_event_stall_bpff) on the client, from the same calendar, before Ramsgate streams its levels.
+      Test with docs/MNG_TESTING.md "Testing as a new player" (a Game.ini without the MNG block).
 - [ ] **Restart needed** for the 31 Oct changes: backend (bonus levels, Trials leaderboards) and the game servers (runtime
       0.1.4). The launcher installs runtime 0.1.4 on the next Play; the dev launcher needs a restart for the new icons.
 - [ ] Check in game after the restart: Ramsgate shows Dark Harvest (`[CityEvent]` lines in mysticparadox_dll_port8790.log
