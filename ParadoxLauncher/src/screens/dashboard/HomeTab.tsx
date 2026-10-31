@@ -34,7 +34,6 @@ import { getVersion } from "@tauri-apps/api/app";
 import { useRealmTrust } from "../../servers/RealmTrust";
 import { realmJoinStep, realmPlayBlock } from "../../servers/realmStatus";
 import { useRealmStatus } from "../../servers/useRealmStatus";
-import { useRealmInvites } from "../../servers/RealmInvites";
 import { NoticeBanner } from "../../components/NoticeBanner";
 
 function gameRootPath(exePath: string): string {
@@ -94,8 +93,6 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
   const services = useServices();
   const { openWarning, selected, officialPlay } = useServer();
   const realmTrust = useRealmTrust();
-  // [2026-10-31] Realm invites waiting for an answer (the "Your server" card).
-  const { invites } = useRealmInvites();
   // [2026-10-16] A selected Paradox realm's own state (its host may not have started it), for the badge and Play.
   // [2026-10-16] Read for the signed-in account: the realm list is the PC's, so another account may not be in the realm yet.
   const { status: realmStatus, refresh: refreshRealm, markRequested } = useRealmStatus(selected, account?.userId);
@@ -690,9 +687,13 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
                 <span className="tile-value">{accountShort}</span>
                 <span className="tile-label">Account</span>
               </button>
-              <div className={`tile${invites.length > 0 ? " peach" : ""}`}>
-                <span className="tile-value">{invites.length}</span>
-                <span className="tile-label">{invites.length === 1 ? "Invite" : "Invites"}</span>
+              {/* [MNG DAUNTLESS 2026-10-31] The ping (was the realm invites count: player-hosted servers are off). */}
+              <div
+                className={`tile${services.pingMs == null ? "" : services.pingMs < 80 ? " good" : services.pingMs < 150 ? "" : " warn"}`}
+                title="Round trip to the server (Service status, top right)"
+              >
+                <span className="tile-value">{services.pingMs != null && services.health === "online" ? services.pingMs : "—"}</span>
+                <span className="tile-label">Ping (ms)</span>
               </div>
             </div>
             <p className="dcard-note">{serverKindLabel}{playServerName ? ` · ${playServerName}` : ""}</p>

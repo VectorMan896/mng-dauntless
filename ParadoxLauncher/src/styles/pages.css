@@ -488,3 +488,26 @@ button.link-row {
   font-size: 12px;
   overflow-wrap: anywhere;
 }
+
+/* [MNG DAUNTLESS 2026-10-31] The event calendar (components/EventCalendar.tsx). */
+.event-row[data-running="true"] {
+  background: rgba(95, 211, 141, 0.06);
+}
+
+.event-dates {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.event-range {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.event-when {
+  color: var(--ink-2);
+  font-size: 12px;
+}

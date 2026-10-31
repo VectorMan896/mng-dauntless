@@ -19,6 +19,7 @@ import { realmStanding, type RealmStanding } from "../../servers/realmStatus";
 import { AddServerForm } from "../../servers/AddServerForm";
 import { RealmInvitations, MNG_PLAYER_SERVERS } from "../../servers/RealmInvites";
 import { NoticeBanner } from "../../components/NoticeBanner";
+import { EventCalendar } from "../../components/EventCalendar";
 
 // [2026-10-13 realms S1] The launcher's server list: the built-in official server, Paradox realms (our backend, playing
 // from the official install unless they have a folder of their own) and local servers (the player's own backend). Every
@@ -355,6 +356,9 @@ export function ServersTab() {
             );
           })}
         </section>
+
+        {/* [MNG DAUNTLESS 2026-10-31] The year's seasonal events. */}
+        <EventCalendar style={at(MNG_PLAYER_SERVERS ? 3 : 2)} />
       </div>
     </div>
   );

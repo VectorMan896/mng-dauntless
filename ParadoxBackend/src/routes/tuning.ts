@@ -11,6 +11,7 @@
 
 import { Router } from "express";
 import { logger } from "../logger";
+import { SeasonalEventSchedule } from "../seasonalEvents";
 
 export const tuningRouter = Router();
 
@@ -46,15 +47,17 @@ function BountyGrantWindows(){
     ];
 }
 
+// [MNG DAUNTLESS 2026-10-31] The running seasonal event (src/seasonalEvents.ts SeasonalEventSchedule; experimental, see there).
 tuningRouter.get("/game_tuning/seasonal_event_schedule", (req: any, res) => {
-    logger.info("Seasonal Event Schedule (stubbed)");
+    const ScheduledItems = SeasonalEventSchedule();
+    logger.info(`Seasonal Event Schedule: ${ScheduledItems.length ? JSON.stringify(ScheduledItems) : "none"}`);
 
     res.status(200);
     res.json({
         code: null,
         message: "OK",
         payload: {
-            ScheduledItems: []
+            ScheduledItems
         }
     });
 })

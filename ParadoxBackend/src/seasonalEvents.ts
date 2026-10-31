@@ -9,6 +9,7 @@
  */
 import { logger } from "./logger";
 import { AddCurrency } from "./controllers/wallet";
+import { WeekendDoubleOn } from "./weekendBonus";
 
 // currency: what each completed hunt pays (none for Midsommar: its shop takes Rams).
 export type SeasonalEvent = { id: string; name: string; currency?: string; coins?: string; from: [number, number]; to: [number, number] };
@@ -47,7 +48,8 @@ export function EventCurrencyPerHunt(env: NodeJS.ProcessEnv = process.env): numb
 /** Pays the running event's currency for one completed hunt. Never throws: a failed payment is logged and the hunt end goes on. */
 export async function PaySeasonalEventHunt(userId: string, huntRef: string): Promise<void> {
     const Event = ActiveSeasonalEvent();
-    const Amount = EventCurrencyPerHunt();
+    // [31 Oct] Weekend double drops (src/weekendBonus.ts) double the event currency too.
+    const Amount = EventCurrencyPerHunt() * (WeekendDoubleOn() ? 2 : 1);
     if (!Event?.currency || Amount <= 0) return;
     try {
         const Balance = await AddCurrency(userId, Event.currency, Amount);
@@ -78,4 +80,44 @@ export function SeasonalEventNotice(now: Date = new Date()): { announcement: { i
         announcement: { id: Key, text: Text.slice(0, 280), tone: "info", showUntil: Until },
         tag: { id: `${Key}-tag`, text: Event.name.toUpperCase().slice(0, 24), tone: "success", showUntil: Until },
     };
+}
+
+// [MNG DAUNTLESS 2026-10-31] The running event for the client's own schedule (GET /game_tuning/seasonal_event_schedule, an
+// FServiceSchedule). Experimental: the ids the client may look for are not known, so the item list names the event's row and
+// EventID in the client's seasonal_event_ui_table (runtime 0.1.7 [SeasonalProbe]) and its event hunts (matchmaker ids, the
+// way the client's other schedules name hunts). MNG_EVENT_SCHEDULE=off serves the empty schedule again.
+const CLIENT_EVENT_IDS: Record<string, string[]> = {
+    dark_harvest: ["DarkHarvest", "EVENT_DARKHARVEST", "MatchmakerHunt_Event_Dark_Harvest_01", "MatchmakerHunt_Event_Dark_Harvest_Hard_01"],
+    ramsgiving: ["Ramsgiving", "EVENT_RAMSGIVING", "MatchmakerHunt_Event_Ramsgiving_01", "MatchmakerHunt_Event_Ramsgiving_02"],
+    frostfall: ["Frostfall", "EVENT_FROSTFALL"],
+    saints_bond: ["SaintsBond", "Event_Saints_Bond_Evergreen"],
+    springtide: ["SpringEvent", "EVENT_SPRINGTIDE", "CR19_MatchmakerHunt_Event_Spring_2020"],
+};
+
+/** The running event's window: its first day 00:00 to the day after its last (local time). */
+export function SeasonalEventWindow(event: SeasonalEvent, now: Date = new Date()): { start: Date; end: Date } {
+    const Wraps = event.from[0] * 100 + event.from[1] > event.to[0] * 100 + event.to[1];
+    const StartYear = Wraps && now.getMonth() + 1 < event.from[0] ? now.getFullYear() - 1 : now.getFullYear();
+    return {
+        start: new Date(StartYear, event.from[0] - 1, event.from[1]),
+        end: new Date(StartYear + (Wraps ? 1 : 0), event.to[0] - 1, event.to[1] + 1),
+    };
+}
+
+export function SeasonalEventSchedule(now: Date = new Date(), env: NodeJS.ProcessEnv = process.env): unknown[] {
+    if (/^(0|off|false|no)$/i.test(env.MNG_EVENT_SCHEDULE?.trim() ?? "")) return [];
+    const Event = ActiveSeasonalEvent(now, env);
+    const Ids = Event ? CLIENT_EVENT_IDS[Event.id] : undefined;
+    if (!Event || !Ids) return [];
+    const { start, end } = SeasonalEventWindow(Event, now);
+    return [{
+        Name: Event.name,
+        StartTime: start.toISOString(),
+        EndTime: end.toISOString(),
+        IsRepeatable: false,
+        RepeatableDetails: { EachDay: false, EachWeek: false },
+        bShouldQueueTheSheduleItems: false,
+        ScheduledItems: Ids.map((ID) => ({ ID, MaxCompletionPerInterval: -1 })),
+        ItemsToBeLeftOutOfTheRotation: [],
+    }];
 }

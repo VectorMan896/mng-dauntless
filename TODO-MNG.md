@@ -7,7 +7,7 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
       guess; the proxy-DLL loader looks like DLL hijacking). Without it the runtime never loads: the game and the local game
       servers start plain and show "Failed to create IGameClient instance". Players will hit it too. (1) Owner: report the
       false positive at microsoft.com/wdsi/filesubmission (software developer, incorrectly detected). (2) Launcher: after an
-      install, detect a missing winmm.dll / MysticParadox.dll and explain it (Protection history > Restore, or an exclusion
+      install, detect a missing winmm.dll / MysticParadox.dll and explain it [done in launcher 0.3.0] (Protection history > Restore, or an exclusion
       for the game folder) instead of starting the game. (3) Later: code-sign the loader, the runtime and the launcher.
 - [x] **Players do not see the events** (found 31 Oct; fixed in runtime 0.1.8 [EventCalendar], tested on this PC with an
       empty Game.ini: dressing and Ozz visible, client and Ramsgate server log the flags; ships with the next update pack): Ramsgate's event dressing and Ozz's stall need the event feature
@@ -133,11 +133,12 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
 - [ ] Lady Luck store (the Trials shop): still the sample file.
 
 ## Next
-- [ ] **Event calendar on the map** (owner's request, 31 Oct): show the year's seasonal events (dates, what each one brings) on
+- [x] **Event calendar on the map** (owner's request, 31 Oct; launcher calendar on the MNG Server page, 0.3.0; the in-game
+      schedule is served experimentally, check what the client does with it): show the year's seasonal events (dates, what each one brings) on
       the map. In game: the client's own event schedule (GET /game_tuning/seasonal_event_schedule, served empty; runtime
       0.1.7 [SeasonalProbe] logs the event ids) may drive its event UI, to check. Fallback: a calendar card in the launcher
       from the same calendar (src/seasonalEvents.ts).
-- [ ] **Weekend double drops** (owner's request, if possible): Saturday and Sunday (server time), for example double event
+- [x] **Weekend double drops** (owner's request; src/weekendBonus.ts, 31 Oct, check a weekend hunt's [WeekendDouble] line): Saturday and Sunday (server time), for example double event
       currency and Rams per hunt (backend, easy: a multiplier on the hunt payout and on the reward grants). Double Behemoth
       loot is rolled by the game server: check the game's own boost items (store "supplies_boost", XP/loot boosts) or a
       multiplier on the hunt's inventory grant. Announce it with a launcher notice (like the event notices).
@@ -171,10 +172,10 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
       announcement showing, Home scrolls a little to reach the card buttons.
 - [ ] Launcher remake, colours: owner not sure yet; one file (src/styles/tokens.css). Bump the launcher version
       (`node scripts/mng-bump-launcher-version.mjs minor "New look"`) when it ships.
-- [ ] Launcher self-update: own update signing key and feed (Tauri updater).
-- [ ] The released launcher shows an "UNOFFICIAL BUILD" tag (src/lib/buildKind.ts: any build without the original project's
+- [x] Launcher self-update (0.3.0): key in .secrets\mng-launcher-updater.key (BACK IT UP), feed latest.json on GitHub.
+- [x] (0.3.0) The released launcher shows an "UNOFFICIAL BUILD" tag (src/lib/buildKind.ts: any build without the original project's
       official profile). MNG's releases should show no tag, or an MNG one.
-- [ ] Home's "Your server" card still counts INVITES (player-hosted servers are off): show something useful instead (the
+- [x] (0.3.0, now the ping) Home's "Your server" card still counts INVITES (player-hosted servers are off): show something useful instead (the
       running event, the player count).
 - [ ] Internal names (MysticParadox.dll, MYSTICPARADOX_* settings): rename only if wanted. (%LOCALAPPDATA% folder: MNGDauntless
       since 31 Oct.)

@@ -5,10 +5,13 @@
 #   Build-Launcher.bat -Domain play.example.com -Repo owner/mng-dauntless
 #
 # Saved for the next build in DautlessReforged\release-server.txt and release-repo.txt. Builds with the runtime update key in
-# ParadoxLauncher\.secrets (players' launchers only accept runtime files signed with it). No launcher self-update (no
-# updater key yet): players download new versions from the GitHub release page.
-# Output: DautlessReforged\Launcher-Releases\MNG-DAUNTLESS-Launcher-<version>-setup.exe (+ .sha256.txt).
-param([string]$Domain = "", [string]$Repo = "")
+# ParadoxLauncher\.secrets (players' launchers only accept runtime files signed with it).
+# [31 Oct] Self-update: the launcher checks https://github.com/<repo>/releases/latest/download/latest.json every 30 minutes
+# and offers "Update now". The installer is signed with .secrets\mng-launcher-updater.key (its password beside it); the
+# public half is built in. KEEP A COPY OF THAT KEY: without it no installed launcher accepts an update again.
+# Output in DautlessReforged\Launcher-Releases\: MNG-DAUNTLESS-Launcher-<version>-setup.exe (+ .sha256.txt) and latest.json.
+# Upload all of them to the GitHub release tagged launcher-v<version>.
+param([string]$Domain = "", [string]$Repo = "", [string]$Notes = "")
 
 $ErrorActionPreference = "Stop"
 $MpRepo = Split-Path -Parent $PSScriptRoot
@@ -50,11 +53,24 @@ $env:MYSTICPARADOX_API_BASE_URL = $Api
 $env:MYSTICPARADOX_RUNTIME_ENDPOINT = "$Api/launcher/v1/runtime"
 $env:MYSTICPARADOX_RUNTIME_PUBLIC_KEY_B64 = (Get-Content $KeyFile -Raw).Trim()
 $env:MYSTICPARADOX_RELEASE_REPO = $Repo
-Remove-Item Env:MYSTICPARADOX_BUILD_KIND -ErrorAction SilentlyContinue
+# The MNG release is the official build of this launcher: no "UNOFFICIAL BUILD" tag.
+$env:MYSTICPARADOX_BUILD_KIND = "official"
 
-# No updater artifacts (they need an updater signing key we do not have yet); the NSIS installer only.
+# Self-update: the signing key, its password and the public key built into the launcher.
+$Secrets = Join-Path $Launcher ".secrets"
+$UpdaterKey = Join-Path $Secrets "mng-launcher-updater.key"
+foreach ($F in @($UpdaterKey, "$UpdaterKey.pub", (Join-Path $Secrets "mng-launcher-updater.password"))) {
+    if (-not (Test-Path $F)) { throw "Missing $F (the launcher update signing key)." }
+}
+$env:TAURI_SIGNING_PRIVATE_KEY = (Get-Content $UpdaterKey -Raw).Trim()
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = (Get-Content (Join-Path $Secrets "mng-launcher-updater.password") -Raw).Trim()
+$UpdateFeed = "https://github.com/$Repo/releases/latest/download/latest.json"
+$OverlayDoc = @{
+    bundle = @{ createUpdaterArtifacts = $true; targets = @("nsis") }
+    plugins = @{ updater = @{ pubkey = (Get-Content "$UpdaterKey.pub" -Raw).Trim(); endpoints = @($UpdateFeed); windows = @{ installMode = "passive" } } }
+}
 $Overlay = Join-Path ([IO.Path]::GetTempPath()) "mng-launcher-release.json"
-[IO.File]::WriteAllText($Overlay, '{ "bundle": { "createUpdaterArtifacts": false, "targets": ["nsis"] } }', $Utf8)
+[IO.File]::WriteAllText($Overlay, ($OverlayDoc | ConvertTo-Json -Depth 6), $Utf8)
 
 Push-Location $Launcher
 try {
@@ -73,7 +89,25 @@ Copy-Item $Setup.FullName $Out -Force
 $Hash = (Get-FileHash $Out -Algorithm SHA256).Hash.ToLower()
 [IO.File]::WriteAllText("$Out.sha256.txt", "$Hash  $(Split-Path -Leaf $Out)`r`n", $Utf8)
 
+# The update manifest: the version, and the signed installer's URL on the release (the signature covers its bytes).
+$Sig = "$($Setup.FullName).sig"
+if (-not (Test-Path $Sig)) { throw "No update signature ($Sig): was the installer signed?" }
+# -Notes "one line for players" shows in the update pop-up.
+$Manifest = [ordered]@{
+    version = $Version
+    notes = $Notes
+    pub_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    platforms = [ordered]@{
+        "windows-x86_64" = [ordered]@{
+            signature = (Get-Content $Sig -Raw).Trim()
+            url = "https://github.com/$Repo/releases/download/launcher-v$Version/$(Split-Path -Leaf $Out)"
+        }
+    }
+}
+[IO.File]::WriteAllText((Join-Path $OutDir "latest.json"), ($Manifest | ConvertTo-Json -Depth 5), $Utf8)
+
 Write-Host ""
 Write-Host "Installer: $Out" -ForegroundColor Green
 Write-Host "SHA-256:   $Hash"
-Write-Host "Upload it to a new release on https://github.com/$Repo/releases (tag launcher-v$Version)."
+Write-Host "Upload the installer, its .sha256.txt and latest.json to a new release on https://github.com/$Repo/releases"
+Write-Host "with the tag launcher-v$Version (exactly). Installed launchers then offer the update within 30 minutes."

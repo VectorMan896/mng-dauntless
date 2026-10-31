@@ -20,6 +20,7 @@ import { ValidateInventoryTransactionBody, InventoryBodyHasGrantOrSpend, Validat
 import { CaptureInventoryTransaction, CaptureEvent } from "../diagnostics/capture";
 import { GetCharactersForUid } from "../controllers/character";
 import { ExtensionInventoryTransaction, GetP2PExtension } from "../extensions/p2p";
+import { WithWeekendDrops } from "../weekendBonus";
 
 export const inventoryRouter = Router();
 
@@ -280,10 +281,20 @@ inventoryRouter.post("/inventory", HasParadoxBackendAuth, async (req: any, res) 
         if (!Ready) logger.warn(`transactionId ${TransactionId}: challenge-reward currency with no claimed, uncredited season challenge after 1.5 s`);
     }
 
+    // [MNG DAUNTLESS 2026-10-31] Weekend double drops on a dedicated game server's grants (src/weekendBonus.ts).
+    let GrantedStacked = StackedItemsToAdd;
+    if (IsDedicatedServer) {
+        const Weekend = WithWeekendDrops(StackedItemsToAdd);
+        if (Weekend.doubled.length > 0) {
+            GrantedStacked = Weekend.items;
+            logger.info(`[WeekendDouble] txn=${TransactionId} user=${UserId}: ${Weekend.doubled.join(", ")}`);
+        }
+    }
+
     let TransactionResult: any;
     try {
         ExtensionTransaction?.report?.("applying");
-        TransactionResult = await RunInventoryTransaction(UserId, CharacterId, TransactionId, InstancedItemsToAdd, StackedItemsToAdd, InstancedItemsToRemove, StackedItemsToRemove, InstancedItemsToSave,
+        TransactionResult = await RunInventoryTransaction(UserId, CharacterId, TransactionId, InstancedItemsToAdd, GrantedStacked, InstancedItemsToRemove, StackedItemsToRemove, InstancedItemsToSave,
             { ...(ExtensionTransaction?.options ?? {}), allowChallengeRewardFunding: FundsChallengeRewards,
                 // [diagnostics 2026-10-14] The economy ledger's source: a host's options name their session (p2p/security/p2pInventoryAuthorization.ts);
                 // a dedicated server is the game server; anything else is OTHER.

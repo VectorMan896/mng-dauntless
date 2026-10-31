@@ -11,6 +11,7 @@ import { Request, Response } from "express";
 import { GetRepositories, GetUnitOfWork, LauncherAccountRecord, LauncherNoticesRecord } from "../persistence";
 import { logger } from "../logger";
 import { SeasonalEventNotice } from "../seasonalEvents";
+import { WeekendNotice } from "../weekendBonus";
 import { LauncherApiError, SendLauncherError } from "../security/launcherErrors";
 import {
     AdminLauncherNoticesView,
@@ -50,6 +51,12 @@ export async function GetPublicLauncherNotices(_req: Request, res: Response): Pr
     if (Season) {
         View.announcements.push(Season.announcement);
         View.tags.push(Season.tag);
+    }
+    // [MNG DAUNTLESS 2026-10-31] Weekend double drops while they run (src/weekendBonus.ts).
+    const Weekend = WeekendNotice();
+    if (Weekend) {
+        View.announcements.push(Weekend.announcement);
+        View.tags.push(Weekend.tag);
     }
     res.status(200).json(View);
 }

@@ -2,6 +2,10 @@
 
 Newest first. Launcher versions; the server, runtime and data change with them.
 
+## 0.3.0 - 2026-10-31
+
+- Self-update, event calendar, ping tile, antivirus warning, no unofficial tag
+
 ## Unreleased - 2026-10-30 / 31
 
 Server, data, tools, the runtime (client feed 0.1.4) and the launcher's look. Folded into the next launcher version.
@@ -108,6 +112,22 @@ Server, data, tools, the runtime (client feed 0.1.4) and the launcher's look. Fo
 - About: removed the "Check this build" card and its startup check against the original project's GitHub releases
   (MNG builds are never there, so it always showed "Not on GitHub" / "Not verified").
 - Game downloader: fixed the free-space check crashing in Windows PowerShell 5.1 ("Cannot convert ... to Int32").
+
+**Launcher 0.3.0, weekend double drops, event schedule (31 Oct, tested on this PC first)**
+- Launcher self-update: Build-Launcher.bat signs the installer with .secrets\mng-launcher-updater.key (keep a copy) and writes
+  latest.json; the launcher checks https://github.com/VectorMan896/mng-dauntless/releases/latest/download/latest.json every
+  30 minutes and offers "Update now". Launchers 0.2.0 have no updater: they install 0.3.0 by hand once.
+- No "UNOFFICIAL BUILD" tag on the released launcher (Build-Launcher marks it the official MNG build).
+- Before starting the game the launcher checks that winmm.dll and MysticParadox.dll are beside it; when an antivirus removed
+  one (Windows Security: Program:Win32/Contebrew.A!ml, a false positive) it says so and how to restore it, instead of the
+  game's "Failed to create IGameClient instance".
+- Home's "Your server" card shows the ping instead of the realm invites count.
+- The MNG Server page has an event calendar: every seasonal event with its dates, what it brings, Live now / Next / In N days.
+- Weekend double drops (src/weekendBonus.ts): on Saturday and Sunday (server time) a game server's grants of Behemoth
+  materials (BREAK_*, ORB_*) and Rams count double, and so does the event currency per hunt; the launcher shows a notice and a
+  DOUBLE DROPS tag. MNG_WEEKEND_DOUBLE=off, MNG_WEEKEND_DOUBLE_ITEMS=<prefixes> in the backend .env.
+- Experimental: GET /game_tuning/seasonal_event_schedule serves the running event (its row, EventID and event hunts) instead
+  of an empty schedule, to see whether the client offers the event hunts. MNG_EVENT_SCHEDULE=off serves it empty again.
 
 **Players see the events (31 Oct, runtime 0.1.8)**
 - The runtime switches the running event on by itself ([EventCalendar]): the event's feature flags (and Ozz's stall) are

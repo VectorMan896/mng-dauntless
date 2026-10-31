@@ -12,6 +12,7 @@
 // of a save whose audit record fails, and the refusal of an unsigned request.
 // [MNG DAUNTLESS 2026-10-31] No seasonal event notice in these tests (src/seasonalEvents.ts adds one while an event runs).
 process.env.MNG_SEASONAL_EVENT = "off";
+process.env.MNG_WEEKEND_DOUBLE = "off";
 
 import assert from "node:assert/strict";
 import crypto from "node:crypto";

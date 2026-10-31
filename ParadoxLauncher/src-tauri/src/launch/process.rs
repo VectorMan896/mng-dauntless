@@ -308,6 +308,23 @@ fn prepare_borderless_display(session_dir: &Path) {
     }
 }
 
+/// [MNG DAUNTLESS 2026-10-31] The runtime files the game needs beside its exe, and the player-facing message when one is
+/// missing (an antivirus removed it). None when both are there.
+pub(crate) fn missing_runtime_message(game_dir: &Path) -> Option<String> {
+    let missing: Vec<&str> = ["winmm.dll", "MysticParadox.dll"]
+        .into_iter()
+        .filter(|name| !game_dir.join(name).is_file())
+        .collect();
+    if missing.is_empty() {
+        return None;
+    }
+    Some(format!(
+        "Windows Security (or your antivirus) removed {} from the game folder. MNG DAUNTLESS needs it to start the game;          it is a false alarm. Open Windows Security > Virus & threat protection > Protection history and restore it, or add          the game folder ({}) under Exclusions. Then press Play again: the launcher puts the file back.",
+        missing.join(" and "),
+        game_dir.display()
+    ))
+}
+
 /// Phase 2 (in-process redirect): the game is launched with NO proxy env vars. The injected
 /// DLL's FCurlHttpRequest::SetURL hook rewrites backend URLs straight to paradox.mysticfox.dev,
 /// so the old WinDivert interceptor / HTTP_PROXY path is no longer used (matches
@@ -345,6 +362,13 @@ pub fn spawn_game(
     let game_dir = exe_path
         .parent()
         .ok_or_else(|| "Invalid installation path.".to_string())?;
+    // [MNG DAUNTLESS 2026-10-31] Windows Security may remove winmm.dll (the runtime loader) right after the install
+    // ("Program:Win32/Contebrew.A!ml", a false positive). Without it the game starts plain and only shows "Failed to
+    // create IGameClient instance": say what happened and how to fix it instead.
+    if let Some(message) = missing_runtime_message(game_dir) {
+        logs::append_launcher_log(session_dir, &format!("launch refused: {message}"));
+        return Err(message);
+    }
     // Where the client's runtime log ends before this run writes to it (the log upload sends from here).
     logs::record_play_log_starts(game_dir, session_dir);
 
@@ -612,6 +636,19 @@ pub fn spawn_game(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn a_missing_runtime_file_is_named_with_the_fix() {
+        let dir = std::env::temp_dir().join(format!("mng-runtime-files-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let _ = std::fs::remove_file(dir.join("winmm.dll"));
+        std::fs::write(dir.join("MysticParadox.dll"), b"x").unwrap();
+        let message = super::missing_runtime_message(&dir).expect("winmm.dll is missing");
+        assert!(message.contains("winmm.dll") && message.contains("Protection history"));
+        std::fs::write(dir.join("winmm.dll"), b"x").unwrap();
+        assert!(super::missing_runtime_message(&dir).is_none());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
     use super::*;
 
     #[test]
