@@ -11,6 +11,9 @@
   <img alt="Platform: Windows x64" src="https://img.shields.io/badge/platform-Windows%20x64-lightgrey">
 </p>
 
+## Disclaimer
+This project is mostly made with claude and built on an already existing project for a specific community
+
 ## Play
 
 1. **Get the launcher**: download `MNG-DAUNTLESS-Launcher-<version>-setup.exe` from the [Releases](../../releases) page and
