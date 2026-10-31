@@ -154,6 +154,10 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
 - [ ] Launcher remake, colours: owner not sure yet; one file (src/styles/tokens.css). Bump the launcher version
       (`node scripts/mng-bump-launcher-version.mjs minor "New look"`) when it ships.
 - [ ] Launcher self-update: own update signing key and feed (Tauri updater).
+- [ ] The released launcher shows an "UNOFFICIAL BUILD" tag (src/lib/buildKind.ts: any build without the original project's
+      official profile). MNG's releases should show no tag, or an MNG one.
+- [ ] Home's "Your server" card still counts INVITES (player-hosted servers are off): show something useful instead (the
+      running event, the player count).
 - [ ] Internal names (MysticParadox.dll, MYSTICPARADOX_* settings): rename only if wanted. (%LOCALAPPDATA% folder: MNGDauntless
       since 31 Oct.)
 
