@@ -332,10 +332,31 @@ function serveRuntimeManifest(target: string, channel: string, platform: string,
             return;
         }
         res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        res.json(manifest);
+        res.json(WithPublicDownloadUrls(manifest));
     } catch {
         res.sendStatus(400);
     }
+}
+
+// [MNG DAUNTLESS 2026-10-31] A manifest keeps the download links of the address it was published with (a feed published on
+// one PC with http://127.0.0.1:3000 and served from another as https://dauntless.maning-gaming.com). The links are not signed
+// (the signatures cover the files' bytes), so they are served on this server's UPDATE_PUBLIC_BASE_URL, path unchanged.
+export function WithPublicDownloadUrls(manifest: any, publicBaseUrl = UPDATE_PUBLIC_BASE_URL): any {
+    const rebase = (url: unknown) => {
+        if (typeof url !== "string") return url;
+        try {
+            const parsed = new URL(url);
+            return `${publicBaseUrl}${parsed.pathname}${parsed.search}`;
+        } catch {
+            return url;
+        }
+    };
+    if (!manifest || typeof manifest !== "object") return manifest;
+    return {
+        ...manifest,
+        ...(manifest.url !== undefined ? { url: rebase(manifest.url) } : {}),
+        ...(Array.isArray(manifest.extraFiles) ? { extraFiles: manifest.extraFiles.map((f: any) => ({ ...f, url: rebase(f?.url) })) } : {}),
+    };
 }
 
 function serveRuntimeDownload(target: string, channel: string, platform: string, res: Response): void {

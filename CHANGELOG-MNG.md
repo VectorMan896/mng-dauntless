@@ -118,6 +118,8 @@ Server, data, tools, the runtime (client feed 0.1.4) and the launcher's look. Fo
 - Install-Server reinstalls the server packages when package-lock.json is newer than the installed ones (update packs carry
   no node_modules; acme-client is new).
 - Set-Server-Address keeps the https:// download address once HTTPS is set up.
+- The runtime feed serves its download links on the server's own public address (UPDATE_PUBLIC_BASE_URL): the manifests
+  kept the address they were published with (http://127.0.0.1:3000), which a release launcher refuses. Links are not signed.
 - Install-Server updates Node.js older than 20.19 (the database driver needs it; the friend's PC had 20.15).
 - New Build-Launcher.bat (scripts/mng-build-launcher.ps1): the players' installer (NSIS) with the HTTPS server name, the
   runtime key and the GitHub release repository built in (release-server.txt / release-repo.txt); no launcher self-update
