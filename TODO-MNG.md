@@ -3,6 +3,12 @@
 Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under "Unreleased" in CHANGELOG-MNG.md.
 
 ## Now
+- [ ] **Windows Defender removes winmm.dll** (31 Oct, 12:12 on this PC): `Program:Win32/Contebrew.A!ml` (a machine-learning
+      guess; the proxy-DLL loader looks like DLL hijacking). Without it the runtime never loads: the game and the local game
+      servers start plain and show "Failed to create IGameClient instance". Players will hit it too. (1) Owner: report the
+      false positive at microsoft.com/wdsi/filesubmission (software developer, incorrectly detected). (2) Launcher: after an
+      install, detect a missing winmm.dll / MysticParadox.dll and explain it (Protection history > Restore, or an exclusion
+      for the game folder) instead of starting the game. (3) Later: code-sign the loader, the runtime and the launcher.
 - [ ] **Players do not see the events** (found 31 Oct; fix in runtime 0.1.8 [EventCalendar], testing on this PC): Ramsgate's event dressing and Ozz's stall need the event feature
       flags in each player's own Game.ini. Only Start-Launcher.bat / Start-Test.bat write them (scripts/mng-seasonal-events.mjs,
       this PC); the released launcher does not, so players on other PCs see no decorations and no Ozz (no event shop).
