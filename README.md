@@ -6,6 +6,10 @@
 </p>
 
 <p align="center">
+  <img src="docs/assets/mng-launcher.png" alt="The MNG DAUNTLESS launcher" width="100%">
+</p>
+
+<p align="center">
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/license-AGPL--3.0--only-blue"></a>
   <img alt="Dauntless: 1.14.7" src="https://img.shields.io/badge/Dauntless-1.14.7-orange">
   <img alt="Platform: Windows x64" src="https://img.shields.io/badge/platform-Windows%20x64-lightgrey">
