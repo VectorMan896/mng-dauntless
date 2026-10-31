@@ -861,14 +861,32 @@ mod tests {
     #[cfg(debug_assertions)]
     #[test]
     fn debug_builds_accept_plain_http_from_their_own_server_only() {
-        for host in ["127.0.0.1:3000", "192.168.1.20:3000", "100.101.102.103:3000", "203.0.113.7:3000", "play.example.com"] {
+        for host in [
+            "127.0.0.1:3000",
+            "192.168.1.20:3000",
+            "100.101.102.103:3000",
+            "203.0.113.7:3000",
+            "play.example.com",
+        ] {
             let endpoint = format!("http://{host}/launcher/v1/runtime");
-            assert!(is_approved_runtime_url_for(&endpoint, &format!("http://{host}/x/winmm.dll")), "{host}");
-            assert!(!is_approved_runtime_url_for(&endpoint, "http://8.8.8.8:3000/x/winmm.dll"), "{host}");
-            assert!(!is_approved_runtime_url_for(&endpoint, &format!("http://{host}:9999/x/winmm.dll")), "{host}");
+            assert!(
+                is_approved_runtime_url_for(&endpoint, &format!("http://{host}/x/winmm.dll")),
+                "{host}"
+            );
+            assert!(
+                !is_approved_runtime_url_for(&endpoint, "http://8.8.8.8:3000/x/winmm.dll"),
+                "{host}"
+            );
+            assert!(
+                !is_approved_runtime_url_for(&endpoint, &format!("http://{host}:9999/x/winmm.dll")),
+                "{host}"
+            );
         }
         // An https feed still never accepts plain http.
-        assert!(!is_approved_runtime_url_for("https://play.example.com/r", "http://play.example.com/x.dll"));
+        assert!(!is_approved_runtime_url_for(
+            "https://play.example.com/r",
+            "http://play.example.com/x.dll"
+        ));
     }
 
     #[cfg(debug_assertions)]
@@ -880,10 +898,16 @@ mod tests {
             Some("http://203.0.113.7:3000/launcher/v1/runtime/client/stable/windows-x86_64/extra/winmm.dll")
         );
         // A link to another real host is not rewritten.
-        assert_eq!(approved_runtime_download_url_for(endpoint, "http://8.8.8.8:3000/x.dll"), None);
+        assert_eq!(
+            approved_runtime_download_url_for(endpoint, "http://8.8.8.8:3000/x.dll"),
+            None
+        );
         // On the server's own PC nothing changes.
         let local = "http://127.0.0.1:3000/launcher/v1/runtime";
-        assert_eq!(approved_runtime_download_url_for(local, "http://127.0.0.1:3000/x.dll").as_deref(), Some("http://127.0.0.1:3000/x.dll"));
+        assert_eq!(
+            approved_runtime_download_url_for(local, "http://127.0.0.1:3000/x.dll").as_deref(),
+            Some("http://127.0.0.1:3000/x.dll")
+        );
     }
 
     #[test]

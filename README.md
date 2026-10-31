@@ -32,14 +32,7 @@ The launcher connects to the MNG DAUNTLESS server by itself and keeps the game's
 See [CHANGELOG-MNG.md](CHANGELOG-MNG.md) for everything MNG DAUNTLESS changed, and [TODO-MNG.md](TODO-MNG.md) for what is
 being worked on.
 
-## Running the server
-
-The server (backend, Director, game servers) runs on one Windows PC. The MNG scripts beside this repository cover it:
-`Install-Server.bat` (from a server pack), `Start-Server.bat` / `Stop-Server.bat`, `Set-Up-HTTPS.bat`,
-`Player-Currency.bat`, `Make-Server-Pack.bat` / `Make-Update-Pack.bat` and `Build-Launcher.bat` (the scripts are in
-[scripts/](scripts)). The original project's full guide is [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md).
-
-Game data extracted from your own Dauntless install, the database, keys and certificates are never in this repository.
+Game data extracted from Dauntless, the server's database, keys and certificates are never in this repository.
 
 ## Credits and license
 

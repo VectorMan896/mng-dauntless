@@ -152,7 +152,8 @@ pub fn set_game_exe(app: &AppHandle, id: &str, exe: &Path) -> Result<(), String>
 /// [MNG DAUNTLESS] The launcher's own server in the canonical `scheme://host[:port]` form the game accepts, worked out once.
 pub(crate) fn official_backend_url() -> Option<&'static str> {
     static URL: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
-    URL.get_or_init(|| official_backend_url_from(crate::commands::auth::api_base_url())).as_deref()
+    URL.get_or_init(|| official_backend_url_from(crate::commands::auth::api_base_url()))
+        .as_deref()
 }
 
 /// [MNG DAUNTLESS] The address check for typed-in servers allows plain http:// only for localhost. The launcher's own
@@ -167,7 +168,11 @@ fn official_backend_url_from(api_base: &str) -> Option<String> {
     #[cfg(debug_assertions)]
     {
         let url = url::Url::parse(api_base.trim().trim_end_matches('/')).ok()?;
-        if url.scheme() == "http" && url.path() == "/" && url.username().is_empty() && url.query().is_none() {
+        if url.scheme() == "http"
+            && url.path() == "/"
+            && url.username().is_empty()
+            && url.query().is_none()
+        {
             let host = url.host_str()?;
             return Some(match url.port() {
                 Some(port) => format!("http://{host}:{port}"),
@@ -182,10 +187,22 @@ fn official_backend_url_from(api_base: &str) -> Option<String> {
 mod mng_official_backend_tests {
     #[test]
     fn a_plain_http_server_on_another_pc_is_passed_to_the_game() {
-        assert_eq!(super::official_backend_url_from("http://203.0.113.7:3000").as_deref(), Some("http://203.0.113.7:3000"));
-        assert_eq!(super::official_backend_url_from("http://127.0.0.1:3000").as_deref(), Some("http://127.0.0.1:3000"));
-        assert_eq!(super::official_backend_url_from("https://play.example.com").as_deref(), Some("https://play.example.com"));
-        assert_eq!(super::official_backend_url_from("http://play.example.com/some/path"), None);
+        assert_eq!(
+            super::official_backend_url_from("http://203.0.113.7:3000").as_deref(),
+            Some("http://203.0.113.7:3000")
+        );
+        assert_eq!(
+            super::official_backend_url_from("http://127.0.0.1:3000").as_deref(),
+            Some("http://127.0.0.1:3000")
+        );
+        assert_eq!(
+            super::official_backend_url_from("https://play.example.com").as_deref(),
+            Some("https://play.example.com")
+        );
+        assert_eq!(
+            super::official_backend_url_from("http://play.example.com/some/path"),
+            None
+        );
     }
 }
 

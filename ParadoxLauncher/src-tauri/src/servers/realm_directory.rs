@@ -120,7 +120,9 @@ fn refusal_text(status: u16, body: &[u8]) -> String {
     let message = value
         .and_then(|value| value["error"]["message"].as_str().map(str::to_string))
         .filter(|text| !text.trim().is_empty());
-    message.unwrap_or_else(|| format!("The MNG Server directory refused the request (status {status})."))
+    message.unwrap_or_else(|| {
+        format!("The MNG Server directory refused the request (status {status}).")
+    })
 }
 
 /// Looks `realm_name` up on our backend with the official sign-in. Without a sign-in the call fails with the usual
@@ -346,7 +348,10 @@ mod tests {
         // Other refusals keep the directory's own sentence.
         let body =
             br#"{"error":{"code":"REALM_NAME_INVALID","message":"That MNG Server name is not valid."}}"#;
-        assert_eq!(refusal_text(400, body), "That MNG Server name is not valid.");
+        assert_eq!(
+            refusal_text(400, body),
+            "That MNG Server name is not valid."
+        );
     }
 
     #[test]
@@ -412,7 +417,10 @@ mod tests {
     #[test]
     fn refusals_read_as_the_directory_said_them() {
         let body = br#"{"error":{"code":"REALM_NOT_FOUND","message":"There is no MNG Server with that name.","requestId":"r"}}"#;
-        assert_eq!(refusal_text(404, body), "There is no MNG Server with that name.");
+        assert_eq!(
+            refusal_text(404, body),
+            "There is no MNG Server with that name."
+        );
         // A deactivated account's lookup says the day its deletion is set, as every other route does.
         assert_eq!(
             refusal_text(

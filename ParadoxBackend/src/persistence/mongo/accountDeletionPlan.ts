@@ -182,6 +182,8 @@ export function CoreAccountDeletionSteps(): AccountDeletionStep[] {
         { kind: "delete", collection: Collections.BountyStates, description: "bounty board state", match: (c) => ({ $or: [{ _id: c.userId }, { userId: c.userId }] }) },
         { kind: "delete", collection: Collections.CooldownStates, description: "cooldowns", match: (c) => ({ $or: [{ _id: c.userId }, { userId: c.userId }] }) },
         { kind: "delete", collection: Collections.EconomyDaily, description: "daily economy totals", match: (c) => ({ userId: c.userId }) },
+        // [MNG DAUNTLESS 2026-10-31] The Trials leaderboard runs (src/trialRuns.ts) the account played in; a team run goes with it.
+        { kind: "delete", collection: Collections.TrialRuns, description: "Trials runs the account played in", match: (c) => ({ "players.userId": c.userId }) },
         // [2026-10-14] The activity monitor (src/activity): daily counters, hunt rows (the host row too), unlock history and flags.
         { kind: "delete", collection: Collections.PlayerActivityDaily, description: "daily activity counters", match: (c) => ({ userId: c.userId }) },
         { kind: "delete", collection: Collections.ActivityHunts, description: "hunt participation rows", match: (c) => ({ userId: c.userId }) },

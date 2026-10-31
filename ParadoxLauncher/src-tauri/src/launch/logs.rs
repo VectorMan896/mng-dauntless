@@ -17,7 +17,10 @@ pub fn sessions_root(app: &AppHandle) -> Result<PathBuf, String> {
         .path()
         .local_data_dir()
         .map_err(|e| format!("Couldn't locate the log directory: {e}"))?;
-    Ok(base.join(crate::DATA_DIR_NAME).join("Logs").join("Sessions"))
+    Ok(base
+        .join(crate::DATA_DIR_NAME)
+        .join("Logs")
+        .join("Sessions"))
 }
 
 pub fn session_dir(app: &AppHandle, launch_session_id: &str) -> Result<PathBuf, String> {

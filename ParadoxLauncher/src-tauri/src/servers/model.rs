@@ -419,7 +419,9 @@ impl ServerList {
                     .iter()
                     .any(|other| other.realm_name.as_deref() == Some(realm_name.as_str()))
                 {
-                    return Err(format!("The MNG Server {realm_name} is already in your list."));
+                    return Err(format!(
+                        "The MNG Server {realm_name} is already in your list."
+                    ));
                 }
                 ServerEntry {
                     id: new_id,
@@ -440,7 +442,8 @@ impl ServerList {
                     .is_some_and(|name| !name.trim().is_empty())
                 {
                     return Err(
-                        "A local server is reached by its address, not an MNG Server name.".to_string(),
+                        "A local server is reached by its address, not an MNG Server name."
+                            .to_string(),
                     );
                 }
                 let name = validate_display_name(request.name.as_deref().unwrap_or(""))?;
@@ -1042,8 +1045,12 @@ mod tests {
         list.set_game_exe("a2", &official, Some(&official)).unwrap();
         assert!(!list.find("a2").unwrap().uses_official_install());
         list.clear_game_exe("a2").unwrap();
-        list.set_game_exe("a2", &exe("D:\\Games\\Dauntless\\MNG Server"), Some(&official))
-            .unwrap();
+        list.set_game_exe(
+            "a2",
+            &exe("D:\\Games\\Dauntless\\MNG Server"),
+            Some(&official),
+        )
+        .unwrap();
         assert!(list
             .check_folder_available(OFFICIAL_ID, &official, None)
             .is_ok());
@@ -1067,14 +1074,22 @@ mod tests {
         list.set_game_exe("a1", &own, Some(&official)).unwrap();
         assert!(list.set_game_exe("a2", &own, Some(&official)).is_err());
         assert!(list
-            .set_game_exe("a2", &exe("d:\\games\\own one\\MNG Server"), Some(&official))
+            .set_game_exe(
+                "a2",
+                &exe("d:\\games\\own one\\MNG Server"),
+                Some(&official)
+            )
             .is_err());
         assert!(list.find("a2").unwrap().uses_official_install());
 
         list.set_game_exe("a2", &exe("D:\\Games\\MNG Server Own"), Some(&official))
             .unwrap();
         assert!(list
-            .set_game_exe("a1", &exe("D:\\Games\\MNG Server Own\\Local"), Some(&official))
+            .set_game_exe(
+                "a1",
+                &exe("D:\\Games\\MNG Server Own\\Local"),
+                Some(&official)
+            )
             .is_err());
     }
 
