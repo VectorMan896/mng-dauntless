@@ -90,8 +90,14 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
 - [ ] Event hunts in 1.14.7 tables: Unseen Summons (MatchmakerHunt_Event_Dark_Harvest_01 / _Hard_01), King Gruk
       (MatchmakerHunt_Event_Ramsgiving_01/02), Anniversary 01/02, Pufflehop Rescue (CR19_MatchmakerHunt_Event_Spring_2020,
       Spring_Event_Island_01), a Charrogg entry. The client does not offer them: likely gated by the seasonal event schedule.
-      Runtime 0.1.7 logs the seasonal tables ([SeasonalProbe] in mysticparadox_dll_port0.log): next, serve the schedule
-      with those ids and see what the client opens (event hunt board, Ozz's quests). Island events, quests and rumours
+      Runtime 0.1.7 [SeasonalProbe] (31 Oct, client log): seasonal_event_ui_table has 6 rows (row -> eventId, hunt tag,
+      currency): SpringEvent -> EVENT_SPRINGTIDE, Hunt.Event.Spring, rounds egghunt/bunnies/sharkcats; DarkHarvest ->
+      EVENT_DARKHARVEST, Hunt.Event.DarkHarvest; Anniversary -> Event_Anniversary_Evergreen, Hunt.Event.Anniversary
+      (Harvest Coins); Ramsgiving -> EVENT_RAMSGIVING; Frostfall -> EVENT_FROSTFALL; SaintsBond ->
+      Event_Saints_Bond_Evergreen. Next: serve GET /game_tuning/seasonal_event_schedule with the running event
+      (ScheduledItems [{ Name, StartTime, EndTime, ScheduledItems: [{ ID: <eventId or row>, MaxCompletionPerInterval: -1 }] }],
+      FServiceSchedule/FScheduleData) and see whether the client offers the event hunt (MatchmakerHunt_Event_Dark_Harvest_01
+      carries Hunt.Event.DarkHarvest). Anniversary is a seventh event, not in the calendar yet. Island events, quests and rumours
       need the quest system (not served).
 - [x] Launcher ping + seasonal art applied (31 Oct). Launcher workflow test fails before and after (cannot load
       servers/RealmInvites from HomeTab.tsx; unrelated).
