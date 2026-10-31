@@ -115,6 +115,16 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
 - [ ] Lady Luck store (the Trials shop): still the sample file.
 
 ## Next
+- [ ] **Event calendar on the map** (owner's request, 31 Oct): show the year's seasonal events (dates, what each one brings) on
+      the map. In game: the client's own event schedule (GET /game_tuning/seasonal_event_schedule, served empty; runtime
+      0.1.7 [SeasonalProbe] logs the event ids) may drive its event UI, to check. Fallback: a calendar card in the launcher
+      from the same calendar (src/seasonalEvents.ts).
+- [ ] **Weekend double drops** (owner's request, if possible): Saturday and Sunday (server time), for example double event
+      currency and Rams per hunt (backend, easy: a multiplier on the hunt payout and on the reward grants). Double Behemoth
+      loot is rolled by the game server: check the game's own boost items (store "supplies_boost", XP/loot boosts) or a
+      multiplier on the hunt's inventory grant. Announce it with a launcher notice (like the event notices).
+- [ ] **Credits** (owner's request): the people who contributed or tested, on the launcher's About page and in the README,
+      next to the Mystic Paradox / Undaunted credit. Needs the list of names from the owner.
 - [ ] Guilds: not implemented (server always answers "no guild"). Needs create/join/leave, members and ranks,
       invites, guild chat and the guild hall.
 - [ ] Friends: blocklist and "recent players" are placeholders.
@@ -144,10 +154,11 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
 - [ ] Launcher remake, colours: owner not sure yet; one file (src/styles/tokens.css). Bump the launcher version
       (`node scripts/mng-bump-launcher-version.mjs minor "New look"`) when it ships.
 - [ ] Launcher self-update: own update signing key and feed (Tauri updater).
-- [ ] Internal names (MysticParadox.dll, %LOCALAPPDATA%\MysticParadox, MYSTICPARADOX_* settings): rename only if wanted.
+- [ ] Internal names (MysticParadox.dll, MYSTICPARADOX_* settings): rename only if wanted. (%LOCALAPPDATA% folder: MNGDauntless
+      since 31 Oct.)
 
 ## Friend's server (going live)
-- [ ] Choose the domain; Let's Encrypt certificate (DNS-01).
+- [x] Domain dauntless.maning-gaming.com, Let's Encrypt certificate (http-01, Set-Up-HTTPS.bat), HTTPS live (31 Oct).
 - [ ] Build the runtime with MP_PUBLIC_HOST set to the domain; publish runtime and launcher signed with the MNG keys.
 - [x] Friend's PC setup (Node.js, MongoDB replica set, game, data, .env, keys, saves): Install-Server.bat from a pack.
 - [ ] Friend's PC, still by hand: router forwarding (TCP 443/3000, UDP 8780-8790), MY_IP in ParadoxDirector\.env, and
