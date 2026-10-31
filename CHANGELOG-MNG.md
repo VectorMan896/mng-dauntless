@@ -115,6 +115,7 @@ Server, data, tools, the runtime (client feed 0.1.4) and the launcher's look. Fo
   saw no event dressing and no Ozz: only the PCs that ran scripts/mng-seasonal-events.mjs had the flags in Game.ini.
   Start-Launcher / Start-Test / Start-Server no longer write the Game.ini block (the script stays for manual use).
   Off with NO_EVENT_CALENDAR.flag beside the game exe.
+  Tested on this PC with no Game.ini block: the dressing and Ozz show, and the client and the Ramsgate server log the flags.
 
 **Testing flow (31 Oct)**
 - docs/MNG_TESTING.md: test every change on this PC (its own server, database and the development launcher) before an

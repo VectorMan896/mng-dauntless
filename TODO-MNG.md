@@ -9,7 +9,8 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
       false positive at microsoft.com/wdsi/filesubmission (software developer, incorrectly detected). (2) Launcher: after an
       install, detect a missing winmm.dll / MysticParadox.dll and explain it (Protection history > Restore, or an exclusion
       for the game folder) instead of starting the game. (3) Later: code-sign the loader, the runtime and the launcher.
-- [ ] **Players do not see the events** (found 31 Oct; fix in runtime 0.1.8 [EventCalendar], testing on this PC): Ramsgate's event dressing and Ozz's stall need the event feature
+- [x] **Players do not see the events** (found 31 Oct; fixed in runtime 0.1.8 [EventCalendar], tested on this PC with an
+      empty Game.ini: dressing and Ozz visible, client and Ramsgate server log the flags; ships with the next update pack): Ramsgate's event dressing and Ozz's stall need the event feature
       flags in each player's own Game.ini. Only Start-Launcher.bat / Start-Test.bat write them (scripts/mng-seasonal-events.mjs,
       this PC); the released launcher does not, so players on other PCs see no decorations and no Ozz (no event shop).
       Fix in the runtime (it auto-updates, no new launcher needed): set the CDOs' bEnabled for the running event's flags
