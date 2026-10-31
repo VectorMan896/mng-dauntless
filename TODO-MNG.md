@@ -16,10 +16,9 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
       Fix in the runtime (it auto-updates, no new launcher needed): set the CDOs' bEnabled for the running event's flags
       (city_event_*_bpff, city_event_stall_bpff) on the client, from the same calendar, before Ramsgate streams its levels.
       Test with docs/MNG_TESTING.md "Testing as a new player" (a Game.ini without the MNG block).
-- [ ] **Restart needed** for the 31 Oct changes: backend (bonus levels, Trials leaderboards) and the game servers (runtime
+- [x] **Restart needed** for the 31 Oct changes: backend (bonus levels, Trials leaderboards) and the game servers (runtime
       0.1.4). The launcher installs runtime 0.1.4 on the next Play; the dev launcher needs a restart for the new icons.
-- [ ] Check in game after the restart: Ramsgate shows Dark Harvest (`[CityEvent]` lines in mysticparadox_dll_port8790.log
-      and port0.log say whether the sub-level loaded); the Hunt Pass screen has no Skip to Next Level button
+- [ ] Check in game: (Dark Harvest shows: done 31 Oct) the Hunt Pass screen has no Skip to Next Level button
       (`[HuntPassSkip]` in port0.log); bonus levels after 50 pay 25 Bonus Cache Coins.
 - [x] Hunts work end to end (owner, 31 Oct).
 - [ ] Test the fountain daily bundle, cells (drops, cores, Middleman fusion) and daily/weekly bounties.
@@ -32,16 +31,16 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
 - [x] Server pack + installer (31 Oct): `Make-Server-Pack.bat` -> `Server-Packs\MNG-Server-<date>.zip`; on the other PC
       unzip, then `Install-Server.bat`. Pack built and checked on this PC (extracted copy reads the database, packages
       load, build is current); the .env and MongoDB config steps tested on the copy.
-- [ ] Connect the launcher to the server on the other PC (Set-Server-Address.bat there, Start-Launcher.bat change
+- [x] Connect the launcher to the server on the other PC (Set-Server-Address.bat there, Start-Launcher.bat change
       here) and play Ramsgate + one hunt over the network.
-- [ ] Run Install-Server.bat on a second PC for real (the full run needs administrator rights and was not run here,
+- [x] Run Install-Server.bat on a second PC for real (the full run needs administrator rights and was not run here,
       because this PC already has the server).
 - [x] Game downloader for any PC (31 Oct): `MNG-Game-Downloader\Download-Game.bat`. Tested on the first 1.7 GB.
 - [ ] Optional cleanup: `C:\Games\_chunk_cache` (~15 GB, left from the first download) and the old `dl\` folder.
-- [ ] Public launcher (31 Oct, in progress): DNS done (dauntless.maning-gaming.com -> the server PC). Friend: forward TCP 443
+- [x] Public launcher (31 Oct, released as launcher 0.2.0 on GitHub): DNS done (dauntless.maning-gaming.com -> the server PC). Friend: forward TCP 443
       (and 80) on the router, apply the update pack, run Set-Up-HTTPS.bat, Start-Server. Then Build-Launcher.bat here, the
       GitHub repository (owner/name) and a release with the installer. Later: a launcher updater key (self-update).
-- [ ] (older) Players need a real launcher build (installer from `npm run tauri build`, with the server address and runtime key
+- [x] (older) Players need a real launcher build (installer from `npm run tauri build`, with the server address and runtime key
       set at build time - see ParadoxLauncher/README.md), not the dev launcher.
 - [x] Hunt Pass works in game (owner, 31 Oct): rewards on every level, claims go through (the "Server Error" Elite-confirm
       fix is live).
@@ -60,7 +59,7 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
       Molten Plateau, Stitched Harvest) are how the live store drew them too. Options: swap those items out of the
       rotation for items with store art, or serve our own tile images if the client's StoreDownloadImagesFeature can load
       them from a URL (untested).
-- [ ] Dark Harvest: not visible in Ramsgate (owner, 31 Oct) although the flag is on for client and server (Game.ini
+- [x] Dark Harvest: not visible in Ramsgate (owner, 31 Oct) although the flag is on for client and server (Game.ini
       works). The event sub-level `/Game/Maps/ramsgate/events/city_01_event_dark_harvest` never loaded; runtime 0.1.4
       streams it in (see Seasonal events). Check after the restart.
 
@@ -71,7 +70,7 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
 - [x] The game reads that Game.ini section: on the 22:38 restart it rewrote the file itself and kept
       `bEnabled=True` (dropping comment lines; the script now finds its sections by name, not by markers).
 - [x] The ini route works: `[FeatureFlags] city_event_dark_harvest_bpff_C bEnabled=1` on Ramsgate's server and the client.
-- [ ] The flag alone does not dress Ramsgate. Runtime 0.1.4 (`CityEventLevels` in dllmain.cpp) asks Ramsgate's streaming
+- [x] The flag alone does not dress Ramsgate. Runtime 0.1.4 (`CityEventLevels` in dllmain.cpp) asks Ramsgate's streaming
       sub-level named after the event to load and show. If `[CityEvent]` says the sub-level is not in Ramsgate's streaming
       list, the next step is loading it as a level instance (ULevelStreamingDynamic::LoadLevelInstance), client and server.
       The 1.14.7 paks have event sub-levels for Dark Harvest and Saint's Bond only (`/Game/Maps/ramsgate/events/`).
@@ -120,7 +119,7 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
       Still missing: the schedule (seasonal_event_schedule), the event quests/rumours (Unseen gifts in Ramsgate,
       Mysterious Notes), Shrowd Effigies / part-break coins, TITLE_DARKHARVESTER, The Unseen Crown; Frostfall/Saint's Bond/Springtide shops.
 - [x] Start-Launcher.bat applies the seasonal flags on each player's PC (the client reads its own Game.ini).
-- [ ] For players on other PCs (friend's server): the launcher should write the same Game.ini block, or the runtime
+- [x] For players on other PCs (friend's server): the launcher should write the same Game.ini block, or the runtime
       should set the flags, since the client reads its own config.
 
 ## Trials
@@ -182,10 +181,11 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
 
 ## Friend's server (going live)
 - [x] Domain dauntless.maning-gaming.com, Let's Encrypt certificate (http-01, Set-Up-HTTPS.bat), HTTPS live (31 Oct).
-- [ ] Build the runtime with MP_PUBLIC_HOST set to the domain; publish runtime and launcher signed with the MNG keys.
+- [x] Runtime and launcher signed with the MNG keys; the backend address reaches the runtime from the launcher (no
+      MP_PUBLIC_HOST build needed). Live 31 Oct.
 - [x] Friend's PC setup (Node.js, MongoDB replica set, game, data, .env, keys, saves): Install-Server.bat from a pack.
-- [ ] Friend's PC, still by hand: router forwarding (TCP 443/3000, UDP 8780-8790), MY_IP in ParadoxDirector\.env, and
-      new secrets for production if wanted.
+- [x] Friend's PC: router forwarding (TCP 443/80/3000, UDP 8780-8790) and MY_IP done (31 Oct).
+- [ ] Optional: new secrets for production (the live server still uses the keys made on this PC).
 - [ ] Backups of MongoDB and the signing keys.
 
 ## Done
