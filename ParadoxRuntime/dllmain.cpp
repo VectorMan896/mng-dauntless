@@ -6830,7 +6830,57 @@ static std::string LevelName(SDK::ULevelStreaming* Streaming) {
     return Name;
 }
 
+// [MNG DAUNTLESS 2026-10-31] The event calendar, in the runtime: the running event's feature flags are switched on in their class
+// default objects (UFeatureFlag::bEnabled, +0x118, the value FlagEnabled reads), on the client and on the game servers. Before
+// this, only the Game.ini block of scripts/mng-seasonal-events.mjs switched them on, and only the PCs that ran that script had
+// it: players on their own PCs saw no event dressing and no Ozz. Same calendar as ParadoxBackend/src/seasonalEvents.ts and the
+// script (month*100+day, inclusive, a window may run over the new year); the PC's local date. Only switches on, never off
+// (a Game.ini block still adds its flags). Off with NO_EVENT_CALENDAR.flag.
+struct CalendarEvent { const char* Name; int From; int To; const char* Flags[2]; };
+static const CalendarEvent kCalendar[] = {
+    { "Dark Harvest", 1014, 1107, { "city_event_dark_harvest_bpff_C", "city_event_stall_bpff_C" } },
+    { "Ramsgiving",   1116, 1201, { "city_event_stall_bpff_C", nullptr } },
+    { "Frostfall",    1209,  106, { "enable_city_event_frostfall_bpff_C", "city_event_stall_bpff_C" } },
+    { "Saint's Bond",  206,  220, { "city_event_SaintsBond_bpff_C", "city_event_stall_bpff_C" } },
+    { "Springtide",    326,  423, { "city_event_Springtide_bpff_C", "city_event_stall_bpff_C" } },
+    { "Midsommar",     803,  914, { "city_event_stall_bpff_C", nullptr } },
+};
+
+static void ApplyCalendar(const char* Side) {
+    static int s_event = -2;   // -2: not looked up yet, -1: no event today or switched off
+    static bool s_done[2] = {};
+    if (s_event == -2) {
+        s_event = -1;
+        if (MpExeRelativeFlagPresent(L"NO_EVENT_CALENDAR.flag")) {
+            MpLog(std::string("[EventCalendar] ") + Side + " OFF (NO_EVENT_CALENDAR.flag)");
+            return;
+        }
+        SYSTEMTIME Today{};
+        GetLocalTime(&Today);
+        const int Md = Today.wMonth * 100 + Today.wDay;
+        for (int i = 0; i < static_cast<int>(sizeof(kCalendar) / sizeof(kCalendar[0])); ++i) {
+            const auto& E = kCalendar[i];
+            if (E.From <= E.To ? (Md >= E.From && Md <= E.To) : (Md >= E.From || Md <= E.To)) { s_event = i; break; }
+        }
+        MpLog(std::string("[EventCalendar] ") + Side + " today (" + std::to_string(Md) + "): "
+            + (s_event >= 0 ? kCalendar[s_event].Name : "no event"));
+    }
+    if (s_event < 0) return;
+    for (int f = 0; f < 2; ++f) {
+        const char* Flag = kCalendar[s_event].Flags[f];
+        if (!Flag || s_done[f]) continue;
+        SDK::UClass* Cls = SDK::UObject::FindClassFast(Flag);   // the flag's blueprint class loads with the game's features
+        if (!Cls || !IsRegisteredLiveObject(Cls)) continue;
+        SDK::UObject* Cdo = Cls->ClassDefaultObject;
+        if (!Cdo || !IsReadablePointer(Cdo, 0x120)) continue;
+        *reinterpret_cast<bool*>(reinterpret_cast<uintptr_t>(Cdo) + 0x118) = true;
+        s_done[f] = true;
+        MpLog(std::string("[EventCalendar] ") + Side + " " + kCalendar[s_event].Name + ": " + Flag + " bEnabled=1");
+    }
+}
+
 static void Tick(const char* Side) {
+    ApplyCalendar(Side);
     static int s_disabled = -1;
     if (s_disabled < 0) {
         s_disabled = MpExeRelativeFlagPresent(L"NO_CITY_EVENT_LEVELS.flag") ? 1 : 0;

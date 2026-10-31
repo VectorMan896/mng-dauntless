@@ -3,7 +3,7 @@
 Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under "Unreleased" in CHANGELOG-MNG.md.
 
 ## Now
-- [ ] **Players do not see the events** (found 31 Oct): Ramsgate's event dressing and Ozz's stall need the event feature
+- [ ] **Players do not see the events** (found 31 Oct; fix in runtime 0.1.8 [EventCalendar], testing on this PC): Ramsgate's event dressing and Ozz's stall need the event feature
       flags in each player's own Game.ini. Only Start-Launcher.bat / Start-Test.bat write them (scripts/mng-seasonal-events.mjs,
       this PC); the released launcher does not, so players on other PCs see no decorations and no Ozz (no event shop).
       Fix in the runtime (it auto-updates, no new launcher needed): set the CDOs' bEnabled for the running event's flags

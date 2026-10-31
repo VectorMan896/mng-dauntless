@@ -109,6 +109,13 @@ Server, data, tools, the runtime (client feed 0.1.4) and the launcher's look. Fo
   (MNG builds are never there, so it always showed "Not on GitHub" / "Not verified").
 - Game downloader: fixed the free-space check crashing in Windows PowerShell 5.1 ("Cannot convert ... to Int32").
 
+**Players see the events (31 Oct, runtime 0.1.8)**
+- The runtime switches the running event on by itself ([EventCalendar]): the event's feature flags (and Ozz's stall) are
+  set on the client and on the game servers from the same calendar as the server (local date). Players on their own PCs
+  saw no event dressing and no Ozz: only the PCs that ran scripts/mng-seasonal-events.mjs had the flags in Game.ini.
+  Start-Launcher / Start-Test / Start-Server no longer write the Game.ini block (the script stays for manual use).
+  Off with NO_EVENT_CALENDAR.flag beside the game exe.
+
 **Testing flow (31 Oct)**
 - docs/MNG_TESTING.md: test every change on this PC (its own server, database and the development launcher) before an
   update pack goes to the live server; the flow, a checklist, testing as a new player, reproducing a live problem.

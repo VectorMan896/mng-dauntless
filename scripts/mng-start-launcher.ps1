@@ -54,9 +54,8 @@ if ($Server -eq "local") {
     }
 }
 
-# Seasonal Ramsgate events (Halloween, Christmas, ...): the game on this PC reads them from its own Game.ini, so a
-# player connecting to another PC's server needs them here too.
-& node (Join-Path $PSScriptRoot "mng-seasonal-events.mjs")
+# [31 Oct] Seasonal events: the runtime switches the running event on by itself (ParadoxRuntime [EventCalendar]), on every
+# player's PC. The Game.ini block of mng-seasonal-events.mjs is no longer written here, so this PC tests what players get.
 
 $env:MYSTICPARADOX_API_BASE_URL = $Api
 $KeyFile = Join-Path $Launcher ".secrets\selfhost-runtime-update.public.raw.b64"

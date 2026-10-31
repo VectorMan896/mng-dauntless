@@ -80,8 +80,8 @@ function Start-Server {
     Push-Location (Join-Path $Repo "ParadoxBackend")
     try { & node "scripts\mng-https.cjs" renew } finally { Pop-Location }
 
-    # Seasonal Ramsgate events for today's date (Dark Harvest, Frostfall, ...).
-    & node (Join-Path $PSScriptRoot "mng-seasonal-events.mjs")
+    # [31 Oct] Seasonal Ramsgate events: the runtime switches the running event on by itself ([EventCalendar]) on the game
+    # servers and the players' PCs; the Game.ini block (mng-seasonal-events.mjs) is no longer needed or written.
 
     foreach ($S in $Services) {
         if (Test-Path $S.Log) { Move-Item -Force $S.Log ($S.Log -replace "\.log$", ".prev.log") }
