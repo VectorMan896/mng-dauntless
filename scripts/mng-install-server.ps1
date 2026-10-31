@@ -81,12 +81,22 @@ function Main {
 
     # 1. Node.js
     Step "1/7 Node.js"
+    # [31 Oct] 20.19 or newer: the database driver (mongodb 7, bson 7) requires it. An older Node.js is upgraded.
     $NodeOk = $false
-    if (Get-Command node -ErrorAction SilentlyContinue) {
-        $NodeOk = [int](((& node -v) -replace "^v", "") -split "\.")[0] -ge 20
+    $HadNode = [bool](Get-Command node -ErrorAction SilentlyContinue)
+    if ($HadNode) {
+        $V = [version](((& node -v) -replace "^v", "") -replace "[^0-9.].*$", "")
+        $NodeOk = $V -ge [version]"20.19.0"
+        if (-not $NodeOk) { Info "Node.js $V is too old (20.19 or newer is needed): updating it." }
     }
     if (-not $NodeOk) {
-        Install-WithWinget "OpenJS.NodeJS.LTS" "Node.js" "https://nodejs.org"
+        if ($HadNode -and (Get-Command winget -ErrorAction SilentlyContinue)) {
+            & winget upgrade -e --id "OpenJS.NodeJS.LTS" --accept-source-agreements --accept-package-agreements
+            if ($LASTEXITCODE -ne 0) { & winget install -e --id "OpenJS.NodeJS.LTS" --accept-source-agreements --accept-package-agreements }
+            Update-PathFromRegistry
+        } else {
+            Install-WithWinget "OpenJS.NodeJS.LTS" "Node.js" "https://nodejs.org"
+        }
         if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw "Node.js was installed but is not found yet. Close this window and run Install-Server.bat again." }
     }
     Ok "Node.js $(& node -v)"
