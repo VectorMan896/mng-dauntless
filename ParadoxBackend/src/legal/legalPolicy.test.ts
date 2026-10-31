@@ -47,13 +47,13 @@ test("the retention periods are the ones the Privacy Policy states", () => {
 // [2026-10-15] The previous privacy version stays accepted during its transition (0.1.66 launchers carry 2026-10-14.2).
 // [2026-10-16] So does 2026-10-15 (launchers up to 0.1.73).
 // [2026-10-17] And 2026-10-16 (launchers before the wider log upload).
-test("the previous privacy versions still count as accepted, other versions do not", async () => {
+test("only the current MNG DAUNTLESS privacy version counts as accepted", async () => {
     const { IsAcceptedPrivacyVersion, PRIVACY_VERSION } = await import("./legalPolicy");
-    assert.equal(PRIVACY_VERSION, "2026-10-17");
+    assert.equal(PRIVACY_VERSION, "2026-10-30");
     assert.equal(IsAcceptedPrivacyVersion(PRIVACY_VERSION), true);
-    assert.equal(IsAcceptedPrivacyVersion("2026-10-16"), true);
-    assert.equal(IsAcceptedPrivacyVersion("2026-10-15"), true);
-    assert.equal(IsAcceptedPrivacyVersion("2026-10-14.2"), true);
+    assert.equal(IsAcceptedPrivacyVersion("2026-10-17"), false);
+    assert.equal(IsAcceptedPrivacyVersion("2026-10-16"), false);
+    assert.equal(IsAcceptedPrivacyVersion("2026-10-14.2"), false);
     assert.equal(IsAcceptedPrivacyVersion("2026-10-14"), false);
     assert.equal(IsAcceptedPrivacyVersion(undefined), false);
 });

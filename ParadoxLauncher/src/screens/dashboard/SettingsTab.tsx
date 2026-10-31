@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState, type ComponentType, type CSSPropertie
 import { usePolicy } from "../../policy/PolicyContext";
 import { getLogPaths, onLogUploadProgress, openLogFolder, uploadLogs } from "../../api/tauri";
 import { sanitizeError } from "../../lib/sanitize";
-import { setUiPrefs, useUiPrefs, type SidebarMode, type UiScale } from "../../lib/prefs";
+import { setUiPrefs, useUiPrefs, type UiScale } from "../../lib/prefs";
 import type { LogPaths, LogUploadProgress, LogUploadReport } from "../../api/types";
-import { CopyIcon, FolderIcon, SidebarIcon, SparkIcon, UploadIcon, ZoomIcon } from "../../components/icons";
+import { CopyIcon, FolderIcon, SparkIcon, UploadIcon, ZoomIcon } from "../../components/icons";
 import { ArtBackdrop } from "../../components/ArtBackdrop";
+import { NoticeBanner } from "../../components/NoticeBanner";
 
 type UploadState =
   | { status: "idle" }
@@ -17,8 +18,8 @@ type UploadState =
 const UPLOAD_CONTENTS = [
   "The launcher log and the session details of your newest Play session.",
   "The game's own log for that session (the newest 8 MB at most).",
-  "The logs of the newest game servers you host (up to 4, the newest 8 MB of each). They name the players in your realm and what they did in the game.",
-  "Connection logs (transport, host and join) and the realm host log.",
+  "The logs of the newest game servers you host (up to 4, the newest 8 MB of each). They name the players in your MNG Server and what they did in the game.",
+  "Connection logs (transport, host and join) and the MNG Server host log.",
   "The game's settings files (Game.ini, Engine.ini, GameUserSettings.ini).",
   "A list of what was sent and left out.",
 ];
@@ -30,11 +31,6 @@ const UI_SIZES: { id: UiScale; label: string }[] = [
   { id: 1, label: "Large" },
 ];
 
-const SIDEBAR_MODES: { id: SidebarMode; label: string }[] = [
-  { id: "auto", label: "Auto" },
-  { id: "expanded", label: "Expanded" },
-  { id: "compact", label: "Compact" },
-];
 
 function at(index: number): CSSProperties {
   return { "--i": index } as CSSProperties;
@@ -102,7 +98,6 @@ export function SettingsTab() {
     }
   }, [refreshPaths]);
 
-  const sidebarIndex = SIDEBAR_MODES.findIndex((mode) => mode.id === prefs.sidebar);
   const sizeIndex = UI_SIZES.findIndex((size) => size.id === prefs.scale);
   const logsIndex = 2 + OPTIONAL_CARDS.length;
 
@@ -115,6 +110,9 @@ export function SettingsTab() {
           <h1 className="page-title">Settings</h1>
           <p className="page-desc">Layout, motion and diagnostics.</p>
         </header>
+
+        {/* [MNG DAUNTLESS 2026-10-31] Announcements (the running event, server notices), on the page's art. */}
+        <NoticeBanner />
 
         <section className="glass card reveal" style={at(1)} aria-label="Interface">
           <div className="section">
@@ -136,25 +134,7 @@ export function SettingsTab() {
               </div>
             </div>
           </div>
-          <div className="section">
-            <div className="section-row">
-              <div className="section-head">
-                <div className="section-icon"><SidebarIcon /></div>
-                <div>
-                  <h2 className="section-title">Sidebar layout</h2>
-                  <p className="section-desc">Auto switches to icons only when the window is narrow.</p>
-                </div>
-              </div>
-              <div className="segmented" style={{ "--count": SIDEBAR_MODES.length, "--index": Math.max(sidebarIndex, 0) } as CSSProperties} role="group" aria-label="Sidebar layout">
-                <span className="segmented-thumb" aria-hidden="true" />
-                {SIDEBAR_MODES.map((mode) => (
-                  <button key={mode.id} type="button" aria-pressed={prefs.sidebar === mode.id} onClick={() => setUiPrefs({ sidebar: mode.id })}>
-                    {mode.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* [MNG DAUNTLESS 2026-10-31] No "Sidebar layout" row: the left rail is always icons (the saved preference is kept). */}
           <div className="section">
             <div className="section-row">
               <div className="section-head">

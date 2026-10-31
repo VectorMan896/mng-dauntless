@@ -3,7 +3,7 @@
   "description": "Mystic Paradox launcher — sign in, verify your install, and play Dauntless",
   "author": "Mystic Paradox (pranav158)",
   "private": true,
-  "version": "0.1.78",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "test:workflow": "node --test scripts/launch-workflow.test.cjs",
@@ -15,8 +15,7 @@
     "publish:launcher": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/publish-launcher-update.ps1"
   },
   "dependencies": {
-    "@fontsource-variable/cinzel": "^5.3.0",
-    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource/outfit": "^5.2.6",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-process": "^2.3.1",

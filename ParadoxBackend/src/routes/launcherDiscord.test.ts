@@ -319,8 +319,8 @@ test("unlink/start mails one unlink code, answers the masked address, and unlink
     assert.deepEqual(Start.json, { sent: true, email: MaskEmail(Account.email!) });
     assert.equal(Recorder.sent.length, Before + 1, "one mail");
     const Mail = Recorder.lastTo(Account.email!)!;
-    assert.match(Mail.subject, /^Your Mystic Paradox code to unlink Discord: \d{6}$/);
-    assert.equal(Mail.subject, `Your Mystic Paradox code to unlink Discord: ${UnlinkCodeMailedTo(Account.email!)}`);
+    assert.match(Mail.subject, /^Your MNG DAUNTLESS code to unlink Discord: \d{6}$/);
+    assert.equal(Mail.subject, `Your MNG DAUNTLESS code to unlink Discord: ${UnlinkCodeMailedTo(Account.email!)}`);
     assert.equal(await Linked(Account), true, "a start unlinks nothing");
 
     const Again = await Call("POST", UNLINK_START, {}, Account.token);

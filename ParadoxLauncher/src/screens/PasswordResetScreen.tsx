@@ -84,7 +84,7 @@ export function PasswordResetScreen() {
   if (step === "email") {
     return (
       <AuthLayout>
-        <AuthCard title="Reset your password" subtitle="Enter the email of your Mystic Paradox account. We send a code to it.">
+        <AuthCard title="Reset your password" subtitle="Enter the email of your MNG DAUNTLESS account. We send a code to it.">
           <form onSubmit={handleSendCode} className="auth-form" noValidate>
             {error && <Banner>{error}</Banner>}
             {notice && <Banner tone="success">{notice}</Banner>}

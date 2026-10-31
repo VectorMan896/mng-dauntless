@@ -90,8 +90,8 @@ export function RegisterScreen({ onBackToLogin }: RegisterScreenProps) {
       <AuthCard
         title={serverName ? `Join ${serverName}` : "Become a Slayer"}
         subtitle={serverName
-          ? "Create an account on this server. It is stored only on the server's own PC, it may need the host's approval, and it is not a Mystic Paradox account."
-          : "Create your Mystic Paradox account. Closed-test accounts are approved by an administrator."}
+          ? "Create an account on this server. It is stored only on the server's own PC, it may need the host's approval, and it is not a MNG DAUNTLESS account."
+          : "Create your MNG DAUNTLESS account. Closed-test accounts are approved by an administrator."}
       >
         <form onSubmit={handleSubmit} className="auth-form" noValidate>
           {error && <Banner>{error}</Banner>}

@@ -53,7 +53,7 @@ export function realmNameForUsername(username: string): string {
 /** [2026-10-16] "MysticFox's Realm": a realm's label from its host's username, as the host typed or spelled it. */
 export function realmLabelForUsername(username: string): string {
   const name = username.trim();
-  return name ? `${name}'s Realm` : "";
+  return name ? `${name}'s MNG Server` : "";
 }
 
 /**

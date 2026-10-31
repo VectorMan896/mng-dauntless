@@ -25,27 +25,27 @@ export interface CodeEmail {
 
 const COPY: Record<CodeEmailPurpose, { subject: string; kicker: string; title: string; lead: string }> = {
     verify: {
-        subject: "Your Mystic Paradox code",
+        subject: "Your MNG DAUNTLESS code",
         kicker: "Email verification",
         title: "Confirm your email",
-        lead: "Enter this code in the Mystic Paradox launcher to verify your email address."
+        lead: "Enter this code in the MNG DAUNTLESS launcher to verify your email address."
     },
     reset: {
-        subject: "Your Mystic Paradox password reset code",
+        subject: "Your MNG DAUNTLESS password reset code",
         kicker: "Password reset",
         title: "Reset your password",
-        lead: "Enter this code in the Mystic Paradox launcher to choose a new password."
+        lead: "Enter this code in the MNG DAUNTLESS launcher to choose a new password."
     },
     unlink: {
-        subject: "Your Mystic Paradox code to unlink Discord",
+        subject: "Your MNG DAUNTLESS code to unlink Discord",
         kicker: "Discord unlink",
         title: "Unlink Discord",
-        lead: "Enter this code in the Mystic Paradox launcher to unlink Discord from your account."
+        lead: "Enter this code in the MNG DAUNTLESS launcher to unlink Discord from your account."
     }
 };
 
 const IGNORE: Record<CodeEmailPurpose, string> = {
-    verify: "If you didn't create a Mystic Paradox account, ignore this email. Nothing happens without this code.",
+    verify: "If you didn't create a MNG DAUNTLESS account, ignore this email. Nothing happens without this code.",
     reset: "If you didn't ask to reset your password, ignore this email. Your password stays as it is.",
     unlink: "If you didn't ask to unlink Discord, ignore this email: Discord stays linked. Someone may know your password, so consider changing it."
 };
@@ -69,7 +69,7 @@ export function RenderCodeEmail(purpose: CodeEmailPurpose, code: string, expires
     const minutes = `${expiresInMinutes} minute${expiresInMinutes === 1 ? "" : "s"}`;
     const expiry = `This code expires in ${minutes} and works only once.`;
     const ignore = IGNORE[purpose];
-    const footer = "Mystic Paradox is a community-run, open-source Dauntless server. It is not affiliated with Phoenix Labs.";
+    const footer = "MNG DAUNTLESS is a community-run, open-source Dauntless server. It is not affiliated with Phoenix Labs.";
 
     const subject = `${copy.subject}: ${code}`;
     const text = [

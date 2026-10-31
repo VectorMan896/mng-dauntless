@@ -109,7 +109,7 @@ fn evaluate_switch(
     // presence loop would report that folder's hashes to our backend. Only the official server and Paradox realms (our
     // feed) may switch co-op on.
     if !crate::servers::active_target(app).uses_official_feed() {
-        return Err("the selected server is a local realm".to_string());
+        return Err("the selected server is a local MNG Server".to_string());
     }
     if coop_transport_disabled() {
         return Err("DISABLE_COOP_TRANSPORT.flag is present".to_string());
@@ -252,13 +252,13 @@ pub fn hosting_active() -> bool {
     realm::hosting_active() || !session::hosted_sessions().is_empty()
 }
 
-/// Testing override of the co-op switch: %LOCALAPPDATA%\MysticParadox\DISABLE_COOP_TRANSPORT.flag (same root as
+/// Testing override of the co-op switch: %LOCALAPPDATA%\MNGDauntless\DISABLE_COOP_TRANSPORT.flag (same root as
 /// the session logs) keeps co-op off. Delete the file to let the switch decide again.
 fn coop_transport_disabled() -> bool {
     std::env::var("LOCALAPPDATA")
         .map(|local| {
             std::path::PathBuf::from(local)
-                .join("MysticParadox")
+                .join(crate::DATA_DIR_NAME)
                 .join("DISABLE_COOP_TRANSPORT.flag")
                 .is_file()
         })

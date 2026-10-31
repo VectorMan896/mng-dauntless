@@ -27,8 +27,9 @@ import { GetBountyState, SaveBountyState } from "../controllers/bounty";
 import { EscalationSeasonProgressUpdate, EscalationTuning, GetEscalationTuning, IsAuthorizedEscalationReader, IsAuthorizedEscalationWriter, IsHostEscalationSeasonAllowed, IsHostEscalationWriter, MergeHostEscalationProgress, RecordToEscalationPayload } from "../escalationProgress";
 import { GetRepositories } from "../persistence";
 import { GetP2PExtension } from "../extensions/p2p";
-import { ActiveSeasonWindow } from "../seasonWindow";
+import { ActiveSeasonWindow, RotatingHuntPassId } from "../seasonWindow";
 import { PerAccountQueue } from "../controllers/perAccountQueue";
+import { BuildTrialsLeaderboard, BuildTrialsPersonalBest, LoadTrialRuns, ParseTrialRunSubmission, SaveTrialRun, type TrialRun } from "../trialRuns";
 
 export const systemRouter = Router();
 
@@ -37,14 +38,14 @@ systemRouter.get("/dauntless-status", (req, res) => {
 
     res.json({
 	    "show-status": true,
-	    "en": "Welcome to Mystic Paradox!",
-	    "fr": "Welcome to Mystic Paradox!",
-	    "it": "Welcome to Mystic Paradox!",
-	    "es": "Welcome to Mystic Paradox!",
-	    "de": "Welcome to Mystic Paradox!",
-	    "pt": "Welcome to Mystic Paradox!",
-	    "ru": "Welcome to Mystic Paradox!",
-	    "ja": "Welcome to Mystic Paradox!"
+	    "en": "Welcome to MNG DAUNTLESS!",
+	    "fr": "Welcome to MNG DAUNTLESS!",
+	    "it": "Welcome to MNG DAUNTLESS!",
+	    "es": "Welcome to MNG DAUNTLESS!",
+	    "de": "Welcome to MNG DAUNTLESS!",
+	    "pt": "Welcome to MNG DAUNTLESS!",
+	    "ru": "Welcome to MNG DAUNTLESS!",
+	    "ja": "Welcome to MNG DAUNTLESS!"
     });
 });
 
@@ -124,38 +125,71 @@ systemRouter.post("/profile/update", HasParadoxBackendAuth, (req, res) => {
 // leaderboard in the documented shape ({ code, message, payload }) — this stops the 404 and lets the
 // results page render cleanly. Populating actual times/ranks would require persisting per-run results
 // reported by the game server (future leaderboard service). Shapes per DauntlessEndpointDocumentation.
-systemRouter.post("/trials/leaderboards/all", HasParadoxBackendAuth, (req, res) => {
-	const body = (req.body ?? {}) as { difficulty?: number; page?: number; page_size?: number; trial_id?: string };
-	const difficulty = body.difficulty ?? 1;
-	logger.info(`Trials leaderboard all (stubbed empty) trial_id=${body.trial_id ?? ""} difficulty=${difficulty}`);
+// [MNG DAUNTLESS 2026-10-31] The boards are built from the runs the game server reports (src/trialRuns.ts). A read that fails
+// answers the empty board, as before, so the results page always loads.
+async function TrialsNameLookup(runs: TrialRun[]): Promise<(userId: string) => string> {
+	const ids = [...new Set(runs.flatMap((run) => run.players.map((p) => p.userId)))];
+	const names = new Map<string, string>();
+	await Promise.all(ids.map(async (id) => {
+		const account = await GetRepositories().accounts.findByUserId(id).catch(() => undefined);
+		if (account?.name) names.set(id, account.name);
+	}));
+	return (userId) => names.get(userId) ?? "Slayer";
+}
 
-	res.status(200).json({
-		code: null,
-		message: "OK",
-		payload: {
-			difficulty,
-			guild: {},
-			page: body.page ?? 0,
-			page_size: body.page_size ?? 100,
-			trial_id: body.trial_id ?? "",
-			world: {
-				group: { difficulty, entries: [] },
-				solo: { all: { difficulty, entries: [] } }
-			}
-		}
-	});
+systemRouter.post("/trials/leaderboards/all", HasParadoxBackendAuth, async (req, res) => {
+	const body = (req.body ?? {}) as { difficulty?: number; page?: number; page_size?: number; trial_id?: string };
+	const query = { trialId: String(body.trial_id ?? ""), difficulty: Number(body.difficulty ?? 1) || 1, page: Number(body.page ?? 0) || 0, pageSize: Math.min(100, Number(body.page_size ?? 100) || 100) };
+	let runs: TrialRun[] = [];
+	try {
+		runs = await LoadTrialRuns(query.trialId, query.difficulty);
+	} catch (err) {
+		logger.warn(`[TrialsMon] leaderboard read failed (empty board served): ${err instanceof Error ? err.message : String(err)}`);
+	}
+	const payload = BuildTrialsLeaderboard(runs, query, await TrialsNameLookup(runs));
+	logger.info(`[TrialsMon] leaderboard trial_id=${query.trialId} difficulty=${query.difficulty} solo=${payload.world.solo.all.entries.length} group=${payload.world.group.entries.length}`);
+	res.status(200).json({ code: null, message: "OK", payload });
 });
 
-systemRouter.post("/trials/leaderboards/solo/individual", HasParadoxBackendAuth, (req, res) => {
-	// Client fetches the player's own recorded run to display between runs. We do not persist runs yet,
-	// so respond OK with an empty payload (no personal best on record) rather than 404.
-	logger.info("Trials leaderboard solo/individual (stubbed - no persisted run)");
+systemRouter.post("/trials/leaderboards/solo/individual", HasParadoxBackendAuth, async (req: any, res) => {
+	// The player's own best solo run, shown between runs; {} when there is none.
+	const body = (req.body ?? {}) as { difficulty?: number; trial_id?: string; phx_account_id?: string };
+	const query = { trialId: String(body.trial_id ?? ""), difficulty: Number(body.difficulty ?? 1) || 1, userId: String(body.phx_account_id ?? req.AuthData?.userId ?? "") };
+	let runs: TrialRun[] = [];
+	try {
+		runs = await LoadTrialRuns(query.trialId, query.difficulty);
+	} catch (err) {
+		logger.warn(`[TrialsMon] personal best read failed: ${err instanceof Error ? err.message : String(err)}`);
+	}
+	res.status(200).json({ code: null, message: "OK", payload: BuildTrialsPersonalBest(runs, query, await TrialsNameLookup(runs)) });
+});
 
-	res.status(200).json({
-		code: null,
-		message: "OK",
-		payload: {}
-	});
+// [MNG DAUNTLESS 2026-10-31] A finished run from the Trials game server (UArenaGameModeComponent::SubmitLeaderboardsInfo). Its path
+// and body are not documented, so any other POST under /trials/ or /leaderboards/ from a game server is read as one; the first
+// 20 bodies are logged in full so the parser (ParseTrialRunSubmission) can be checked. Only a game server may report a run.
+let TrialSubmissionsLogged = 0;
+systemRouter.post(/^\/(trials|leaderboards?)\//i, HasParadoxBackendAuth, async (req: any, res) => {
+	const raw = JSON.stringify(req.body ?? {});
+	if (TrialSubmissionsLogged < 20) {
+		TrialSubmissionsLogged++;
+		logger.info(`[TrialsMon] submission ${req.method} ${req.path} gameserver=${req.AuthData?.IsGameserver === true} body=${raw.slice(0, 4000)}`);
+	}
+	if (req.AuthData?.IsGameserver !== true) {
+		res.status(403).json({ code: null, message: "Forbidden", payload: {} });
+		return;
+	}
+	const run = ParseTrialRunSubmission(req.body);
+	if (!run) {
+		logger.warn(`[TrialsMon] submission not understood (nothing saved) path=${req.path}`);
+	} else {
+		try {
+			await SaveTrialRun(run);
+			logger.info(`[TrialsMon] run saved trial_id=${run.trialId} difficulty=${run.difficulty} time=${run.completionTime} players=${run.players.map((p) => p.userId).join(",")}`);
+		} catch (err) {
+			logger.error(`[TrialsMon] run not saved: ${err instanceof Error ? err.message : String(err)}`);
+		}
+	}
+	res.status(200).json({ code: null, message: "OK", payload: {} });
 });
 
 systemRouter.get("/vivox/login", HasParadoxBackendAuth, (req, res) => {
@@ -197,6 +231,15 @@ systemRouter.get("/motd/trigger", HasParadoxBackendAuth, (req, res) => {
 systemRouter.get("/entitlementsv2", HasParadoxBackendAuth, async (req: any, res) => {
 	const UserId = req.AuthData?.userId ?? "INVALID";
 	const Entitlements = await GetEntitlementsForUser(UserId);
+
+	// [MNG DAUNTLESS] Free premium: every account owns each hunt pass's premium gating entitlement.
+	if (UserId !== "INVALID" && /^(1|true|yes|on)$/i.test(process.env.MYSTICPARADOX_HUNTPASS_FREE_PREMIUM ?? "")) {
+		const Owned = new Set(Entitlements.map((E) => E.name));
+		for (const Name of FreePremiumEntitlementNames()) {
+			if (!Owned.has(Name)) Entitlements.push({ activatedDate: "2019-01-01T00:00:00Z", duration: 0, name: Name });
+		}
+		Entitlements.sort((A, B) => A.name.localeCompare(B.name));
+	}
 
 	logger.debug(`Entitlements for ${UserId}: ${Entitlements.length}`);
 
@@ -406,13 +449,24 @@ export { ActiveSeasonWindow };
 const FUTURE_PASS_WINDOW_START = "2099-01-02T00:00:00+00:00";
 const FUTURE_PASS_WINDOW_END = "2099-12-31T00:00:00+00:00";
 
+// [MNG DAUNTLESS] The premium gating entitlements of every hunt pass in the progression config (worked out once).
+let FreePremiumNamesCache: string[] | undefined;
+function FreePremiumEntitlementNames(): string[] {
+    FreePremiumNamesCache ??= [...new Set<string>((progressionconfig?.payload?.paths ?? [])
+        .filter((P: any) => IsHuntPassProgressionId(P?.progression_id) && typeof P?.premium_gating_entitlement === "string")
+        .map((P: any) => P.premium_gating_entitlement as string)
+        .filter((Name: string) => Name.length > 0))];
+    return FreePremiumNamesCache;
+}
+
 function IsHuntPassProgressionId(Id: unknown): boolean {
     if (typeof Id !== "string") return false;
     return /^(eventpass_|d24_|season)/i.test(Id);
 }
 
 export function GetServedHuntPassId(): string {
-    return (process.env.GAMESERVER_HUNTPASS_ID ?? ACTIVE_HUNTPASS_PROGRESSION_ID).trim();
+    // [MNG DAUNTLESS] Same rule as controllers/progression.ts ServedHuntPassProgressionId.
+    return (process.env.GAMESERVER_HUNTPASS_ID ?? RotatingHuntPassId(Date.now()) ?? ACTIVE_HUNTPASS_PROGRESSION_ID).trim();
 }
 
 // [1.14.7 2026-10-03] MEASURED root cause of the active-hunt-pass failure. The client iterates the game's
@@ -867,14 +921,14 @@ systemRouter.get("/patchnotes/:language/:gameversion", (req, res) => {
 		code: null,
 		message: "OK",
 		payload: {
-			date: "2026-10-08T00:00:00.000+00:00",
+			date: "2026-10-30T00:00:00.000+00:00",
 			description: "Welcome, Slayer! The Shattered Isles are calling again. Gather your party in Ramsgate and return to the hunt.",
 			language: req.params.language ?? "en",
 			notes: [
 				{
 					sections: [
 						{
-							description: "Mystic Paradox is a community project that keeps Dauntless alive. Your Slayer, gear and loadouts are kept on Mystic Paradox servers, so you can pick up right where you left off.",
+							description: "MNG DAUNTLESS is a community project that keeps Dauntless alive. Your Slayer, gear and loadouts are kept on MNG DAUNTLESS servers, so you can pick up right where you left off.",
 							title: "The hunt continues",
 							type: "featured"
 						},
@@ -890,9 +944,25 @@ systemRouter.get("/patchnotes/:language/:gameversion", (req, res) => {
 							],
 							title: "Getting started",
 							type: "default"
+						},
+						{
+							changes: [
+								{
+									list: [
+										"The **Legacy Hunt Pass** brings back the Hunt Passes of the past, one at a time",
+										"A new season starts **every 4 weeks** with a different classic pass: its armour, weapon skins, lanterns, emotes, banners and dyes",
+										"**Premium is free for everyone**: you earn both the free and the premium rewards, no Platinum needed",
+										"Earn pass XP by **hunting Behemoths and completing challenges**; each of the **50 ranks** unlocks rewards",
+										"Ranks without a cosmetic give **Rams**, with **Cell Cores** every 5 ranks",
+										"Your pass progress resets when a new season begins, so claim your rewards before it rotates"
+									]
+								}
+							],
+							title: "Legacy Hunt Pass",
+							type: "default"
 						}
 					],
-					title: "Welcome to Mystic Paradox",
+					title: "Welcome to MNG DAUNTLESS",
 					type: "new_to_dauntless"
 				},
 				{
@@ -901,8 +971,8 @@ systemRouter.get("/patchnotes/:language/:gameversion", (req, res) => {
 							changes: [
 								{
 									list: [
-										"Mystic Paradox is still growing, so you may run into the odd bug",
-										"If something goes wrong, tell the Mystic Paradox team what you were doing and roughly when it happened",
+										"MNG DAUNTLESS is still growing, so you may run into the odd bug",
+										"If something goes wrong, tell the MNG DAUNTLESS team what you were doing and roughly when it happened",
 										"Thank you for hunting with us!"
 									]
 								}
@@ -915,9 +985,9 @@ systemRouter.get("/patchnotes/:language/:gameversion", (req, res) => {
 					type: "quality_of_life"
 				}
 			],
-			permalink: "/patch-notes/mysticparadox/",
+			permalink: "/patch-notes/mngdauntless/",
 			release_version: "",
-			title: "Mystic Paradox"
+			title: "MNG DAUNTLESS"
 		}
 	});
 });

@@ -728,7 +728,15 @@ progressionRouter.post("/progression/:userId", HasParadoxBackendAuth, async (req
 // (hostWrites RANK_CONFIRM: a hunt's admitted member, a realm's Ramsgate hub's present member; a Training hub refuses). Its
 // confirm is tagged only when the confirmed rank rises. Until now a hunt's rank-ups never confirmed; the dedicated path is
 // unchanged.
-progressionRouter.post("/progression/:userId/:progressionId/:rank/confirm/public", HasParadoxBackendAuth, async (req: any, res) => {
+// [MNG DAUNTLESS 2026-10-30] The same route answers confirm/premium: claiming a Hunt Pass level confirms the free rank, then the
+// Elite rank. Without it the Elite confirm got a 404 and the game showed "Server Error" after the rewards were already granted.
+progressionRouter.post("/progression/:userId/:progressionId/:rank/confirm/:kind", HasParadoxBackendAuth, async (req: any, res, next) => {
+    const Kind = req.params.kind;
+    if(Kind !== "public" && Kind !== "premium"){
+        next();
+        return;
+    }
+    const Premium = Kind === "premium";
     const IsHost = IsHostRuntimeAuth(req.AuthData);
     if(!IsHost && req.AuthData?.IsGameserver !== true){
         logger.warn(`Rejected rank confirm attempt without gameserver auth (userId=${req.params.userId}, track=${req.params.progressionId})`);
@@ -767,11 +775,11 @@ progressionRouter.post("/progression/:userId/:progressionId/:rank/confirm/public
     // The confirmed rank before this confirm, so a host's confirm is tagged only when it actually raised the rank (the store
     // keeps the higher of the two, so the record after it cannot tell). Read for a host only; the dedicated path is unchanged.
     const PreviousRank = IsHost
-        ? (await GetRepositories().progressionTracks.get(RequestedUserId, ProgressionId))?.confirmedFremiumRank ?? DEFAULT_CONFIRMED_RANK
+        ? (await GetRepositories().progressionTracks.get(RequestedUserId, ProgressionId))?.[Premium ? "confirmedPremiumRank" : "confirmedFremiumRank"] ?? DEFAULT_CONFIRMED_RANK
         : undefined;
 
     // [2026-10-15] Only a host or a dedicated server reaches this point, so both may use the bounded mastery sync (ConfirmRankOptions).
-    const Result = await ConfirmPublicProgressionRank(RequestedUserId, ProgressionId, Rank, { boundedMasterySync: true });
+    const Result = await ConfirmPublicProgressionRank(RequestedUserId, ProgressionId, Rank, { boundedMasterySync: true, premium: Premium });
 
     if(!Result.ok){
         const StatusByReason = { unknown_track: 400, rank_out_of_range: 400, insufficient_xp: 409 } as const;
@@ -781,11 +789,12 @@ progressionRouter.post("/progression/:userId/:progressionId/:rank/confirm/public
     }
 
     const Updated = Result.record;
-    logger.info(`Confirm public progression rank ${Rank} for userId ${RequestedUserId} track ${ProgressionId} - progress preserved at ${Updated.progress}`);
+    logger.info(`Confirm ${Kind} progression rank ${Rank} for userId ${RequestedUserId} track ${ProgressionId} - progress preserved at ${Updated.progress}`);
 
-    if(IsHost && PreviousRank !== undefined && Updated.confirmedFremiumRank > PreviousRank){
+    const ConfirmedRank = Premium ? Updated.confirmedPremiumRank : Updated.confirmedFremiumRank;
+    if(IsHost && PreviousRank !== undefined && ConfirmedRank > PreviousRank){
         await TagHostWrite(req, "RANK_CONFIRM", RequestedUserId, {
-            track: ProgressionId, rank: Rank, previousRank: PreviousRank, confirmedRank: Updated.confirmedFremiumRank
+            track: ProgressionId, rank: Rank, previousRank: PreviousRank, confirmedRank: ConfirmedRank
         });
     }
 

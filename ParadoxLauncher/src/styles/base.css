@@ -78,7 +78,7 @@ input, textarea {
 }
 
 ::selection {
-  background: rgba(91, 163, 255, 0.35);
+  background: rgba(var(--aether-rgb), 0.35);
 }
 
 ::-webkit-scrollbar {
@@ -93,11 +93,11 @@ input, textarea {
 ::-webkit-scrollbar-thumb {
   border: 3px solid transparent;
   border-radius: 11px;
-  background: rgba(160, 190, 230, 0.16) padding-box;
+  background: rgba(var(--frost-rgb), 0.16) padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(160, 190, 230, 0.3);
+  background-color: rgba(var(--frost-rgb), 0.3);
 }
 
 .sr-only {
@@ -107,6 +107,22 @@ input, textarea {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* [MNG DAUNTLESS 2026-10-31] Headings in the condensed display font are set in capitals, as the game's own menus are
+   (the original's Cinzel drew capitals by itself). */
+.auth-brand-name,
+.auth-title,
+.hero-name,
+.play-server-name,
+.legal-doc-title,
+.modal-title,
+.page-title,
+.game-tile-title,
+.profile-name,
+.about-title,
+.brand-name {
+  text-transform: uppercase;
 }
 
 .mono {
@@ -164,9 +180,17 @@ input, textarea {
 }
 
 /* Page changes: a View Transition where available, this entry animation otherwise. */
+/* [2026-10-31] A flex column, so the page fills the window's height (Home's launch bar sits at the bottom of a tall window;
+   a percentage min-height on the page could not resolve against this host's own min-height). */
 .page-host {
+  display: flex;
+  flex-direction: column;
   min-height: 100%;
   view-transition-name: page;
+}
+
+.page-host > * {
+  flex: 1 0 auto;
 }
 
 .page-enter {

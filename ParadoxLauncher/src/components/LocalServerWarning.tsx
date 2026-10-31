@@ -56,17 +56,17 @@ export function LocalServerWarning({ server, onAgree, onClose }: LocalServerWarn
       )}
     >
       <p className="modal-lead">
-        <strong>{server.name}</strong> is a local server, not in the Mystic Paradox directory.
+        <strong>{server.name}</strong> is a local server, not in the MNG DAUNTLESS directory.
         {server.backendUrl && <> You are about to connect to <span className="mono">{server.backendUrl}</span>.</>}
       </p>
       <p>
-        This server is not run, hosted, listed, monitored or checked by Mystic Paradox; the person who runs it is
+        This server is not run, hosted, listed, monitored or checked by MNG DAUNTLESS; the person who runs it is
         responsible for it. Only join if you trust the host.
       </p>
       <ul className="modal-points">
         <li>
-          The runtime files used with this server are not installed or checked by Mystic Paradox and may contain
-          malware. Mystic Paradox takes no responsibility for any harm caused by them or by the server.
+          The runtime files used with this server are not installed or checked by MNG DAUNTLESS and may contain
+          malware. MNG DAUNTLESS takes no responsibility for any harm caused by them or by the server.
         </li>
         <li>
           Your progress on this server is stored only on the host's PC. It is never synced to the official Mystic
@@ -77,7 +77,7 @@ export function LocalServerWarning({ server, onAgree, onClose }: LocalServerWarn
           front of it. The host can see the address you connect from.
         </li>
         <li>
-          The account you create or sign in to belongs to that server, not to Mystic Paradox. Do not reuse your
+          The account you create or sign in to belongs to that server, not to MNG DAUNTLESS. Do not reuse your
           official password.
         </li>
       </ul>

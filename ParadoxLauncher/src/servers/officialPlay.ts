@@ -3,7 +3,7 @@ import type { OfficialPlay } from "../api/types";
 import type { RealmStatus } from "./realmStatus";
 
 /** The note when the official server is switched off and the backend sent no message of its own. */
-export const OFFICIAL_UNAVAILABLE_NOTE = "The official server is currently unavailable. Join or host a realm.";
+export const OFFICIAL_UNAVAILABLE_NOTE = "The official server is currently unavailable. Join or host an MNG Server.";
 
 /** True only when the official server answered that it is off. A missing answer, or an older backend, means available. */
 export function officialUnavailable(play: OfficialPlay | null | undefined): boolean {

@@ -1429,7 +1429,7 @@ pub fn stop_hunt_joins_for_hub_join() {
         .unwrap_or_default();
     for (session_id, sender) in &joins {
         process::append_active_session_log(&format!(
-            "hunt join ends once the game leaves it: the account is entering a realm hub (session={session_id})"
+            "hunt join ends once the game leaves it: the account is entering an MNG Server hub (session={session_id})"
         ));
         let _ = sender.send(SupervisorCommand::StopWhenGameLeaves);
     }

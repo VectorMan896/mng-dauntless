@@ -345,7 +345,7 @@ const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
  * set, lower case). The same realm and kind always give the same id, so the room survives hub restarts.
  */
 export function HubRoomId(realmId: string, hubKind: RealmHubKind): string {
-    if (typeof realmId !== "string" || realmId.length === 0) throw new Error("HubRoomId needs a realm id.");
+    if (typeof realmId !== "string" || realmId.length === 0) throw new Error("HubRoomId needs an MNG Server id.");
     if (!HUB_KINDS.includes(hubKind)) throw new Error(`HubRoomId: unknown hub kind ${String(hubKind)}.`);
     const bytes = Buffer.from(crypto.createHash("sha256").update(`paradox-realm-hub:v1:${realmId}:${hubKind}`).digest().subarray(0, 16));
     bytes[6] = (bytes[6] & 0x0f) | 0x50;

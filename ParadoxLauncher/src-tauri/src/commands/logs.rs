@@ -209,7 +209,7 @@ pub struct UploadReport {
     pub stopped: Option<String>,
 }
 
-const NETWORK_ERROR: &str = "Couldn't reach the Mystic Paradox server right now.";
+const NETWORK_ERROR: &str = "Couldn't reach the MNG DAUNTLESS server right now.";
 
 /// A whole file can take a while on a slow connection; the shared client's 10 s would cut it off.
 fn upload_client() -> Result<reqwest::blocking::Client, String> {

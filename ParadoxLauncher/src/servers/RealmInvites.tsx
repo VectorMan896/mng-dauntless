@@ -39,6 +39,10 @@ const IDLE: RealmInvitesState = {
   decline: async () => {},
 };
 
+// [MNG DAUNTLESS 2026-10-31] Player-hosted MNG Servers (realms) are off: MNG DAUNTLESS is one community server, built into the
+// launcher. No invites are polled (they were 404s on our server) and the Host page and add form are hidden.
+export const MNG_PLAYER_SERVERS = false;
+
 const RealmInvitesContext = createContext<RealmInvitesState>(IDLE);
 
 export function useRealmInvites(): RealmInvitesState {
@@ -71,7 +75,7 @@ export function RealmInvitesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!officialNetwork) {
+    if (!officialNetwork || !MNG_PLAYER_SERVERS) {
       setInvites([]);
       return;
     }
@@ -138,17 +142,17 @@ export function RealmInvitations({ onChanged, style }: { onChanged?: (list: Serv
   };
 
   return (
-    <section className="glass card reveal realm-invitations" style={style} aria-label="Realm invitations">
+    <section className="glass card reveal realm-invitations" style={style} aria-label="MNG Server invitations">
       <div className="section">
         <div className="section-row">
           <div className="section-head">
             <div className="section-icon good"><HostRealmIcon /></div>
             <div className="min-w-0">
               <h2 className="section-title server-title">
-                <span>Realm invitations</span>
+                <span>MNG Server invitations</span>
                 {invites.length > 0 && <span className="chip good">{invites.length}</span>}
               </h2>
-              <p className="section-desc">A host invited you to their realm. Accept to join it with your Mystic Paradox account.</p>
+              <p className="section-desc">A host invited you to their MNG Server. Accept to join it with your MNG DAUNTLESS account.</p>
             </div>
           </div>
         </div>

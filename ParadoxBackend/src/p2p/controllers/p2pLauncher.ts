@@ -104,7 +104,7 @@ export async function CreateHostBootstrap(accountId: string, sessionId: string) 
         // [2026-10-13 realms S1] A realm hub is bootstrapped like a hunt (same offer, capability and host ticket) with its own
         // scopes, a longer capability and a peer limit of its own; it needs realm hosting to be on.
         const isHub = IsRealmHub(current);
-        if (isHub && !IsRealmHostingEnabled()) throw new LauncherApiError("P2P_DISABLED", "Realm hosting is switched off on this server.");
+        if (isHub && !IsRealmHostingEnabled()) throw new LauncherApiError("P2P_DISABLED", "MNG Server hosting is switched off on this server.");
         // [2026-10-11 B7/B10] NO_COMPLETION is the Training Grounds' no-reward session. Launchers older than the one
         // that accepts it refuse the bootstrap ("bindings are invalid"); the hunt then falls back as for any failed
         // host start - P2P_TRAINING_ENABLED stays off until launchers accept the mode.

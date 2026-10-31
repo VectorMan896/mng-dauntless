@@ -22,6 +22,7 @@ import { ResolveProgressionGrant } from "../skuProgression";
 import { GetInventoryStoragePolicy, InventoryStoragePolicyEntry } from "../inventoryStoragePolicy";
 import { logger } from "../logger";
 import { loadGameData, tryLoadGameData } from "../gameData/loader";
+import { ActiveSeasonalEvent } from "../seasonalEvents";
 
 // [2026-07-24] Lady Luck's Store (the Trials/Arena reward shop). Confirmed real endpoint contract:
 // GET /product/skus/public?requiredTags=ladyluckstore returns exactly this shape
@@ -69,6 +70,8 @@ export type StoreSku = {
     // opposed to plain functional/consumable items - populating it from our own `instanced` flag
     // instead (as an earlier version of this route did) is why dye tiles rendered with no icon.
     duplicateInstancedItems: string[];
+    // [MNG DAUNTLESS 2026-10-31] Listing only: the requesting player already bought this one-time SKU (served as remaining 0).
+    owned?: boolean;
 };
 
 const LADYLUCK_SKUS = loadGameData<StoreSku[]>("ladyluck_store.json");
@@ -81,8 +84,19 @@ const PLATINUM_SKUS = loadGameData<StoreSku[]>("platinum_store.json");
 // service's `requiredTags` contract means. Lady Luck and the Reward Cache keep their existing
 // whole-array registration: every SKU in those files already carries its own store tag, so the two
 // forms agree, and not touching them keeps this change behaviour-neutral for both.
+// [MNG DAUNTLESS] MYSTICPARADOX_HUNTPASS_NO_SKIP=on: the hunt pass is earned by playing only. The rank-skip and pass
+// sections sell nothing, and no SKU that grants hunt pass progression is offered in any section.
+export const HUNTPASS_NO_SKIP = /^(1|true|yes|on)$/i.test(process.env.MYSTICPARADOX_HUNTPASS_NO_SKIP ?? "");
+const HUNTPASS_SKIP_SECTIONS = ["hp_level_skip_rank", "huntpass_store"];
+
+export function GrantsHuntPassProgress(Sku: StoreSku): boolean {
+    const TrackId = Sku.skuProgression?.progressionId;
+    return typeof TrackId === "string" && (TrackId === "selected_huntpass" || /^(season|eventpass_|d24_)/i.test(TrackId));
+}
+
 function PlatinumSection(sectionTag: string): StoreSku[] {
-    return PLATINUM_SKUS.filter((Sku) => Sku.tags.includes(sectionTag));
+    if (HUNTPASS_NO_SKIP && HUNTPASS_SKIP_SECTIONS.includes(sectionTag)) return [];
+    return PLATINUM_SKUS.filter((Sku) => Sku.tags.includes(sectionTag) && !(HUNTPASS_NO_SKIP && GrantsHuntPassProgress(Sku)));
 }
 
 // [1.14.7 2026-10-08] The Middleman's cell-fusion slots. Slot 1 is free; slots 2 and 3 are unlocked by the
@@ -246,7 +260,52 @@ function WithoutSkuIdClashes(SectionTag: string, Candidates: StoreSku[], Others:
 const FOUNTAIN_DAILY_SKUS = WithoutSkuIdClashes(FOUNTAIN_DAILY_BUNDLE_TAG, LoadFountainDailyBundleSkus(),
     [EXCHANGE_SLOT_SKUS.slot2, EXCHANGE_SLOT_SKUS.slot3, LADYLUCK_SKUS, REWARD_CACHE_SKUS, PLATINUM_SKUS]);
 
+// [MNG DAUNTLESS 2026-10-31] The event merchant (Honest Ozz's stall in Ramsgate, the client's EventStoreScreen). Data:
+// game-data/event_store.json (scripts/generate_event_stores.cjs), optional: one shop per seasonal event, and the server sells
+// only the running event's (src/seasonalEvents.ts). Every event's SKUs are registered under EVENT_STORE_TAG so a purchase token
+// resolves; GetStoreSkus(EVENT_STORE_TAG) is the running event's list, so a purchase of another event's SKU finds nothing.
+// The client asks for tag "seasonal_event" (runtime [StoreProbe]); the listing answers the file's `serveUnder` tags and any
+// unregistered tag that looks like an event store.
+export const EVENT_STORE_TAG = "event_store";
+type EventStoreFile = { serveUnder?: string[]; events?: Record<string, { skus?: StoreSku[] }> };
+const EVENT_STORE_FILE = (() => {
+    try {
+        return (tryLoadGameData("event_store.json") as EventStoreFile | undefined) ?? {};
+    } catch (Err) {
+        logger.error(`[Store:${EVENT_STORE_TAG}] event_store.json could not be read - the event merchant sells nothing: ${String(Err)}`);
+        return {};
+    }
+})();
+// A SKU id another store already uses is dropped (one offer, not the whole shop): a token names only the SKU id.
+const EVENT_STORE_OTHER_IDS = new Set([EXCHANGE_SLOT_SKUS.slot2, EXCHANGE_SLOT_SKUS.slot3, LADYLUCK_SKUS, REWARD_CACHE_SKUS, PLATINUM_SKUS,
+    FOUNTAIN_DAILY_SKUS].flat().map((Sku) => Sku.id));
+const EVENT_STORES = new Map<string, StoreSku[]>();
+for (const [EventId, Shop] of Object.entries(EVENT_STORE_FILE.events ?? {})) {
+    const Skus = (Array.isArray(Shop?.skus) ? Shop.skus : []).filter((Sku) => {
+        if (!EVENT_STORE_OTHER_IDS.has(Sku.id)) return true;
+        logger.error(`[Store:${EVENT_STORE_TAG}] ${EventId}: SKU id ${Sku.id} is already used by another store - offer left out`);
+        return false;
+    });
+    EVENT_STORES.set(EventId, Skus);
+}
+const EVENT_STORE_SKUS = [...EVENT_STORES.values()].flat();
+const EVENT_STORE_ALIASES = new Set((EVENT_STORE_FILE.serveUnder ?? []).filter((Tag) => typeof Tag === "string"));
+
+/** The running event's shop (empty outside every event, or for an event without one). */
+export function EventStoreSkus(now: Date = new Date()): StoreSku[] {
+    const Event = ActiveSeasonalEvent(now);
+    return Event ? EVENT_STORES.get(Event.id) ?? [] : [];
+}
+
+/** The tag of the event merchant's listing when `requestedTag` is one of its names, else undefined. */
+export function EventStoreAlias(requestedTag: string): string | undefined {
+    if (EVENT_STORE_SKUS.length === 0 || requestedTag in STORE_SKUS) return undefined;
+    if (EVENT_STORE_ALIASES.has(requestedTag) || /event|rumou?r|harvest|ozz/i.test(requestedTag)) return EVENT_STORE_TAG;
+    return undefined;
+}
+
 const STORE_SKUS: Record<string, StoreSku[]> = {
+    [EVENT_STORE_TAG]: EVENT_STORE_SKUS,
     exchange_vendor_slot_2: EXCHANGE_SLOT_SKUS.slot2,
     exchange_vendor_slot_3: EXCHANGE_SLOT_SKUS.slot3,
     ladyluckstore: LADYLUCK_SKUS,
@@ -273,6 +332,13 @@ export function DailyResetWindow(NowMs: number): { key: string; startMs: number;
 // The claim's inventory transaction id: deterministic in (store scope, userId, skuId, window), so a second claim in the
 // same window hits the same idempotency-ledger row and only REPLAYS the stored result, and the listing can find
 // this window's claim without any separate cooldown record (which would sit outside the grant's transaction).
+// A one-time SKU's purchase transaction id: deterministic in (store scope, userId, skuId), so a repeat purchase replays the
+// first one and the listing can tell the SKU is owned.
+export function OneTimeTransactionId(storeTag: string, userId: string, skuId: string): string {
+    const { transaction: Scope } = TransactionScopeFor(storeTag);
+    return crypto.createHash("sha256").update(`${Scope}:${userId}:${skuId}`).digest("hex").slice(0, 32).toUpperCase();
+}
+
 export function DailyClaimTransactionId(storeTag: string, userId: string, skuId: string, windowKey: string): string {
     const { transaction: Scope } = TransactionScopeFor(storeTag);
     return crypto.createHash("sha256").update(`${Scope}:${userId}:${skuId}:${windowKey}`).digest("hex").slice(0, 32).toUpperCase();
@@ -296,6 +362,35 @@ async function FindClaimInInventoryLedger(userId: string, transactionId: string)
     return { characterId: typeof Row.characterId === "string" ? Row.characterId : undefined };
 }
 
+// [MNG DAUNTLESS 2026-10-31] Marks the one-time SKUs the player already bought, so the client shows them as owned instead
+// of "Buy Now" (a repeat buy was already safe: it replays the first purchase, OneTimeTransactionId). The purchase's own
+// ledger row is the proof, looked up in one query. Event merchant only for now. A failed lookup marks nothing.
+async function MarkOwnedOneTimeSkus(section: string, skus: StoreSku[], userId: string | undefined): Promise<StoreSku[]> {
+    if (typeof userId !== "string" || userId.length === 0 || userId === "INVALID") return skus;
+    const IdBySku = new Map(skus.filter((Sku) => Sku.maxAllowed === 1).map((Sku) => [Sku.id, OneTimeTransactionId(section, userId, Sku.id)]));
+    if (IdBySku.size === 0) return skus;
+    try {
+        const Owned = new Set<string>();
+        const Sqlite = GetSqliteDirectAccess();
+        if (Sqlite) {
+            for (const [SkuId, TransactionId] of IdBySku) {
+                if (await Sqlite.findInventoryLedgerClaim(userId, TransactionId)) Owned.add(TransactionId);
+            }
+        } else {
+            const Rows = await (await GetMongoDb()).collection(Collections.InventoryTransactions).find(
+                { userId: { $eq: userId }, transactionId: { $in: [...IdBySku.values()] } },
+                { projection: { _id: 0, transactionId: 1 } }
+            ).toArray();
+            for (const Row of Rows) if (typeof Row.transactionId === "string") Owned.add(Row.transactionId);
+        }
+        if (Owned.size === 0) return skus;
+        return skus.map((Sku) => Owned.has(IdBySku.get(Sku.id) ?? "") ? { ...Sku, owned: true } : Sku);
+    } catch (Err) {
+        logger.warn(`[Store:${section}] ${userId} ownership lookup failed - listing every offer as available: ${String(Err)}`);
+        return skus;
+    }
+}
+
 export type StoreListingOptions = { nowMs?: number; hasClaim?: DailyClaimLookup };
 
 // The listing for one requesting player. Every section but the daily ones is served as is. A daily offer is left out
@@ -303,7 +398,10 @@ export type StoreListingOptions = { nowMs?: number; hasClaim?: DailyClaimLookup 
 // whenever the claim cannot be checked: fail closed, the fountain just looks used until the next arrival.
 export async function GetStoreSkusForPlayer(storeTag: string, userId: string | undefined, Options: StoreListingOptions = {}): Promise<StoreSku[]> {
     const Skus = GetStoreSkus(storeTag);
-    if (!IsDailyClaimSection(storeTag)) return Skus;
+    if (!IsDailyClaimSection(storeTag)) {
+        const Section = storeTag === EVENT_STORE_TAG || EventStoreAlias(storeTag) === EVENT_STORE_TAG ? EVENT_STORE_TAG : undefined;
+        return Section ? MarkOwnedOneTimeSkus(Section, Skus, userId) : Skus;
+    }
     if (Skus.length === 0) {
         logger.info(`[Store:${storeTag}] no daily offer loaded (${FOUNTAIN_DAILY_BUNDLE_FILE} missing or rejected at startup) - serving none`);
         return [];
@@ -349,13 +447,33 @@ const CURRENCY_ID_MAP: Record<string, string> = {
     // InsufficientStackedItemError (unmapped -> 500) instead of charging anything. It failed closed,
     // but it would have failed. See Progress/33_PLATINUM_STORE.md.
     id_currency_platinum: "CURRENCY_PLATINUM",
+    // [MNG DAUNTLESS 2026-10-31] The seasonal event currencies (the event merchant's prices, src/seasonalEvents.ts pays them).
+    id_currency_event_darkharvest: "CURRENCY_EVENT_DARKHARVEST",
+    id_currency_event_frostfall: "CURRENCY_EVENT_FROSTFALL",
+    id_currency_event_saintsbond: "CURRENCY_EVENT_SAINTSBOND",
+    id_currency_event_springtide: "CURRENCY_EVENT_SPRINGTIDE",
+    id_currency_event_ramsgiving: "CURRENCY_EVENT_RAMSGIVING",
+    // Rams (the Midsommar shop at Ozz is priced in Rams).
+    id_currency_notes: "CURRENCY_NOTES",
 };
 
 export function GetLadyLuckSkus(): StoreSku[] {
     return LADYLUCK_SKUS;
 }
 
+// [MNG DAUNTLESS 2026-10-31] The event merchant sells only while an event with a shop runs (src/seasonalEvents.ts, the same
+// calendar that pays the currency): outside it the listing is empty and a purchase finds no SKU. Coins stay in the wallet.
+export function EventStoreOpen(now: Date = new Date()): boolean {
+    return EventStoreSkus(now).length > 0;
+}
+
 export function GetStoreSkus(storeTag: string): StoreSku[] {
+    const Alias = STORE_SKUS[storeTag] === undefined ? EventStoreAlias(storeTag) : undefined;
+    if (storeTag === EVENT_STORE_TAG || Alias === EVENT_STORE_TAG) {
+        const Skus = EventStoreSkus();
+        if (Alias) logger.info(`[Store:${EVENT_STORE_TAG}] '${storeTag}': ${ActiveSeasonalEvent()?.name ?? "no event"} shop, ${Skus.length} offers`);
+        return Skus;
+    }
     return STORE_SKUS[storeTag] ?? [];
 }
 
@@ -423,6 +541,10 @@ function TransactionScopeFor(storeTag: string): { transaction: string; instance:
 // PAID SKU "granted nothing" is a fact worth having in the log next to the debit.
 async function GrantSkuProgressionInTransaction(repos: RepositoryProvider, userId: string, sku: StoreSku, session: ClientSession): Promise<void> {
     if (sku.skuProgression == undefined) return;
+    // [MNG DAUNTLESS] Hunt pass progress is never sold: refusing here rolls the whole purchase (and its debit) back.
+    if (HUNTPASS_NO_SKIP && GrantsHuntPassProgress(sku)) {
+        throw new Error(`Hunt pass progress cannot be bought (sku=${sku.id}); MYSTICPARADOX_HUNTPASS_NO_SKIP is on`);
+    }
 
     const RawTrackId = sku.skuProgression.progressionId;
     const TrackId = typeof RawTrackId === "string" ? ResolveProgressionTrackId(RawTrackId) : undefined;
@@ -494,7 +616,7 @@ export async function PurchaseStoreSku(userId: string, characterId: string, stor
     const TransactionId = DailyWindow
         ? DailyClaimTransactionId(storeTag, userId, skuId, DailyWindow.key)
         : IsOneTime
-            ? crypto.createHash("sha256").update(`${TransactionScope}:${userId}:${skuId}`).digest("hex").slice(0, 32).toUpperCase()
+            ? OneTimeTransactionId(storeTag, userId, skuId)
             : crypto.randomBytes(16).toString("hex").toUpperCase();
 
     // [1.14.7 2026-10-10] Only a positive price is a debit. The fountain's offer is priced 0 Platinum (the client opens

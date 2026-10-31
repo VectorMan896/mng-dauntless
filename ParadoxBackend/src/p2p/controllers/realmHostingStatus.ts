@@ -48,7 +48,7 @@ export interface RealmHostingStatusView {
 export async function GetRealmHostingStatus(accountId: string): Promise<RealmHostingStatusView> {
     const realms = GetRealmsPort();
     const realm = await realms.findHostedRealm(accountId);
-    if (realm == undefined || realm.hostAccountId !== accountId) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+    if (realm == undefined || realm.hostAccountId !== accountId) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
     const repos = GetP2PRepositories();
     const names = await realms.memberDisplayNames(accountId);
     const players: RealmPlayerStatusView[] = [];

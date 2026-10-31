@@ -149,6 +149,46 @@ pub fn set_game_exe(app: &AppHandle, id: &str, exe: &Path) -> Result<(), String>
 
 /// A fresh id that no entry uses: `s-` plus 12 hex digits. Not secret and not cryptographic; sha2 is already a
 /// dependency, so no `uuid`/`rand` crate is pulled in for this (same approach as the launch session ids).
+/// [MNG DAUNTLESS] The launcher's own server in the canonical `scheme://host[:port]` form the game accepts, worked out once.
+pub(crate) fn official_backend_url() -> Option<&'static str> {
+    static URL: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    URL.get_or_init(|| official_backend_url_from(crate::commands::auth::api_base_url())).as_deref()
+}
+
+/// [MNG DAUNTLESS] The address check for typed-in servers allows plain http:// only for localhost. The launcher's own
+/// server is not typed in (it is fixed when the launcher is built), and the MNG servers have no HTTPS yet, so a debug
+/// build also passes its own http://host:port on to the game (the runtime accepts http for any host). Without this
+/// the game fell back to its built-in https://localhost and showed "An error occurred while communicating with the
+/// game servers".
+fn official_backend_url_from(api_base: &str) -> Option<String> {
+    if let Ok(url) = super::model::normalize_backend_url(api_base) {
+        return Some(url);
+    }
+    #[cfg(debug_assertions)]
+    {
+        let url = url::Url::parse(api_base.trim().trim_end_matches('/')).ok()?;
+        if url.scheme() == "http" && url.path() == "/" && url.username().is_empty() && url.query().is_none() {
+            let host = url.host_str()?;
+            return Some(match url.port() {
+                Some(port) => format!("http://{host}:{port}"),
+                None => format!("http://{host}"),
+            });
+        }
+    }
+    None
+}
+
+#[cfg(all(test, debug_assertions))]
+mod mng_official_backend_tests {
+    #[test]
+    fn a_plain_http_server_on_another_pc_is_passed_to_the_game() {
+        assert_eq!(super::official_backend_url_from("http://203.0.113.7:3000").as_deref(), Some("http://203.0.113.7:3000"));
+        assert_eq!(super::official_backend_url_from("http://127.0.0.1:3000").as_deref(), Some("http://127.0.0.1:3000"));
+        assert_eq!(super::official_backend_url_from("https://play.example.com").as_deref(), Some("https://play.example.com"));
+        assert_eq!(super::official_backend_url_from("http://play.example.com/some/path"), None);
+    }
+}
+
 pub fn new_server_id(list: &ServerList) -> String {
     use sha2::{Digest, Sha256};
     use std::sync::atomic::{AtomicU32, Ordering};
@@ -194,10 +234,12 @@ impl ServerTarget {
         self.server.kind.uses_official_feed()
     }
 
-    /// The address the game must use instead of the built-in one: only a local server has one.
+    /// The address the game must use instead of the built-in one: a local server's own, or (MNG DAUNTLESS) the
+    /// launcher's own server for the official entry, so the game always follows the server this launcher was built for.
     pub fn backend_url(&self) -> Option<&str> {
         match self.server.kind {
             ServerKind::Local => self.server.backend_url.as_deref(),
+            ServerKind::Official => official_backend_url(),
             _ => None,
         }
     }
@@ -536,7 +578,7 @@ mod tests {
             list.add(
                 NewServer {
                     kind: Some(ServerKind::ParadoxRealm),
-                    name: Some(format!("realm {id}")),
+                    name: Some(format!("MNG Server {id}")),
                     backend_url: None,
                     realm_name: Some(format!("r-{}", &id[2..])),
                 },
@@ -555,7 +597,7 @@ mod tests {
         assert_eq!(target.exe_path, Some(official.clone()));
         assert!(target.folder_problem.is_none());
         assert!(target.uses_official_feed());
-        assert!(target.backend_url().is_none());
+        assert_eq!(target.backend_url(), official_backend_url());
         // Not located: still the official server, with no path (callers say "Locate your installation").
         let target = resolve_target(&list, None, Some(OFFICIAL_ID), identity).unwrap();
         assert_eq!(target.exe_path, None);
@@ -567,7 +609,7 @@ mod tests {
         let official = exe("D:\\Games\\Dauntless");
         let mut list = sample_list();
         let local_exe = exe("D:\\Games\\Local One");
-        let realm_exe = exe("D:\\Games\\Realm One");
+        let realm_exe = exe("D:\\Games\\MNG Server One");
         list.set_game_exe("s-aaaaaaaaaaaa", &local_exe, Some(&official))
             .unwrap();
         list.set_game_exe("s-bbbbbbbbbbbb", &realm_exe, Some(&official))
@@ -601,7 +643,7 @@ mod tests {
         assert!(realm.uses_official_feed());
         assert!(
             realm.backend_url().is_none(),
-            "a realm uses the built-in backend"
+            "an MNG Server uses the built-in backend"
         );
 
         // The selected server is what `None` resolves to.

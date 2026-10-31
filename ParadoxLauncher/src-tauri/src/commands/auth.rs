@@ -261,7 +261,7 @@ pub(crate) const LAUNCHER_UPDATE_REQUIRED: &str =
 
 /// [2026-10-15] The official server's play switch is off (`officialPlay.available` false, or a game session refused).
 pub(crate) const OFFICIAL_UNAVAILABLE: &str =
-    "The official server is currently unavailable. Join or host a realm.";
+    "The official server is currently unavailable. Join or host an MNG Server.";
 
 /// [2026-10-15] A refusal the sign-in screens act on by its code: `CODE: sentence`. The screen reads the code, and the
 /// sentence is what any other screen shows.
@@ -326,8 +326,8 @@ pub(crate) fn api_error_message(status: u16, code: Option<&str>, fallback: &str)
         Some("OFFICIAL_PLAY_UNAVAILABLE") => OFFICIAL_UNAVAILABLE.to_string(),
         // [2026-10-16] The server refuses Play from an unofficial launcher build (MYSTICPARADOX_UNOFFICIAL_LAUNCHER=refuse).
         Some("LAUNCHER_UNOFFICIAL") => {
-            "This launcher isn't an official Mystic Paradox build. Install the official \
-            launcher (github.com/pranav158/Mystic-Paradox/releases) to play on Mystic Paradox."
+            "This launcher isn't an official MNG DAUNTLESS build. Ask the MNG DAUNTLESS team for the \
+            current launcher to play on MNG DAUNTLESS."
                 .to_string()
         }
         // [2026-10-15] Linking and unlinking Discord in Settings.
@@ -335,7 +335,7 @@ pub(crate) fn api_error_message(status: u16, code: Option<&str>, fallback: &str)
             "Discord is this account's only sign-in, so it can't be unlinked.".to_string()
         }
         Some("AUTH_DISCORD_ALREADY_LINKED") => {
-            "That Discord account is already linked to another Mystic Paradox account.".to_string()
+            "That Discord account is already linked to another MNG DAUNTLESS account.".to_string()
         }
         Some("AUTH_DISCORD_ACCOUNT_HAS_LINK") => {
             "This account already has a Discord account linked.".to_string()
@@ -739,7 +739,7 @@ fn cross_process_refresh_lock(scope: &AuthScope) -> CrossProcessRefreshLock {
     #[cfg(not(test))]
     let base = std::env::var_os("LOCALAPPDATA")
         .map(std::path::PathBuf::from)
-        .map(|dir| dir.join("MysticParadox"))
+        .map(|dir| dir.join(crate::DATA_DIR_NAME))
         .unwrap_or_else(std::env::temp_dir);
     #[cfg(test)]
     let base = std::env::temp_dir().join("mp-refresh-locks");
@@ -804,7 +804,7 @@ fn refresh_locked(host: &dyn SessionHost, scope: &AuthScope) -> Result<NativeSes
             .map_err(|_| {
                 scope
                     .pick(
-                        "Couldn't reach the Mystic Paradox account server.",
+                        "Couldn't reach the MNG DAUNTLESS account server.",
                         "Couldn't reach this server.",
                     )
                     .to_string()
@@ -903,7 +903,7 @@ fn login_with(
         .map_err(|_| {
             scope
                 .pick(
-                    "Can't reach the Mystic Paradox server right now.",
+                    "Can't reach the MNG DAUNTLESS server right now.",
                     "Can't reach this server right now.",
                 )
                 .to_string()
@@ -1042,7 +1042,7 @@ pub(crate) fn fetch_status(scope: &AuthScope) -> Result<NativeServerStatus, Stri
         .map_err(|_| {
             scope
                 .pick(
-                    "Can't reach the Mystic Paradox service right now.",
+                    "Can't reach the MNG DAUNTLESS service right now.",
                     "Can't reach this server right now.",
                 )
                 .to_string()
@@ -1058,6 +1058,34 @@ pub async fn native_get_server_status(
     run_auth_task(move || {
         let scope = command_scope(&app, server_id.as_deref())?;
         fetch_status(&scope)
+    })
+    .await
+}
+
+/// [MNG DAUNTLESS 2026-10-31] Ping to the selected server for the service status card: the HTTP round trip to its status
+/// endpoint on a connection a first request already opened (so connecting is not counted), best of three, in ms.
+#[tauri::command]
+pub async fn native_ping_server(app: AppHandle, server_id: Option<String>) -> Result<u32, String> {
+    run_auth_task(move || {
+        let scope = command_scope(&app, server_id.as_deref())?;
+        let client = http_client_for(&scope)?;
+        let url = format!("{}/launcher/v1/status", scope.base_url());
+        let get = || -> Result<(), String> {
+            client
+                .get(&url)
+                .send()
+                .and_then(|response| response.bytes())
+                .map(|_| ())
+                .map_err(|_| "Can't reach this server right now.".to_string())
+        };
+        get()?;
+        let mut best = u128::MAX;
+        for _ in 0..3 {
+            let started = std::time::Instant::now();
+            get()?;
+            best = best.min(started.elapsed().as_millis());
+        }
+        Ok(best.min(u128::from(u32::MAX)) as u32)
     })
     .await
 }
@@ -1086,7 +1114,7 @@ pub async fn native_check_username(
             .map_err(|_| {
                 scope
                     .pick(
-                        "Can't reach the Mystic Paradox server right now.",
+                        "Can't reach the MNG DAUNTLESS server right now.",
                         "Can't reach this server right now.",
                     )
                     .to_string()
@@ -1149,7 +1177,7 @@ pub async fn native_register(
             .map_err(|_| {
                 scope
                     .pick(
-                        "Can't reach the Mystic Paradox server right now.",
+                        "Can't reach the MNG DAUNTLESS server right now.",
                         "Can't reach this server right now.",
                     )
                     .to_string()
@@ -1171,7 +1199,7 @@ pub async fn native_register(
 // local server keeps its own accounts and is refused before any request. A verify or reset that succeeds signs in exactly
 // as login does (same device, same base URL, same epoch check and saved refresh token).
 
-const EMAIL_CODES_ON_OFFICIAL_ONLY: &str = "Email codes and password resets belong to Mystic Paradox accounts. This server keeps its own accounts.";
+const EMAIL_CODES_ON_OFFICIAL_ONLY: &str = "Email codes and password resets belong to MNG DAUNTLESS accounts. This server keeps its own accounts.";
 
 /// Ends a sign-in the server holds for approval: nothing stays signed in and the scope's epoch moves on.
 fn end_pending_sign_in(
@@ -1203,7 +1231,7 @@ fn official_email_scope(app: &AppHandle, server_id: Option<&str>) -> Result<Auth
 fn unreachable_account_server(scope: &AuthScope) -> String {
     scope
         .pick(
-            "Can't reach the Mystic Paradox server right now.",
+            "Can't reach the MNG DAUNTLESS server right now.",
             "Can't reach this server right now.",
         )
         .to_string()
@@ -1717,7 +1745,7 @@ pub(crate) fn fetch_policy_from(
         .map_err(|_| {
             scope
                 .pick(
-                    "Can't reach the Mystic Paradox server right now.",
+                    "Can't reach the MNG DAUNTLESS server right now.",
                     "Can't reach this server right now.",
                 )
                 .to_string()
@@ -1743,7 +1771,7 @@ fn fetch_policy_cached_with(
             .map_err(|_| {
                 scope
                     .pick(
-                        "Can't reach the Mystic Paradox server right now.",
+                        "Can't reach the MNG DAUNTLESS server right now.",
                         "Can't reach this server right now.",
                     )
                     .to_string()
@@ -1790,7 +1818,7 @@ pub async fn native_refresh_account(
                 .map_err(|_| {
                     scope
                         .pick(
-                            "Couldn't reach the Mystic Paradox account server.",
+                            "Couldn't reach the MNG DAUNTLESS account server.",
                             "Couldn't reach this server.",
                         )
                         .to_string()
@@ -2675,7 +2703,7 @@ mod tests {
         );
         // [2026-10-16] An unofficial launcher build refused at Play gets the sentence, not "x (server status 403)".
         assert!(api_error_message(403, Some("LAUNCHER_UNOFFICIAL"), "x")
-            .starts_with("This launcher isn't an official Mystic Paradox build."));
+            .starts_with("This launcher isn't an official MNG DAUNTLESS build."));
     }
 
     #[test]

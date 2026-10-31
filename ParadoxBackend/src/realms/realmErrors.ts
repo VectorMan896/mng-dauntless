@@ -76,17 +76,17 @@ export type RealmEntryErrorCode =
 
 /** The readable message of each refusal, shared by the join route and the game-session route. */
 export const REALM_ENTRY_MESSAGES: Readonly<Record<RealmEntryErrorCode, string>> = Object.freeze({
-    REALM_NOT_FOUND: "There is no realm with that name.",
-    REALM_OWNER_CHANGED: "This realm now belongs to a different host.",
-    REALM_BANNED: "You cannot join this realm.",
-    REALM_INVITE_REQUIRED: "This realm is invite-only. You need an invite code.",
-    REALM_INVITE_INVALID: "That invite code is not valid for this realm.",
+    REALM_NOT_FOUND: "There is no MNG Server with that name.",
+    REALM_OWNER_CHANGED: "This MNG Server now belongs to a different host.",
+    REALM_BANNED: "You cannot join this MNG Server.",
+    REALM_INVITE_REQUIRED: "This MNG Server is invite-only. You need an invite code.",
+    REALM_INVITE_INVALID: "That invite code is not valid for this MNG Server.",
     REALM_INVITE_EXPIRED: "That invite has expired, was revoked or has been used up.",
-    REALM_FULL: "This realm cannot take more members.",
-    REALM_OFFLINE: "This realm is offline: its host is not running it right now.",
-    REALM_SOLO: "This realm is in solo mode: its host is playing alone right now.",
+    REALM_FULL: "This MNG Server cannot take more members.",
+    REALM_OFFLINE: "This MNG Server is offline: its host is not running it right now.",
+    REALM_SOLO: "This MNG Server is in solo mode: its host is playing alone right now.",
     REALM_JOIN_REQUESTED: "Request sent to the host. Wait for their approval, then press Play again.",
-    REALM_REQUESTS_FULL: "This realm has too many join requests waiting. Try again later."
+    REALM_REQUESTS_FULL: "This MNG Server has too many join requests waiting. Try again later."
 });
 
 export function RealmEntryError(code: RealmEntryErrorCode): LauncherApiError {

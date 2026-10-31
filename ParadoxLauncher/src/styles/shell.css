@@ -1,4 +1,7 @@
-/* App frame: custom title bar, sidebar, scrolling main area. */
+/* App frame: custom title bar, left icon rail, top-right corner, scrolling main area.
+   [MNG DAUNTLESS 2026-10-31] Layout after the owner's reference design: a slim rail of round icon buttons (the MNG mark, Home
+   on its own, the other pages in one grouped pill) and a top-right corner with the server's state and the account avatar.
+   The original had a 252 px sidebar. */
 
 /* ---- Title bar (the window is frameless) -------------------------------- */
 
@@ -23,8 +26,8 @@
 .window-controls {
   position: relative;
   display: flex;
-  border-bottom-left-radius: 12px;
-  background: linear-gradient(90deg, rgba(5, 10, 18, 0), rgba(5, 10, 18, 0.28) 30%);
+  border-bottom-left-radius: var(--r-md);
+  background: linear-gradient(90deg, rgba(var(--bg-rgb), 0), rgba(var(--bg-rgb), 0.28) 30%);
   pointer-events: auto;
 }
 
@@ -33,7 +36,7 @@
   place-items: center;
   width: 46px;
   height: var(--titlebar-h);
-  color: rgba(240, 246, 255, 0.92);
+  color: rgba(244, 244, 246, 0.9);
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
   transition: background-color var(--t-fast), color var(--t-fast);
 }
@@ -62,13 +65,8 @@
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
   background: var(--bg);
-  transition: grid-template-columns var(--t-slow) var(--ease-out);
-}
-
-.shell[data-compact="true"] {
-  --sidebar-w: 84px;
 }
 
 .main {
@@ -78,205 +76,130 @@
   container: main / inline-size;
 }
 
-/* ---- Sidebar ---------------------------------------------------------------- */
+/* ---- Rail ---------------------------------------------------------------------- */
 
-.sidebar {
+.rail {
   position: relative;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: calc(var(--titlebar-h) - 6px) 14px 14px;
-  border-right: 1px solid rgba(160, 195, 240, 0.08);
-  background: linear-gradient(180deg, rgba(11, 19, 32, 0.97), rgba(6, 11, 19, 0.99));
-  box-shadow: 18px 0 50px -30px rgba(0, 0, 0, 0.9);
-}
-
-.sidebar::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 300px;
-  background: radial-gradient(70% 60% at 50% 18%, rgba(91, 163, 255, 0.13), transparent 70%);
-  pointer-events: none;
-}
-
-.brand {
-  position: relative;
+  z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0 26px;
-  text-align: center;
+  gap: 18px;
+  padding: 18px 0;
+  border-right: 1px solid var(--line);
+  background: rgba(var(--panel-deep-rgb), 0.96);
 }
 
+/* The MNG mark in a dark circle, as the reference's top-left emblem. */
 .brand-mark {
-  width: 60px;
-  height: 60px;
-  color: #e3eeff;
-  filter: drop-shadow(0 0 20px rgba(91, 163, 255, 0.45));
-  transition: width var(--t-slow) var(--ease-out), height var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-spring);
-}
-
-.brand:hover .brand-mark {
-  transform: rotate(18deg) scale(1.04);
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, #2a2a2e, #141416);
+  color: var(--ink);
+  pointer-events: none;
 }
 
 .brand-mark svg {
-  width: 100%;
-  height: 100%;
-}
-
-.brand-name,
-.brand-sub {
-  max-height: 40px;
-  white-space: nowrap;
-  /* Expanding: wait for the rail to widen before the text fades in. */
-  transition: opacity 220ms var(--ease-out) 200ms, max-height var(--t-slow) var(--ease-out), margin var(--t-slow) var(--ease-out);
-}
-
-.brand-name {
-  margin-top: 14px;
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-}
-
-.brand-sub {
-  margin-top: 4px;
-  color: var(--ink-3);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.38em;
-  text-transform: uppercase;
+  width: 28px;
+  height: 28px;
 }
 
 .nav {
-  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  /* The rail's middle holds the pages, as in the reference. */
+  margin-bottom: 64px;
+}
+
+/* A dark pill around a column of round buttons. */
+.nav-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.nav-indicator {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 48px;
-  border: 1px solid var(--aether-line);
-  border-radius: 14px;
-  background: linear-gradient(90deg, rgba(91, 163, 255, 0.2), rgba(91, 163, 255, 0.05) 70%, rgba(91, 163, 255, 0));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px -14px rgba(91, 163, 255, 0.6);
-  pointer-events: none;
-  transform: translate3d(0, calc(var(--nav-index, 0) * 54px), 0);
-  transition: transform var(--t-slow) var(--ease-spring), opacity var(--t-med);
-  view-transition-name: nav-indicator;
-}
-
-.nav-indicator::before {
-  content: "";
-  position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: -1px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--aether);
-  box-shadow: 0 0 12px var(--aether);
-}
-
-.nav-indicator[data-hidden="true"] {
-  opacity: 0;
+.nav-group-solo {
+  padding: 4px;
 }
 
 .nav-item {
   position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  height: 48px;
-  padding: 0 15px;
-  border-radius: 14px;
-  color: var(--ink-2);
-  font-size: 14.5px;
-  font-weight: 560;
-  white-space: nowrap;
-  transition: color var(--t-med), background-color var(--t-med), padding var(--t-slow) var(--ease-out);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink-3);
+  transition: color var(--t-med), background-color var(--t-med), transform var(--t-med) var(--ease-spring);
+}
+
+.nav-group-solo .nav-item {
+  width: 46px;
+  height: 46px;
 }
 
 .nav-item svg {
-  width: 22px;
-  height: 22px;
-  flex: none;
-  transition: transform var(--t-med) var(--ease-spring), color var(--t-med);
+  width: 18px;
+  height: 18px;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(255, 255, 255, 0.09);
   color: var(--ink);
+  transform: scale(1.06);
 }
 
-.nav-item:hover svg {
-  transform: translateY(-1px) scale(1.1);
-}
-
+/* The open page: a pale mint pill with dark ink (the reference's highlighted controller button). */
 .nav-item[aria-current="page"] {
-  color: #fff;
+  background: var(--aether);
+  color: var(--aether-ink);
+  box-shadow: 0 8px 22px -10px rgba(var(--aether-rgb), 0.7);
+  view-transition-name: nav-indicator;
 }
 
-.nav-item[aria-current="page"] svg {
-  color: var(--aether-hi);
-}
-
-/* [2026-10-16] A count on a nav item (realm invites waiting). In the icon rail it sits on the icon's corner. */
+/* [2026-10-16] A count on a page button (realm invites waiting), on its corner. */
 .nav-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
   display: grid;
   place-items: center;
-  min-width: 20px;
-  height: 20px;
-  margin-left: auto;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--ok);
-  box-shadow: 0 0 12px rgba(69, 217, 155, 0.45);
-  color: #052514;
-  font-size: 11px;
-  font-weight: 750;
-}
-
-.shell[data-compact="true"] .nav-badge {
-  position: absolute;
-  top: 5px;
-  right: 7px;
-  min-width: 16px;
-  height: 16px;
-  margin: 0;
+  min-width: 17px;
+  height: 17px;
   padding: 0 4px;
+  border: 2px solid rgba(var(--panel-deep-rgb), 1);
+  border-radius: 999px;
+  background: var(--peach);
+  color: #1d130b;
   font-size: 10px;
+  font-weight: 700;
 }
 
-.nav-label,
-.me-copy,
-.services-copy,
-.collapse-label {
-  transition: opacity 220ms var(--ease-out) 200ms;
-}
-
-/* Compact tooltips escape the rail; the sidebar sits above main (z-index 3). */
-.nav-item[data-tip]::after,
-.sidebar-foot [data-tip]::after {
+/* Tooltips to the right of the rail. */
+.rail [data-tip]::after {
   content: attr(data-tip);
   position: absolute;
   z-index: 10;
   top: 50%;
-  left: calc(100% + 14px);
-  padding: 6px 10px;
+  left: calc(100% + 16px);
+  padding: 6px 12px;
   border: 1px solid var(--line-2);
-  border-radius: 9px;
-  background: rgba(10, 18, 31, 0.96);
+  border-radius: 999px;
+  background: rgba(var(--panel-rgb), 0.97);
   box-shadow: var(--shadow-pop);
   color: var(--ink);
   font-size: 12px;
@@ -288,155 +211,101 @@
   transition: opacity var(--t-fast), transform var(--t-med) var(--ease-out);
 }
 
-.nav-item[data-tip]:hover::after,
-.sidebar-foot [data-tip]:hover::after {
+.rail [data-tip]:hover::after {
   opacity: 1;
   transform: translate(0, -50%);
 }
 
-.sidebar-foot {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: auto;
-}
+/* ---- Top-right corner: tags, server state, avatar ------------------------------------------------ */
 
-/* ---- Account chip ---------------------------------------------------------- */
-
-.me {
-  position: relative;
+.corner {
+  position: fixed;
+  z-index: 50;
+  top: calc(var(--titlebar-h) + 8px);
+  right: 22px;
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
-  padding: 9px;
-  border: 1px solid transparent;
-  border-radius: 16px;
-  text-align: left;
-  transition: background-color var(--t-med), border-color var(--t-med);
 }
 
-.me:hover {
-  border-color: var(--line);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.me[aria-current="page"] {
-  border-color: var(--aether-line);
-  background: var(--aether-a10);
-}
-
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #4a8cf0, #1b3b74);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 6px 18px -8px rgba(74, 140, 240, 0.85);
-  color: #fff;
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.me-copy,
-.services-copy {
-  min-width: 0;
-  flex: 1;
-}
-
-.me-name,
-.me-sub,
-.services-title,
-.services-sub {
-  display: block;
+.notice-tags.brand-tags {
+  flex-wrap: nowrap;
 }
 
 .services-wrap {
   position: relative;
 }
 
-.me-name {
-  overflow: hidden;
-  font-size: 13.5px;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.me-sub {
-  overflow: hidden;
-  color: var(--ink-3);
-  font-size: 11.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ---- Services card and popover ------------------------------------------- */
-
 .services {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  min-width: 0;
-  padding: 12px 12px 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  text-align: left;
-  transition: background-color var(--t-med), border-color var(--t-med);
+  padding: 4px 4px 4px 14px;
+  border-radius: 999px;
+  text-align: right;
+  transition: background-color var(--t-med);
 }
 
 .services:hover,
 .services[aria-expanded="true"] {
-  border-color: var(--line-2);
-  background: rgba(255, 255, 255, 0.055);
+  background: rgba(var(--bg-rgb), 0.55);
+}
+
+.services-copy {
+  display: grid;
+  min-width: 0;
 }
 
 .services-title {
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
   white-space: nowrap;
 }
 
 .services-sub {
+  max-width: 230px;
   overflow: hidden;
-  color: var(--ink-3);
-  font-size: 11.5px;
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.services .chev {
-  width: 16px;
-  height: 16px;
+.services-orb {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
   flex: none;
-  color: var(--ink-3);
-  transition: transform var(--t-med) var(--ease-out);
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: rgba(var(--panel-deep-rgb), 0.85);
 }
 
-.services[aria-expanded="true"] .chev {
-  transform: rotate(-90deg);
+.services-orb .status-dot {
+  width: 10px;
+  height: 10px;
 }
 
 .glass.services-pop {
   position: absolute;
   z-index: 20;
-  bottom: calc(100% + 10px);
-  left: 0;
-  width: 272px;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 280px;
   padding: 16px;
-  border-radius: 18px;
+  border-radius: var(--r-xl);
   box-shadow: inset 0 1px 0 var(--sheen), var(--shadow-pop);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(8px) scale(0.98);
-  transform-origin: bottom left;
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top right;
   transition: opacity var(--t-med) var(--ease-out), transform var(--t-med) var(--ease-out);
 }
 
@@ -451,10 +320,9 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
-  font-family: var(--font-display);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -469,107 +337,88 @@
   color: var(--ink-3);
 }
 
+/* [MNG DAUNTLESS 2026-10-31] The service status ping. */
+.pop-rows dd.ping.good { color: #5fd38d; }
+.pop-rows dd.ping.fair { color: #e6c35c; }
+.pop-rows dd.ping.slow { color: #ef7a6a; }
+
 .pop-rows dd {
   color: var(--ink);
   text-align: right;
 }
 
-.collapse-toggle {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 12px;
-  color: var(--ink-3);
-  font-size: 12.5px;
+/* The avatar: a round portrait with a status dot, as the reference's top-right corner. */
+.me {
+  position: relative;
+  display: block;
+  border-radius: 50%;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--line-3);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3b4a52, #15191c);
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 800;
+  transition: border-color var(--t-med), transform var(--t-med) var(--ease-spring);
+}
+
+.me:hover .avatar {
+  transform: scale(1.05);
+}
+
+.me[aria-current="page"] .avatar {
+  border-color: var(--aether);
+}
+
+.me-dot {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--ink-4);
+}
+
+.me-dot.ok {
+  background: var(--ok);
+}
+
+.corner [data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 8px);
+  right: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: rgba(var(--panel-rgb), 0.97);
+  box-shadow: var(--shadow-pop);
+  color: var(--ink);
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-  transition: background-color var(--t-fast), color var(--t-fast);
-}
-
-.collapse-toggle svg {
-  width: 18px;
-  height: 18px;
-  flex: none;
-  transition: transform var(--t-slow) var(--ease-spring);
-}
-
-.collapse-toggle:hover {
-  background: rgba(255, 255, 255, 0.045);
-  color: var(--ink);
-}
-
-/* ---- Compact rail ----------------------------------------------------------- */
-
-.shell[data-compact="true"] .sidebar {
-  padding-right: 12px;
-  padding-left: 12px;
-}
-
-.shell[data-compact="true"] .brand-mark {
-  width: 42px;
-  height: 42px;
-}
-
-.shell[data-compact="true"] .brand-name,
-.shell[data-compact="true"] .brand-sub {
-  max-height: 0;
-  margin: 0;
-  overflow: hidden;
   opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-fast);
 }
 
-.shell[data-compact="true"] .nav-item {
-  justify-content: center;
-  padding: 0;
+.corner [data-tip]:hover::after {
+  opacity: 1;
 }
 
-.shell[data-compact="true"] .nav-label,
-.shell[data-compact="true"] .me-copy,
-.shell[data-compact="true"] .services-copy,
-.shell[data-compact="true"] .services .chev,
-.shell[data-compact="true"] .collapse-label,
-.shell[data-compact="true"] .brand-name,
-.shell[data-compact="true"] .brand-sub {
-  /* Collapsing: hide at once, before the rail narrows. */
-  transition-delay: 0ms;
-  transition-duration: 90ms;
-}
-
-.shell[data-compact="true"] .nav-label,
-.shell[data-compact="true"] .me-copy,
-.shell[data-compact="true"] .services-copy,
-.shell[data-compact="true"] .services .chev,
-.shell[data-compact="true"] .collapse-label {
-  position: absolute;
-  width: 0;
-  overflow: hidden;
-  opacity: 0;
-}
-
-.shell[data-compact="true"] .me,
-.shell[data-compact="true"] .services,
-.shell[data-compact="true"] .collapse-toggle {
-  justify-content: center;
-  padding-right: 0;
-  padding-left: 0;
-}
-
-.shell[data-compact="true"] .services {
-  height: 44px;
-}
-
-.shell[data-compact="true"] .collapse-toggle svg {
-  transform: rotate(180deg);
-}
-
-.shell[data-compact="true"] .glass.services-pop {
-  bottom: 0;
-  left: calc(100% + 12px);
-  transform-origin: bottom left;
-}
-
-.shell:not([data-compact="true"]) [data-tip]::after {
-  display: none;
+/* A narrow window: the server's detail line steps aside. */
+@media (max-width: 1099px) {
+  .services-sub,
+  .notice-tags.brand-tags {
+    display: none;
+  }
 }

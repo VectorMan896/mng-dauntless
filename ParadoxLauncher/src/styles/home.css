@@ -1,10 +1,14 @@
-/* Home: hero art, launch panel, status cards, session history. */
+/* Home: full-bleed art, the hero (tag, title, Play), and three cards along the bottom.
+   [MNG DAUNTLESS 2026-10-31] After the owner's reference design: a pill tag, a heavy white title, a round pale-mint PLAY pill,
+   and dark rounded cards with small grey capitals over them, tiles inside and a full-width "View ..." button. */
 
 .home {
   position: relative;
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
   min-height: 100%;
-  padding: calc(var(--titlebar-h) + clamp(22px, 7vh, 84px)) var(--gutter) 40px;
+  padding: calc(var(--titlebar-h) + clamp(28px, 9vh, 110px)) clamp(28px, 4.4vw, 72px) 28px;
 }
 
 /* ---- Hero art (shared with the auth screens) ------------------------------ */
@@ -17,8 +21,7 @@
 }
 
 .home > .art {
-  inset: 0 0 auto;
-  height: clamp(380px, 70vh, 760px);
+  inset: 0;
 }
 
 .art-parallax {
@@ -32,7 +35,7 @@
   position: absolute;
   inset: 0;
   background-image: var(--art);
-  background-position: center 40%;
+  background-position: center 35%;
   background-size: cover;
   transform-origin: 64% 42%;
   animation: kenburns 44s var(--ease-in-out) infinite alternate;
@@ -40,16 +43,17 @@
 
 @keyframes kenburns {
   from { transform: scale(1.02); }
-  to { transform: scale(1.1); }
+  to { transform: scale(1.08); }
 }
 
+/* Charcoal on the left (the title) and at the bottom (the cards); the art's middle stays clear. */
 .home > .art::after {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(5, 10, 18, 0.88) 0%, rgba(5, 10, 18, 0.56) 32%, rgba(5, 10, 18, 0) 64%),
-    linear-gradient(180deg, rgba(5, 10, 18, 0.4) 0%, rgba(5, 10, 18, 0) 20%, rgba(5, 10, 18, 0.2) 58%, var(--bg) 100%);
+    linear-gradient(90deg, rgba(var(--bg-rgb), 0.85) 0%, rgba(var(--bg-rgb), 0.45) 32%, rgba(var(--bg-rgb), 0) 60%),
+    linear-gradient(180deg, rgba(var(--bg-rgb), 0.35) 0%, rgba(var(--bg-rgb), 0) 25%, rgba(var(--bg-rgb), 0.35) 55%, rgba(var(--bg-rgb), 0.96) 82%, var(--bg) 100%);
 }
 
 .motes {
@@ -64,7 +68,7 @@
   width: var(--s);
   height: var(--s);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(185, 222, 255, 0.95), rgba(91, 163, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0) 70%);
   opacity: 0;
   animation: mote var(--d) linear infinite;
   animation-delay: var(--delay);
@@ -72,413 +76,180 @@
 
 @keyframes mote {
   0% { opacity: 0; transform: translate3d(0, 0, 0); }
-  12% { opacity: 0.85; }
-  75% { opacity: 0.55; }
+  12% { opacity: 0.7; }
+  75% { opacity: 0.4; }
   100% { opacity: 0; transform: translate3d(var(--drift), -62vh, 0); }
 }
 
-.watermark {
-  position: absolute;
-  z-index: -1;
-  right: -70px;
-  bottom: -90px;
-  width: 440px;
-  height: 440px;
-  color: rgba(140, 180, 240, 0.035);
-  pointer-events: none;
-}
-
-.watermark svg {
-  width: 100%;
-  height: 100%;
-}
-
-/* ---- Hero copy -------------------------------------------------------------- */
-
-.hero {
-  max-width: 680px;
-}
-
+/* The small grey capitals over a page title ("LAUNCHER PREFERENCES"); shared by every page. */
 .eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   color: var(--gold);
   font-size: 11.5px;
-  font-weight: 650;
-  letter-spacing: 0.34em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-.hero-name {
-  margin-top: 10px;
+/* ---- Notices (deactivation, a realm that ended) ---------------------------------- */
+
+.home-notice {
+  max-width: 720px;
+  margin-bottom: 14px;
+}
+
+/* ---- Hero ------------------------------------------------------------------------- */
+
+.hero {
+  flex: 1;
+  max-width: 720px;
+}
+
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The small pill tag ("MOST PLAYED" in the reference). */
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  height: 26px;
+  padding: 0 12px;
   overflow: hidden;
-  color: #f4f8ff;
-  font-family: var(--font-display);
-  font-size: clamp(36px, 3.3vw + 10px, 64px);
-  font-weight: 700;
-  letter-spacing: 0.015em;
-  line-height: 1.06;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: rgba(var(--bg-rgb), 0.45);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-overflow: ellipsis;
-  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.55), 0 0 42px rgba(91, 163, 255, 0.2);
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.hero-rule {
-  display: block;
-  width: 74px;
-  height: 3px;
-  margin: 12px 0 14px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--aether), rgba(91, 163, 255, 0));
-  box-shadow: 0 0 14px rgba(91, 163, 255, 0.6);
-  transform-origin: left;
-  animation: grow-x 800ms var(--ease-out) 220ms both;
+.hero-tag.is-live {
+  border-color: var(--ok-line);
+  color: var(--ok);
 }
 
-@keyframes grow-x {
-  from { transform: scaleX(0); }
+/* The heavy title with a small word beside its top ("LEAGUE of LEGENDS"). */
+.hero-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  color: #fff;
+  font-family: var(--font-display);
+  line-height: 0.88;
+  text-shadow: 0 4px 40px rgba(0, 0, 0, 0.55);
+}
+
+.hero-title-main {
+  font-size: clamp(54px, 6.4vw + 6px, 112px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.hero-title-small {
+  margin-top: 0.3em;
+  font-size: clamp(18px, 1.8vw + 4px, 30px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .hero-copy {
-  max-width: 46ch;
-  color: rgba(226, 235, 249, 0.88);
+  max-width: 44ch;
+  margin-top: 14px;
+  color: var(--ink-2);
   font-size: 14.5px;
-  line-height: 1.65;
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
-  /* [2026-10-15] The hero line may carry its own line break; a line that still wraps is balanced. */
+  line-height: 1.55;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.7);
   white-space: pre-line;
   text-wrap: balance;
 }
 
-.hero-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-.hero-chips .chip {
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-/* ---- Body layout ------------------------------------------------------------- */
-
-.home-body {
-  display: grid;
-  gap: 12px;
-  margin-top: clamp(20px, 4vh, 40px);
-}
-
-/* The launch panel and the status strip touch: together they read as one console. */
-.home-primary {
-  display: grid;
-  min-width: 0;
-}
-
-/* ---- Launch panel --------------------------------------------------------- */
+/* ---- Launch row: the PLAY pill and its status ------------------------------------------ */
 
 .launch {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 14px 16px 14px 18px;
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-}
-
-.launch-emblem {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  color: #dce9ff;
-}
-
-.launch-emblem::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  right: -11px;
-  bottom: 4px;
-  width: 1px;
-  background: var(--line-2);
-}
-
-.launch-emblem svg {
-  width: 38px;
-  height: 38px;
-  filter: drop-shadow(0 0 16px rgba(91, 163, 255, 0.4));
-  animation: hover-float 6s var(--ease-in-out) infinite;
-}
-
-@keyframes hover-float {
-  50% { transform: translateY(-4px) rotate(4deg); }
+  gap: 18px;
+  margin-top: 26px;
 }
 
 .launch-copy {
   min-width: 0;
+  max-width: 460px;
 }
 
 .launch-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16.5px;
+  font-size: 15px;
   font-weight: 700;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
 }
 
 .badge-ok {
   display: grid;
   place-items: center;
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
   flex: none;
   border-radius: 50%;
   background: var(--ok);
-  box-shadow: 0 0 16px rgba(69, 217, 155, 0.55);
   color: #052514;
   animation: pop 520ms var(--ease-spring) both;
 }
 
 .badge-ok svg {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   stroke-width: 3;
 }
 
 .launch-desc {
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--ink-2);
-  font-size: 13px;
+  font-size: 12.5px;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
 }
 
-.launch-path {
-  max-width: 100%;
-  margin-top: 5px;
-  overflow: hidden;
-  color: var(--ink-3);
-  font-size: 11.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.launch .loader-bar {
-  max-width: 360px;
-  margin-top: 12px;
-}
-
-.launch-error {
-  margin-top: 10px;
-  color: #ffb4c0;
-  font-size: 13px;
-}
-
-/* [2026-10-15] Information after Play (a request sent to the realm's host): the aether blue, never the error red. */
-.launch-notice {
-  margin-top: 10px;
-  color: var(--aether-hi);
-  font-size: 13px;
-}
-
-.launch-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-}
-
-/* The server Play uses: its kind in small gold capitals, its name large in the display face (kind and name are text, not colour). */
+/* The server Play uses: kind, name and state on one line. */
 .play-server {
-  display: grid;
-  gap: 3px;
-  min-width: 188px;
-  max-width: 260px;
-  margin-bottom: 2px;
-}
-
-.play-server-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
+  margin-top: 6px;
 }
 
 .play-server-kind {
   color: var(--gold);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .play-server-name {
+  max-width: 220px;
   overflow: hidden;
   color: var(--ink);
-  font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* [2026-10-14] A realm's own name for it, under its realm name, when the player named it differently. */
-.play-server-detail {
-  overflow: hidden;
-  margin: 0;
-  color: var(--ink-3);
   font-size: 12.5px;
-  line-height: 1.3;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* ---- Play button ------------------------------------------------------------ */
-
-.play-wrap {
-  position: relative;
-  isolation: isolate;
-}
-
-.play-wrap::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: -10px;
-  border-radius: 22px;
-  background: radial-gradient(closest-side, rgba(91, 163, 255, 0.5), transparent);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.play-wrap.is-ready::before {
-  animation: breathe 3.6s var(--ease-in-out) infinite;
-}
-
-@keyframes breathe {
-  0%, 100% { opacity: 0.15; transform: scale(0.96); }
-  50% { opacity: 0.75; transform: scale(1.04); }
-}
-
-.play {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  min-width: 188px;
-  height: 52px;
-  padding: 0 24px;
-  overflow: hidden;
-  border-radius: 15px;
-  background: linear-gradient(180deg, #6db3ff 0%, #3a86f4 48%, #2a6be0 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 1px rgba(180, 215, 255, 0.28), 0 18px 40px -16px rgba(45, 120, 240, 0.95);
-  color: #fff;
-  font-size: 16.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  transition: transform var(--t-med) var(--ease-spring), box-shadow var(--t-med) var(--ease-out), filter var(--t-med), background-color var(--t-med);
-}
-
-.play > * {
-  position: relative;
-  z-index: 1;
-}
-
-.play svg {
-  width: 18px;
-  height: 18px;
-  flex: none;
-  transition: transform var(--t-med) var(--ease-spring);
-}
-
-.play::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.36) 50%, transparent 65%);
-  transform: translateX(-120%);
-  transition: transform 760ms var(--ease-out);
-}
-
-.play:hover:not(:disabled) {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 1px rgba(190, 222, 255, 0.36), 0 24px 52px -14px rgba(45, 120, 240, 1), 0 0 0 6px rgba(91, 163, 255, 0.13);
-  filter: brightness(1.06);
-  transform: translateY(-2px);
-}
-
-.play:hover:not(:disabled)::before {
-  transform: translateX(120%);
-}
-
-.play:hover:not(:disabled) svg {
-  transform: translateX(2px) scale(1.08);
-}
-
-.play:active:not(:disabled) {
-  transform: translateY(0) scale(0.98);
-}
-
-.play.is-secondary {
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 0 0 1px var(--line-2), 0 14px 34px -20px rgba(0, 0, 0, 0.9);
-  font-size: 15px;
-}
-
-.play.is-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.11);
-  box-shadow: inset 0 0 0 1px var(--line-3), 0 18px 40px -18px rgba(0, 0, 0, 0.9);
-}
-
-.play.is-running {
-  background: linear-gradient(180deg, rgba(69, 217, 155, 0.24), rgba(69, 217, 155, 0.1));
-  box-shadow: inset 0 0 0 1px rgba(69, 217, 155, 0.42), 0 16px 40px -18px rgba(69, 217, 155, 0.55);
-  color: #dcfff0;
-  font-size: 15px;
-}
-
-.play.is-running .dot {
-  color: var(--ok);
-}
-
-.play.is-busy,
-.play.is-busy:disabled {
-  background-color: #2b62c4;
-  background-image:
-    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.1) 0 12px, transparent 12px 24px),
-    linear-gradient(180deg, #4e8fe6, #2b62c4);
-  background-size: 52px 100%, 100% 100%;
-  color: rgba(255, 255, 255, 0.92);
-  cursor: progress;
-  font-size: 14px;
-  animation: stripes 0.9s linear infinite;
-}
-
-@keyframes stripes {
-  to { background-position: 52px 0, 0 0; }
-}
-
-.launch-secondary {
-  align-self: center;
-}
-
-/* [2026-10-15] The game folder and the launcher's version on one line: the path takes the room and ellipsizes, the chip keeps its
-   size. The compact chip is no taller than the path's line, so the card does not grow. */
-.launch-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  margin-top: 5px;
-}
-
-.launch-meta .launch-path {
-  min-width: 0;
-  margin-top: 0;
 }
 
 .chip.chip-compact {
@@ -488,285 +259,409 @@
   font-size: 10.5px;
 }
 
-/* ---- Status strip: three cells under the launch panel ------------------------- */
-
-/* The launch panel's bottom border is the strip's top edge. */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  overflow: hidden;
-  border-top: 0;
-  border-radius: 0 0 var(--r-xl) var(--r-xl);
-  background: linear-gradient(180deg, rgba(14, 24, 40, 0.72), rgba(8, 14, 25, 0.8));
-  box-shadow: var(--shadow-card);
+.launch .loader-bar {
+  max-width: 320px;
+  margin-top: 10px;
 }
 
-.stat {
-  display: flex;
+.launch-error {
+  margin-top: 8px;
+  color: #ffb4c0;
+  font-size: 13px;
+}
+
+/* [2026-10-15] Information after Play (a request sent to the realm's host): the accent, never the error red. */
+.launch-notice {
+  margin-top: 8px;
+  color: var(--aether-hi);
+  font-size: 13px;
+}
+
+.launch-secondary {
+  align-self: center;
+}
+
+/* ---- PLAY pill ------------------------------------------------------------------------- */
+
+.play-wrap {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+}
+
+.play-wrap::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -10px;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(var(--aether-rgb), 0.45), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.play-wrap.is-ready::before {
+  animation: breathe 3.6s var(--ease-in-out) infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.1; transform: scale(0.96); }
+  50% { opacity: 0.6; transform: scale(1.04); }
+}
+
+.play {
+  display: inline-flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
-  padding: 14px 20px;
-  color: inherit;
-  text-align: left;
-  transition: background-color var(--t-med) var(--ease-out);
+  height: 52px;
+  padding: 0 26px 0 7px;
+  border-radius: 999px;
+  background: var(--aether);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 12px 30px -14px rgba(var(--aether-rgb), 0.8);
+  color: var(--aether-ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: transform var(--t-med) var(--ease-spring), background-color var(--t-med), box-shadow var(--t-med);
 }
 
-.stat + .stat {
-  border-left: 1px solid var(--line);
-}
-
-button.stat:hover {
-  background: rgba(140, 190, 255, 0.05);
-}
-
-.stat:focus-visible {
-  outline-offset: -3px;
-}
-
-.stat-icon {
+/* The round dark play mark at the pill's left end. */
+.play-orb {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   flex: none;
-  border: 1px solid rgba(120, 175, 255, 0.2);
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(91, 163, 255, 0.15), rgba(91, 163, 255, 0.04));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  color: var(--aether-hi);
+  border-radius: 50%;
+  background: var(--aether-ink);
+  color: var(--aether);
 }
 
-.stat-icon svg {
-  width: 17px;
-  height: 17px;
+.play-orb svg {
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
 }
 
-.stat-icon.warn {
-  border-color: var(--warn-line);
-  background: var(--warn-a);
-  color: var(--warn);
+.play-orb .spinner {
+  width: 16px;
+  height: 16px;
 }
 
-.stat-icon.good {
-  border-color: var(--ok-line);
-  background: var(--ok-a);
+.play:hover:not(:disabled) {
+  background: var(--aether-hi);
+  transform: translateY(-2px);
+}
+
+.play:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.play.is-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px var(--line-3);
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.play.is-secondary .play-orb {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--ink);
+}
+
+.play.is-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.play.is-running {
+  background: rgba(69, 217, 155, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(69, 217, 155, 0.45);
+  color: #dcfff0;
+}
+
+.play.is-running .play-orb {
+  background: rgba(69, 217, 155, 0.2);
   color: var(--ok);
 }
 
-.stat-icon.busy svg {
-  animation: spin 1.4s linear infinite;
+.play.is-busy,
+.play.is-busy:disabled {
+  background: rgba(var(--aether-rgb), 0.75);
+  cursor: progress;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-.stat-copy {
-  min-width: 0;
-  flex: 1;
+/* ---- Bottom cards ------------------------------------------------------------------------- */
+
+/* [MNG DAUNTLESS 2026-10-31] The announcements on Home: under the hero, just above the cards, as wide as the hero. */
+.notice-stack.home-notices {
+  max-width: 720px;
+  margin-top: 24px;
 }
 
-.stat-label {
-  color: var(--ink-3);
-  font-size: 11.5px;
-  font-weight: 550;
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 30px;
 }
 
-.stat-value {
-  margin-top: 1px;
-  overflow: hidden;
-  font-size: 15px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stat-note {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-  overflow: hidden;
-  color: var(--ink-3);
-  font-size: 11.5px;
-  white-space: nowrap;
-}
-
-.stat-note > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ---- Session history ------------------------------------------------------- */
-
-.panel {
-  padding: 14px 16px;
-  border-radius: var(--r-xl);
-}
-
-.panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-
-.panel-title {
-  display: flex;
-  align-items: center;
+.card-col {
+  display: grid;
+  grid-template-rows: auto 1fr;
   gap: 10px;
-  font-family: var(--font-display);
-  font-size: 12.5px;
-  font-weight: 700;
+  min-width: 0;
+}
+
+/* Small grey capitals over each card. */
+.card-label {
+  color: var(--gold);
+  font-size: 11.5px;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.panel-title svg {
-  width: 18px;
-  height: 18px;
-  color: var(--gold);
+.dcard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: rgba(var(--panel-rgb), 0.78);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow-card);
 }
 
-.session-list li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+.dcard-row {
+  display: flex;
   align-items: center;
   gap: 14px;
-  padding: 9px 4px;
-  border-top: 1px solid var(--line);
+  padding: 8px 10px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.035);
 }
 
-.session-list li:first-child {
-  border-top: 0;
-}
-
-.session-list .dot {
-  color: var(--tone, var(--ink-4));
-}
-
-.session-body {
-  min-width: 0;
-}
-
-.panel > .loader-bar {
-  margin: 18px 4px 10px;
-}
-
-.session-when {
+.dcard-note {
+  min-height: 15px;
   overflow: hidden;
-  font-size: 13px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.session-meta {
-  overflow: hidden;
+  padding: 0 6px;
   color: var(--ink-3);
   font-size: 11.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.panel-empty {
-  padding: 18px 4px 8px;
+/* The full-width button at the bottom of a card ("VIEW FULL ACTIVITY"). */
+.dcard-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  margin-top: auto;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.045);
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background-color var(--t-fast), color var(--t-fast);
+}
+
+.dcard-action svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dcard-action:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--ink);
+}
+
+/* Weekly activity: an avatar and seven bars (peach, as the reference). */
+.activity-avatar {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border: 2px solid var(--line-3);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3b4a52, #15191c);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.activity-bars {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.activity-day {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+
+.activity-track {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 16px;
+  height: 46px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.activity-fill {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 4px;
+  background: var(--peach);
+  transition: height var(--t-slow) var(--ease-out);
+}
+
+.activity-label {
+  color: var(--ink-4);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.activity-label.is-today {
+  color: var(--ink);
+}
+
+/* Tiles: a big value over a small grey label ("66% / WIN RATE"). */
+.dcard-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dcard-tiles.is-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dcard-tiles.is-three .tile-value {
+  font-size: 14.5px;
+}
+
+.tile {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 70px;
+  padding: 10px 8px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.035);
+  color: inherit;
+  text-align: center;
+  transition: background-color var(--t-fast);
+}
+
+button.tile:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.tile-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-value svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--ink-3);
+}
+
+.tile.good .tile-value svg {
+  color: var(--ok);
+}
+
+.tile.warn .tile-value {
+  color: var(--warn);
+}
+
+.tile.warn .tile-value svg {
+  color: var(--warn);
+}
+
+.tile.good .tile-value {
+  color: var(--ink);
+}
+
+.tile.peach .tile-value {
+  color: var(--peach);
+}
+
+.tile-label {
+  color: var(--ink-4);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 /* ---- Layouts ---------------------------------------------------------------- */
 
-/* Wide windows: history moves into a right-hand column once the status strip keeps its room. */
-/* Both columns end on one line: the launch panel grows (its content stays centred). */
-@container main (min-width: 1360px) {
-  .home-body {
-    grid-template-columns: minmax(0, 1fr) 340px;
-  }
-
-  .home-primary {
-    grid-template-rows: minmax(0, 1fr) auto;
-  }
-
-  .home-side .panel {
-    height: 100%;
-  }
-}
-
-/* Medium content: a little tighter, the strip keeps its three cells in one row. */
-@container main (max-width: 1000px) {
-  .launch {
-    gap: 16px;
-  }
-
-  .play {
-    min-width: 168px;
-  }
-
-  .stat {
-    gap: 10px;
-    padding: 12px 14px;
-  }
-}
-
-/* Narrow content (a forced-expanded sidebar at the minimum window size). */
-@container main (max-width: 720px) {
-  .launch {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-  }
-
-  .launch-emblem {
-    display: none;
-  }
-
-  .stats {
+/* Narrow content: two cards a row, the third under them. */
+@container main (max-width: 860px) {
+  .home-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .stats > :last-child {
+  .home-cards > :last-child {
     grid-column: 1 / -1;
-    border-top: 1px solid var(--line);
-    border-left: 0;
+  }
+
+  .launch {
+    flex-wrap: wrap;
   }
 }
 
-/* Tall windows: give the hero more air instead of leaving the bottom empty. */
-@media (min-height: 980px) {
+/* Short windows: a smaller title and less room above it. */
+@media (max-height: 760px) {
   .home {
-    padding-top: calc(var(--titlebar-h) + clamp(60px, 13vh, 170px));
+    padding-top: calc(var(--titlebar-h) + 20px);
   }
 
-  .home-body {
-    margin-top: clamp(40px, 7vh, 90px);
-  }
-
-  .play {
-    height: 58px;
-    font-size: 17.5px;
-  }
-}
-
-@media (max-height: 720px) {
-  .home {
-    padding-top: calc(var(--titlebar-h) + 18px);
-  }
-
-  .hero-name {
-    font-size: clamp(32px, 3vw + 10px, 52px);
-  }
-
-  .hero-rule {
-    margin: 10px 0 10px;
+  .hero-title-main {
+    font-size: clamp(48px, 5.4vw + 4px, 88px);
   }
 
   .hero-copy {
-    font-size: 14px;
+    display: none;
   }
 
-  .home-body {
-    margin-top: 18px;
+  .launch {
+    margin-top: 20px;
   }
 
-  .play {
-    height: 48px;
+  .home-cards {
+    margin-top: 22px;
   }
 }

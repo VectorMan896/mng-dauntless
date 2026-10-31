@@ -7,16 +7,16 @@ import { ChevronRightIcon, ExternalIcon, InfoIcon, LinkIcon, ShieldIcon } from "
 import { useServices } from "../../services/ServicesContext";
 import { buildName } from "../../lib/sessions";
 import { useLegalViewer } from "../../components/LegalDocument";
-import { PublicBuildCheck } from "../../components/PublicBuildCheck";
 import { LEGAL } from "../../legal/legalMeta";
 import { useBuildBadge } from "../../lib/buildKind";
+import { NoticeBanner } from "../../components/NoticeBanner";
 
 // [2026-10-15] The attribution notice that ADDITIONAL_TERMS.md (section 1) asks for in the Appropriate Legal Notices. The launcher is
 // the project's own code, so it shows no upstream credit; the original authors' notices stay in the source and NOTICE.md.
 const NOTICE_URL = "https://github.com/pranav158/Mystic-Paradox/blob/main/NOTICE.md";
 
 const LINKS = [
-  { href: "https://github.com/pranav158/Mystic-Paradox", label: "Mystic Paradox source code", sub: "GitHub", icon: LinkIcon },
+  { href: "https://github.com/pranav158/Mystic-Paradox", label: "Mystic Paradox source code", sub: "The original project MNG DAUNTLESS is based on", icon: LinkIcon },
   { href: "https://github.com/pranav158/Mystic-Paradox?tab=AGPL-3.0-1-ov-file", label: "AGPL-3.0 license", sub: "Your rights to this software", icon: ShieldIcon },
 ];
 
@@ -51,12 +51,15 @@ export function AboutTab() {
           <p className="page-desc">Project information, versions and source links.</p>
         </header>
 
+        {/* [MNG DAUNTLESS 2026-10-31] Announcements (the running event, server notices), on the page's art. */}
+        <NoticeBanner />
+
         <section className="glass glow card reveal" style={at(1)}>
           <div className="about-hero">
             <div className="about-mark"><AetherMark title={null} /></div>
             <div>
-              <h2 className="about-title">Mystic Paradox</h2>
-              <p className="section-desc">An unofficial community preservation project keeping the Shattered Isles alive after the storm.</p>
+              <h2 className="about-title">MNG DAUNTLESS</h2>
+              <p className="section-desc">An unofficial community server keeping the Shattered Isles alive after the storm. A modified version of Mystic Paradox, not an official Mystic Paradox release.</p>
               <div className="game-tile-meta">
                 <span className="chip accent">{version ? `Launcher v${version}` : "Launcher"}</span>
                 {supportedChangelist && (
@@ -103,10 +106,8 @@ export function AboutTab() {
           </div>
         </section>
 
-        {/* [2026-10-15] This build compared with the public repository's release builds. */}
-        <section className="glass card reveal" style={at(3)} aria-label="Check this build">
-          <PublicBuildCheck />
-        </section>
+        {/* [MNG DAUNTLESS] The "Check this build" card (comparison with the original project's GitHub releases) is
+            removed: MNG builds are never on that GitHub, so it always reported "Not on GitHub". */}
 
         {/* [2026-10-16] The licence and disclaimer under a section title, as every other card has one. */}
         <section className="glass card reveal" style={at(4)} aria-label="Licence and disclaimer">
@@ -116,7 +117,7 @@ export function AboutTab() {
               <div className="min-w-0 about-legal">
                 <h2 className="section-title">Licence and disclaimer</h2>
                 <p className="section-desc">
-                  Mystic Paradox is free software under the GNU Affero General Public License, version 3 (AGPL-3.0). It comes
+                  MNG DAUNTLESS is a modified version of Mystic Paradox. Both are free software under the GNU Affero General Public License, version 3 (AGPL-3.0). It comes
                   with no warranty. If you run a changed version for other people over a network, the licence requires you to
                   offer them its source.
                 </p>
@@ -129,7 +130,7 @@ export function AboutTab() {
                   for contribution and provenance information.
                 </p>
                 <p className="section-desc">
-                  Mystic Paradox is not affiliated with, endorsed by or supported by the owners of Dauntless.
+                  MNG DAUNTLESS is not affiliated with, endorsed by or supported by the owners of Dauntless, or by the Mystic Paradox project.
                 </p>
                 <p className="note">Copyright (C) 2026 MysticFox / Pranav Karande</p>
               </div>

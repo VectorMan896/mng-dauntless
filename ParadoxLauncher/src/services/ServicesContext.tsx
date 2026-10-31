@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { getServerStatus } from "../api/tauri";
+import { getServerStatus, pingServer } from "../api/tauri";
 import { useServer } from "../servers/ServerContext";
 
 export type ServiceHealth = "checking" | "online" | "degraded" | "unreachable";
@@ -10,6 +10,8 @@ export interface ServicesState {
   refreshing: boolean;
   /** The changelist the backend currently accepts, from `/launcher/v1/status`. */
   supportedChangelist: number | null;
+  /** [MNG DAUNTLESS 2026-10-31] Round trip to the server in ms, measured after each successful check; null when unknown. */
+  pingMs: number | null;
   refresh: () => Promise<void>;
 }
 
@@ -18,6 +20,7 @@ const IDLE: ServicesState = {
   checkedAt: null,
   refreshing: false,
   supportedChangelist: null,
+  pingMs: null,
   refresh: async () => {},
 };
 
@@ -38,6 +41,7 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
   const [checkedAt, setCheckedAt] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [supportedChangelist, setSupportedChangelist] = useState<number | null>(null);
+  const [pingMs, setPingMs] = useState<number | null>(null);
   const inFlightRef = useRef(false);
   const checkedAtRef = useRef(0);
   const mountedRef = useRef(false);
@@ -53,9 +57,14 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
       if (!mountedRef.current || generation !== generationRef.current) return;
       setHealth(status.online ? "online" : "degraded");
       setSupportedChangelist(status.supportedBuildChangelist ?? null);
+      // The ping is extra: a failed measurement leaves the status as it is.
+      const ping = await pingServer(serverId).catch(() => null);
+      if (!mountedRef.current || generation !== generationRef.current) return;
+      setPingMs(ping);
     } catch {
       if (!mountedRef.current || generation !== generationRef.current) return;
       setHealth("unreachable");
+      setPingMs(null);
     } finally {
       // A check of a server that is no longer selected does not touch the state of the one that is.
       if (generation === generationRef.current) {
@@ -79,6 +88,7 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
     setHealth("checking");
     setCheckedAt(null);
     setSupportedChangelist(null);
+    setPingMs(null);
     setRefreshing(false);
     const refreshWhenVisible = () => {
       if (document.visibilityState !== "hidden" && Date.now() - checkedAtRef.current > 30_000) void refresh();
@@ -96,8 +106,8 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const value = useMemo<ServicesState>(
-    () => ({ health, checkedAt, refreshing, supportedChangelist, refresh }),
-    [health, checkedAt, refreshing, supportedChangelist, refresh],
+    () => ({ health, checkedAt, refreshing, supportedChangelist, pingMs, refresh }),
+    [health, checkedAt, refreshing, supportedChangelist, pingMs, refresh],
   );
   return <ServicesContext.Provider value={value}>{children}</ServicesContext.Provider>;
 }

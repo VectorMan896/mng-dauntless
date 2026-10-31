@@ -1,4 +1,8 @@
 mod auth;
+
+/// [MNG DAUNTLESS 2026-10-31] The launcher's folder under %LOCALAPPDATA%: session logs, the realm host log, refresh locks.
+/// It was MysticParadox; the old folder is left as it is (logs only).
+pub const DATA_DIR_NAME: &str = "MNGDauntless";
 mod commands;
 mod install;
 mod launch;
@@ -21,6 +25,7 @@ macro_rules! launcher_commands {
         tauri::generate_handler![
             commands::auth::native_restore_session,
             commands::auth::native_get_server_status,
+            commands::auth::native_ping_server,
             commands::auth::native_login,
             commands::auth::native_register,
             commands::auth::native_discord_complete,

@@ -108,7 +108,7 @@ async function StartTrainingHub(realm: RealmSummary): Promise<P2PHuntSessionReco
     try {
         const started = await CreateRealmHubSession(realm.hostAccountId, { hubKind: "TRAINING", maxPlayers: realm.hosting?.maxPlayers });
         const hub = await GetP2PRepositories().p2pHunts.findHunt(started.sessionId);
-        if (hub == undefined) throw new LauncherApiError("REALM_HOST_OFFLINE", "The realm's Training hub could not be started.");
+        if (hub == undefined) throw new LauncherApiError("REALM_HOST_OFFLINE", "The MNG Server's Training hub could not be started.");
         await GetP2PRepositories().p2pHunts.enqueueControlMessage({
             accountId: realm.hostAccountId,
             messageType: "HUNT_BOOTSTRAP",
@@ -156,7 +156,7 @@ async function PlaceInHub(Context: HuntRouteContext, hub: P2PHuntSessionRecord, 
     }) : undefined;
     // The repository does not touch the one-second presence cache: this process forgets the hub's list after the entries.
     InvalidateHubPresence(hub.sessionId);
-    if (batch !== undefined && !batch.placed) throw new LauncherApiError("REALM_HUB_FULL", "This realm's hub is full right now.");
+    if (batch !== undefined && !batch.placed) throw new LauncherApiError("REALM_HUB_FULL", "This MNG Server's hub is full right now.");
 
     const running = hub.state === "RUNNING";
     const placed: Array<{ accountId: string; candidateId: string }> = [];
@@ -198,23 +198,23 @@ async function RouteRealmHub(Context: HuntRouteContext, realm: RealmSummary, mem
     }
     let hub: P2PHuntSessionRecord | undefined;
     if (kind === "RAMSGATE") {
-        if (!realm.serving) throw new LauncherApiError("REALM_HOST_OFFLINE", "The realm's host is not online right now.");
+        if (!realm.serving) throw new LauncherApiError("REALM_HOST_OFFLINE", "The MNG Server's host is not online right now.");
         hub = await LiveHub(realm.realmId, "RAMSGATE");
-        if (hub == undefined || hub.state !== "RUNNING") throw new LauncherApiError("REALM_HOST_OFFLINE", "The realm's Ramsgate is not running right now.");
+        if (hub == undefined || hub.state !== "RUNNING") throw new LauncherApiError("REALM_HOST_OFFLINE", "The MNG Server's Ramsgate is not running right now.");
     } else {
         // Training starts on demand, so the host need only be online (not serving).
-        if (!realm.online) throw new LauncherApiError("REALM_HOST_OFFLINE", "The realm's host is not online right now.");
+        if (!realm.online) throw new LauncherApiError("REALM_HOST_OFFLINE", "The MNG Server's host is not online right now.");
         hub = await LiveHub(realm.realmId, "TRAINING") ?? await StartTrainingHub(realm);
-        if (hub.state === "SUSPECT") throw new LauncherApiError("REALM_HOST_OFFLINE", "The realm's Training hub is recovering.");
+        if (hub.state === "SUSPECT") throw new LauncherApiError("REALM_HOST_OFFLINE", "The MNG Server's Training hub is recovering.");
     }
     await PlaceInHub(Context, hub, members);
     return { handled: true, result: true };
 }
 
 async function RouteRealmHunt(Context: HuntRouteContext, realm: RealmSummary, members: string[], deps: RealmRouteDeps): Promise<HuntRouteOutcome> {
-    if (!realm.serving) throw new LauncherApiError("REALM_HOST_OFFLINE", "The realm's host is not online right now.");
+    if (!realm.serving) throw new LauncherApiError("REALM_HOST_OFFLINE", "The MNG Server's host is not online right now.");
     if (IsKnownRuntimeIncompatible(Context.huntId)) {
-        throw new LauncherApiError("REALM_HUNT_RUNTIME_INCOMPATIBLE", "This hunt does not run on the realm's server.");
+        throw new LauncherApiError("REALM_HUNT_RUNTIME_INCOMPATIBLE", "This hunt does not run on the MNG Server's server.");
     }
     // [2026-10-14 realms S5, design section 13] A request with no party state (the main Start Hunt sends none) is the requester's own
     // solo party, which POST /party would have created: the realm hunt is then a Private Hunt's with a one-member roster. Joining
@@ -248,13 +248,13 @@ async function RouteRealmRequestChecked(Context: HuntRouteContext, presence: { r
     const requester = Context.playerId;
     const realms = GetRealmsPort();
     const realm = await realms.findRealm(presence.realmId);
-    if (realm == undefined) throw new LauncherApiError("REALM_NOT_FOUND", "This realm no longer exists.");
-    if (await realms.isBanned(realm.realmId, requester)) throw new LauncherApiError("REALM_BANNED", "You cannot join this realm.");
+    if (realm == undefined) throw new LauncherApiError("REALM_NOT_FOUND", "This MNG Server no longer exists.");
+    if (await realms.isBanned(realm.realmId, requester)) throw new LauncherApiError("REALM_BANNED", "You cannot join this MNG Server.");
     // [2026-10-16] A SOLO realm takes nobody but its host: a member already inside cannot start a hunt or move to Training there.
     if (realm.joinPolicy === "SOLO" && requester !== realm.hostAccountId) {
-        throw new LauncherApiError("REALM_SOLO", "This realm is in solo mode: its host is playing alone right now.");
+        throw new LauncherApiError("REALM_SOLO", "This MNG Server is in solo mode: its host is playing alone right now.");
     }
-    if (!(await realms.isMember(realm.realmId, requester))) throw new LauncherApiError("REALM_NOT_MEMBER", "You are not a member of this realm.");
+    if (!(await realms.isMember(realm.realmId, requester))) throw new LauncherApiError("REALM_NOT_MEMBER", "You are not a member of this MNG Server.");
     await RequireRealmHosting();
     const members = await MembersInRealm(Context, realm);
     setMembers(members);

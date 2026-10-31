@@ -14,6 +14,7 @@ import { DeactivationBanner } from "../../components/DeactivationBanner";
 import { DeleteAccountDialog } from "../../components/DeleteAccountDialog";
 import { useLegalViewer } from "../../components/LegalDocument";
 import { TextField } from "../../components/TextField";
+import { NoticeBanner } from "../../components/NoticeBanner";
 
 function at(index: number): CSSProperties {
   return { "--i": index } as CSSProperties;
@@ -100,8 +101,11 @@ export function AccountTab() {
         <header className="page-head reveal" style={at(0)}>
           <p className="eyebrow">Slayer profile</p>
           <h1 className="page-title">Account</h1>
-          <p className="page-desc">Your identity across Mystic Paradox and the game.</p>
+          <p className="page-desc">Your identity across MNG DAUNTLESS and the game.</p>
         </header>
+
+        {/* [MNG DAUNTLESS 2026-10-31] Announcements (the running event, server notices), on the page's art. */}
+        <NoticeBanner />
 
         {rules.deactivatedUntil && (
           <div className="reveal" style={at(1)}>
@@ -290,7 +294,7 @@ export function AccountTab() {
                 <div>
                   <h3 className="section-title">An account on {selected?.name ?? "a local server"}</h3>
                   <p className="section-desc">
-                    Mystic Paradox does not hold this account. Its terms, its deletion and its data are for the operator of
+                    MNG DAUNTLESS does not hold this account. Its terms, its deletion and its data are for the operator of
                     that server to manage.
                   </p>
                 </div>

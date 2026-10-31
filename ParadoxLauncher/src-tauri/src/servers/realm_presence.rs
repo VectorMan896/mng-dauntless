@@ -101,24 +101,24 @@ fn heartbeat(
         Ok(view) => {
             let state = describe(&view, realm);
             if last.as_deref() != Some(state.as_str()) {
-                log(session_dir, &format!("realm presence: {state}"));
+                log(session_dir, &format!("MNG Server presence: {state}"));
                 *last = Some(state);
             }
         }
         Err(error) => log(
             session_dir,
-            &format!("realm presence heartbeat failed, retrying in 30 s: {error}"),
+            &format!("MNG Server presence heartbeat failed, retrying in 30 s: {error}"),
         ),
     }
 }
 
 fn leave(app: &AppHandle, session_dir: &Option<PathBuf>) {
     match call(app, LEAVE) {
-        Ok(_) => log(session_dir, "realm presence: left the realm"),
+        Ok(_) => log(session_dir, "MNG Server presence: left the MNG Server"),
         Err(error) => log(
             session_dir,
             &format!(
-                "realm presence leave failed (the backend expires it in two minutes): {error}"
+                "MNG Server presence leave failed (the backend expires it in two minutes): {error}"
             ),
         ),
     }
@@ -131,7 +131,7 @@ fn describe(view: &PresenceView, realm: &str) -> String {
             "{} hostOnline={} serving={} hubReady={}",
             presence.name, presence.host_online, presence.serving, presence.hub_ready
         ),
-        None => format!("{realm}: no realm presence yet (the game login binds it)"),
+        None => format!("{realm}: no MNG Server presence yet (the game login binds it)"),
     }
 }
 
@@ -139,7 +139,7 @@ fn presence(app: &AppHandle) -> Result<PresenceView, String> {
     let response = call(app, HEARTBEAT)?;
     response
         .json::<PresenceView>()
-        .map_err(|_| "The realm presence answer was malformed.".to_string())
+        .map_err(|_| "The MNG Server presence answer was malformed.".to_string())
 }
 
 /// POST with an empty body on the official scope (a realm is our backend). A refused answer is its status only.
@@ -151,7 +151,7 @@ fn call(app: &AppHandle, path: &str) -> Result<Response, String> {
             .bearer_auth(token)
             .json(&serde_json::json!({}))
             .send()
-            .map_err(|_| "Couldn't reach the realm server.".to_string())
+            .map_err(|_| "Couldn't reach the MNG Server server.".to_string())
     })?;
     if response.status().is_success() {
         Ok(response)
@@ -207,7 +207,7 @@ mod tests {
         );
         assert_eq!(
             describe(&PresenceView { realm: None }, "tempest"),
-            "tempest: no realm presence yet (the game login binds it)"
+            "tempest: no MNG Server presence yet (the game login binds it)"
         );
     }
 }

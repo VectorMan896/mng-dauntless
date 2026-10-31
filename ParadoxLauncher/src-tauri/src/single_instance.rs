@@ -22,12 +22,12 @@ use windows_sys::Win32::{
 };
 
 /// This launcher's own instance mutex (session-local).
-const INSTANCE_MUTEX: &str = "Local\\dev.mysticfox.launcher-instance";
-/// The single-instance plugin's names for the app identifier `dev.mysticfox.launcher` (tauri-plugin-single-instance 2.4,
+const INSTANCE_MUTEX: &str = "Local\\gg.mngdauntless.launcher-instance";
+/// The single-instance plugin's names for the app identifier `gg.mngdauntless.launcher` (tauri-plugin-single-instance 2.4,
 /// no `semver` feature): its mutex, which launchers before 0.1.78 hold too, and its message window.
-const PLUGIN_MUTEX: &str = "dev.mysticfox.launcher-sim";
-const PLUGIN_WINDOW_CLASS: &str = "dev.mysticfox.launcher-sic";
-const PLUGIN_WINDOW_NAME: &str = "dev.mysticfox.launcher-siw";
+const PLUGIN_MUTEX: &str = "gg.mngdauntless.launcher-sim";
+const PLUGIN_WINDOW_CLASS: &str = "gg.mngdauntless.launcher-sic";
+const PLUGIN_WINDOW_NAME: &str = "gg.mngdauntless.launcher-siw";
 /// The plugin's `WM_COPYDATA` tag.
 const PLUGIN_COPYDATA_TAG: usize = 1542;
 /// How long to look for the running launcher's window: it may still be starting, or (an update) just closing.
@@ -35,7 +35,7 @@ const FIND_WINDOW_WAIT: Duration = Duration::from_secs(6);
 /// How long the running launcher has to take the message; a hung one fails it.
 const SEND_TIMEOUT_MS: u32 = 5_000;
 
-const ALREADY_RUNNING_TITLE: &str = "Mystic Paradox Launcher";
+const ALREADY_RUNNING_TITLE: &str = "MNG DAUNTLESS Launcher";
 const ALREADY_RUNNING_TEXT: &str = "Mystic Paradox Launcher is already running.\n\n\
 It may be minimized or still starting. Use the window that is already open, or close it before starting the launcher again.";
 

@@ -21,9 +21,8 @@ import {
 } from "../../api/tauri";
 import { sanitizeError } from "../../lib/sanitize";
 import { deactivationMessage, isDeactivationRefusal } from "../../lib/accountDeletion";
-import { buildName, describeExit, formatClock, formatDuration, formatWhen, type SessionSummary } from "../../lib/sessions";
-import { AccountIcon, AlertIcon, BuildIcon, CheckIcon, HistoryIcon, PlayIcon, RuntimeIcon } from "../../components/icons";
-import { AetherMark } from "../../components/AetherMark";
+import { buildName, describeExit, formatClock, formatWhen, type SessionSummary } from "../../lib/sessions";
+import { AccountIcon, AlertIcon, BuildIcon, CheckIcon, HistoryIcon, PlayIcon } from "../../components/icons";
 import { ArtBackdrop } from "../../components/ArtBackdrop";
 import { Banner } from "../../components/Banner";
 import { DeactivationBanner } from "../../components/DeactivationBanner";
@@ -35,6 +34,8 @@ import { getVersion } from "@tauri-apps/api/app";
 import { useRealmTrust } from "../../servers/RealmTrust";
 import { realmJoinStep, realmPlayBlock } from "../../servers/realmStatus";
 import { useRealmStatus } from "../../servers/useRealmStatus";
+import { useRealmInvites } from "../../servers/RealmInvites";
+import { NoticeBanner } from "../../components/NoticeBanner";
 
 function gameRootPath(exePath: string): string {
   return exePath
@@ -93,6 +94,8 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
   const services = useServices();
   const { openWarning, selected, officialPlay } = useServer();
   const realmTrust = useRealmTrust();
+  // [2026-10-31] Realm invites waiting for an answer (the "Your server" card).
+  const { invites } = useRealmInvites();
   // [2026-10-16] A selected Paradox realm's own state (its host may not have started it), for the badge and Play.
   // [2026-10-16] Read for the signed-in account: the realm list is the PC's, so another account may not be in the realm yet.
   const { status: realmStatus, refresh: refreshRealm, markRequested } = useRealmStatus(selected, account?.userId);
@@ -202,7 +205,8 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
   useEffect(() => {
     if (!accountId) return;
     let cancelled = false;
-    getRecentSessions(accountId, 4)
+    // [2026-10-31] Enough history for the weekly activity card (was 4, the old session list).
+    getRecentSessions(accountId, 40)
       .then((next) => { if (!cancelled) setSessions(next); })
       .catch(() => { if (!cancelled) setSessions([]); });
     return () => { cancelled = true; };
@@ -317,7 +321,7 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
       if (deactivated) void rules.reloadDeletion().catch(() => {});
       if (mountedRef.current) {
         // [2026-10-14 realms] The host check's token reads as a sentence (the host is confirmed before the next Play).
-        const text = err === REALM_HOST_KEY_REQUIRED ? "Confirm this realm's host before you play." : typeof err === "string" ? err : err instanceof Error ? err.message : undefined;
+        const text = err === REALM_HOST_KEY_REQUIRED ? "Confirm this MNG Server's host before you play." : typeof err === "string" ? err : err instanceof Error ? err.message : undefined;
         setPhase({ status: "error", message: sanitizeError(text) || "Couldn't launch Dauntless." });
       }
     } finally {
@@ -393,7 +397,7 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
   const officialBlock = serverKind === "official" && officialUnavailable(officialPlay) ? officialUnavailableNote(officialPlay) : null;
   // [2026-10-16] A realm that has not let this account in yet: the step comes first (Ask to join, the request waits, or an
   // invite to accept on the Realms page). Then a realm whose host has not started it: Play waits and says so.
-  const realmLabel = selected ? serverNaming(selected).primary : "this realm";
+  const realmLabel = selected ? serverNaming(selected).primary : "this MNG Server";
   const joinStep = serverKind === "paradox_realm" ? realmJoinStep(realmStatus, realmLabel, joinRequestedHere) : null;
   const realmBlock = serverKind === "paradox_realm" ? realmPlayBlock(realmStatus) : null;
   const playBlocked = ready ? install?.playBlockedReason ?? officialBlock ?? accountBlock ?? joinStep?.line ?? realmBlock : null;
@@ -411,7 +415,7 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
           ? "Waiting for the host"
           : realmStatus?.standing === "invited"
             ? "You're invited"
-            : realmStatus?.standing === "solo" ? "Unavailable: solo mode" : "Not in this realm yet"
+            : realmStatus?.standing === "solo" ? "Unavailable: solo mode" : "Not in this MNG Server yet"
         : playBlocked ? "Play isn't available yet" : runtimeRepairRequired ? "Runtime will be repaired" : "Ready to launch"
       : located
         ? "Installation needs attention"
@@ -442,7 +446,7 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
           ? joinStepShown && joinStep
             ? joinBusy ? "Sending…" : joinStep.button
             : playBlocked === realmBlock
-              ? realmStatus?.state === "starting" ? "Realm starting" : "Realm offline"
+              ? realmStatus?.state === "starting" ? "MNG Server starting" : "MNG Server offline"
               : "Unavailable"
           : canRepair
             ? "Repair"
@@ -456,7 +460,6 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
   // ---- Status cards: every value below comes from a native call or the backend. ----
   const target = install?.targetChangelist ?? null;
   const targetName = buildName(target);
-  const buildValue = target ? `Dauntless ${targetName ?? `CL ${target}`}` : "Dauntless";
   const serverChangelist = services.supportedChangelist;
   const buildMatches = target != null && serverChangelist != null && target === serverChangelist;
   const buildMismatch = target != null && serverChangelist != null && target !== serverChangelist;
@@ -491,7 +494,7 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
   let runtimeNote = "Select your game folder";
   let runtimeTone: "" | " good" | " warn" | " busy" = "";
   if (located && !runtimeManaged) {
-    runtimeValue = "Realm's own files";
+    runtimeValue = "MNG Server's own files";
     runtimeNote = "Not updated by the launcher";
   } else if (located && runtimeRepairRequired) {
     runtimeValue = "Repair needed";
@@ -528,28 +531,23 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
   const nonStableChannel = channel && channel !== "stable" ? channel : null;
   // [2026-10-14] Which server Play uses: the kind in words, then its name (the official server is "Mystic Paradox"). A
   // realm is named by its realm name; the player's own name for it is a smaller line under that, only when it differs.
-  const serverKindLabel = serverKind === "paradox_realm" ? "Paradox realm" : serverKind === "local" ? "Local server" : "Official server";
+  const serverKindLabel = serverKind === "paradox_realm" ? "MNG Server" : serverKind === "local" ? "Local server" : "Official server";
   const playNaming = statusNaming(install, selected);
-  const playServerName = serverKind === "official" ? "Mystic Paradox" : playNaming?.primary || null;
+  const playServerName = serverKind === "official" ? "MNG DAUNTLESS" : playNaming?.primary || null;
   const playServerDetail = serverKind === "official" ? null : playNaming?.secondary ?? null;
+
+  // [MNG DAUNTLESS 2026-10-31] Layout after the owner's reference design: full-bleed art; a pill tag, the heavy DAUNTLESS
+  // title and a round PLAY pill with the launch status beside it; then three cards along the bottom (weekly activity, your
+  // setup, your server), each with small grey caps over it, tiles inside and a full-width "View ..." button.
+  const week = weeklyActivity(sessions, gameRunning);
+  const weekMinutes = week.reduce((sum, day) => sum + day.minutes, 0);
+  const accountShort = account?.status === "active" && account.approvalStatus === "approved" ? "Approved" : accountStatus.replace("Account ", "").replace("Access ", "");
+  const lastSession = sessions?.[0] ?? null;
+  const lastOutcome = lastSession ? describeExit(lastSession.exitCode, lastSession.exitedAt, gameRunning) : null;
 
   return (
     <div className="home">
       <ArtBackdrop />
-      <div className="watermark" aria-hidden="true"><AetherMark title={null} /></div>
-
-      <header className="hero">
-        <p className="eyebrow reveal" style={at(0)}>Welcome back,</p>
-        <h1 className="hero-name reveal" style={at(1)} title={account?.displayName}>{account?.displayName ?? "Slayer"}</h1>
-        <span className="hero-rule" aria-hidden="true" />
-        <p className="hero-copy reveal" style={at(2)}>{heroCopy}</p>
-        {(gameRunning || nonStableChannel) && (
-          <div className="hero-chips reveal" style={at(3)}>
-            {gameRunning && <span className="chip good"><span className="dot pulse" />Playing now</span>}
-            {nonStableChannel && <span className="chip accent">{nonStableChannel === "beta" ? "Beta" : "Dev"} channel</span>}
-          </div>
-        )}
-      </header>
 
       {/* [2026-10-14] The account is deactivated and waits for its deletion: restore it, or the deletion day stands. */}
       {rules.deactivatedUntil !== null && (
@@ -577,132 +575,169 @@ export function HomeTab({ onOpenAccount = () => {}, onNavigate = () => {} }: Hom
         </div>
       )}
 
-      <div className="home-body">
-        <div className="home-primary">
-          <section className="glass glow launch reveal" style={at(3)} aria-label="Installation and launch status">
-            <div className="launch-emblem"><AetherMark title={null} /></div>
-            <div className="launch-copy">
-              <h2 className="launch-title" aria-live="polite">
-                <span key={busy ? progressLabel : statusTitle} className="swap">{busy ? progressLabel : statusTitle}</span>
-                {ready && !busy && !gameRunning && !runtimeRepairRequired && !playBlocked && (
-                  <span className="badge-ok" aria-label="Verified"><CheckIcon /></span>
-                )}
-              </h2>
-              <p className="launch-desc">{statusDescription}</p>
-              {/* [2026-10-15] The game folder and the launcher's version (a compact chip) share one line, so the card keeps its height. */}
-              {((located && install?.exePath) || launcherVersion) && (
-                <div className="launch-meta">
-                  {located && install?.exePath && (
-                    <p className="launch-path mono" title={gameRootPath(install.exePath)}>{gameRootPath(install.exePath)}</p>
-                  )}
-                  {launcherVersion && <span className="chip accent chip-compact">Launcher v{launcherVersion}</span>}
-                </div>
-              )}
-              {busy && <div className="loader-bar" role="progressbar" aria-label="Launcher task in progress" aria-valuetext={progressLabel ?? "Working"} />}
-              {phase.status === "error" && <p className="launch-error" role="alert">{phase.message}</p>}
-              {playNotice && phase.status !== "error" && <p className="launch-notice" role="status">{playNotice}</p>}
-              {joinError && <p className="launch-error" role="alert">{joinError}</p>}
-            </div>
-            <div className="launch-actions">
-              {/* [2026-10-14] The server Play will use, named in words (kind and name), so it is never a surprise. */}
-              <div className="play-server" data-kind={serverKind}>
-                <div className="play-server-head">
-                  <span className="play-server-kind">{serverKindLabel}</span>
-                  {statusBadge && (
-                    <span className={`chip${statusBadge.tone === "neutral" ? "" : ` ${statusBadge.tone}`}`} data-testid="server-status">
-                      {statusBadge.text}
-                    </span>
-                  )}
-                  {serverKind === "local" && (
-                    <LocalServerBadge onOpen={() => openWarning(serverId)}>LOCAL SERVER WARNING</LocalServerBadge>
-                  )}
-                </div>
-                {playServerName && <p className="play-server-name" title={playServerName}>{playServerName}</p>}
-                {playServerDetail && <p className="play-server-detail" title={playServerDetail}>{playServerDetail}</p>}
-              </div>
-              <div className={`play-wrap${canPlay && !gameRunning && !busy ? " is-ready" : ""}`}>
-                <button type="button" onClick={buttonAction} disabled={busy || joinBusy || (playBlocked != null && !gameRunning && !joinAction)} className={`play${playVariant}`}>
-                  {busy ? <span className="spinner" aria-hidden="true" /> : gameRunning ? <span className="dot pulse" aria-hidden="true" /> : canPlay ? <PlayIcon /> : null}
-                  <span key={buttonText} className="swap">{buttonText}</span>
-                </button>
-              </div>
-              {canRepair && canPlay && (
-                <button type="button" className="btn btn-ghost btn-sm launch-secondary" onClick={handleRepair}>
-                  Repair
-                </button>
-              )}
-            </div>
-          </section>
-
-          <section className="glass glow stats reveal" style={at(4)} aria-label="Launcher details">
-            <article className="stat">
-              <div className={`stat-icon${buildMatches ? " good" : buildMismatch ? " warn" : ""}`}><BuildIcon /></div>
-              <div className="stat-copy">
-                <div className="stat-label">Build</div>
-                <div className="stat-value">{buildValue}</div>
-                <div className="stat-note"><span key={buildNote} className="swap">{buildNote}</span></div>
-              </div>
-            </article>
-            <button
-              type="button"
-              className="stat"
-              onClick={onOpenAccount}
-              aria-label={`Manage ${account?.displayName ?? "your"} account. ${accountNote}.`}
-            >
-              <div className="stat-icon"><AccountIcon /></div>
-              <div className="stat-copy">
-                <div className="stat-label">Account</div>
-                <div className="stat-value">{account?.displayName ?? "Signed in"}</div>
-                <div className="stat-note" aria-live="polite"><span key={accountNote} className="swap">{accountNote}</span></div>
-              </div>
-            </button>
-            <button
-              type="button"
-              className="stat"
-              onClick={() => onNavigate("library")}
-              aria-label={`Runtime: ${runtimeValue}. ${runtimeNote}. Open the library.`}
-            >
-              <div className={`stat-icon${runtimeTone}`}>{runtimeTone === " warn" ? <AlertIcon /> : <RuntimeIcon />}</div>
-              <div className="stat-copy">
-                <div className="stat-label">Runtime</div>
-                <div className="stat-value"><span key={runtimeValue} className="swap">{runtimeValue}</span></div>
-                <div className="stat-note"><span key={runtimeNote} className="swap">{runtimeNote}</span></div>
-              </div>
-            </button>
-          </section>
+      <header className="hero">
+        <div className="hero-tags reveal" style={at(0)}>
+          <span className="hero-tag" title={account?.displayName}>Welcome back, {account?.displayName ?? "Slayer"}</span>
+          {gameRunning && <span className="hero-tag is-live"><span className="dot pulse" />Playing now</span>}
+          {nonStableChannel && <span className="hero-tag">{nonStableChannel === "beta" ? "Beta" : "Dev"} channel</span>}
         </div>
+        <h1 className="hero-title reveal" style={at(1)} aria-label="MNG DAUNTLESS">
+          <span className="hero-title-main">DAUNTLESS</span><span className="hero-title-small" aria-hidden="true">MNG</span>
+        </h1>
+        <p className="hero-copy reveal" style={at(2)}>{heroCopy}</p>
 
-        <aside className="home-side">
-          <section className="glass panel reveal" style={at(5)} aria-label="Recent sessions">
-            <div className="panel-head">
-              <h2 className="panel-title"><HistoryIcon />Recent sessions</h2>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => onNavigate("settings")}>Logs</button>
+        <section className="launch reveal" style={at(3)} aria-label="Installation and launch status">
+          <div className={`play-wrap${canPlay && !gameRunning && !busy ? " is-ready" : ""}`}>
+            <button type="button" onClick={buttonAction} disabled={busy || joinBusy || (playBlocked != null && !gameRunning && !joinAction)} className={`play${playVariant}`}>
+              <span className="play-orb" aria-hidden="true">
+                {busy ? <span className="spinner" /> : gameRunning ? <span className="dot pulse" /> : <PlayIcon />}
+              </span>
+              <span key={buttonText} className="swap play-text">{buttonText}</span>
+            </button>
+          </div>
+          <div className="launch-copy">
+            <h2 className="launch-title" aria-live="polite">
+              <span key={busy ? progressLabel : statusTitle} className="swap">{busy ? progressLabel : statusTitle}</span>
+              {ready && !busy && !gameRunning && !runtimeRepairRequired && !playBlocked && (
+                <span className="badge-ok" aria-label="Verified"><CheckIcon /></span>
+              )}
+            </h2>
+            <p className="launch-desc">{statusDescription}</p>
+            {/* [2026-10-14] The server Play will use, named in words (kind and name), so it is never a surprise. */}
+            <div className="play-server" data-kind={serverKind}>
+              <span className="play-server-kind">{serverKindLabel}</span>
+              {playServerName && <span className="play-server-name" title={playServerDetail ?? playServerName}>{playServerName}</span>}
+              {statusBadge && (
+                <span className={`chip chip-compact${statusBadge.tone === "neutral" ? "" : ` ${statusBadge.tone}`}`} data-testid="server-status">
+                  {statusBadge.text}
+                </span>
+              )}
+              {serverKind === "local" && (
+                <LocalServerBadge onOpen={() => openWarning(serverId)}>LOCAL SERVER WARNING</LocalServerBadge>
+              )}
             </div>
-            {sessions == null ? (
-              <div className="loader-bar" />
-            ) : sessions.length === 0 ? (
-              <p className="panel-empty">No sessions yet. Your Play history on this PC appears here.</p>
-            ) : (
-              <ul className="session-list">
-                {sessions.map((session, index) => {
-                  const outcome = describeExit(session.exitCode, session.exitedAt, gameRunning && index === 0);
-                  const duration = session.exitedAt || outcome.tone === "live" ? formatDuration(session.startedAt, session.exitedAt) : null;
-                  return (
-                    <li key={session.id}>
-                      <span className={`dot tone-${outcome.tone}${outcome.tone === "live" ? " pulse" : ""}`} aria-hidden="true" />
-                      <div className="session-body">
-                        <div className="session-when">{formatWhen(session.startedAt)}</div>
-                        <div className="session-meta">{outcome.label}{session.channel !== "stable" ? ` · ${session.channel}` : ""}</div>
-                      </div>
-                      <span className="session-meta">{duration ?? ""}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        </aside>
+            {busy && <div className="loader-bar" role="progressbar" aria-label="Launcher task in progress" aria-valuetext={progressLabel ?? "Working"} />}
+            {phase.status === "error" && <p className="launch-error" role="alert">{phase.message}</p>}
+            {playNotice && phase.status !== "error" && <p className="launch-notice" role="status">{playNotice}</p>}
+            {joinError && <p className="launch-error" role="alert">{joinError}</p>}
+          </div>
+          {canRepair && canPlay && (
+            <button type="button" className="btn btn-secondary btn-sm launch-secondary" onClick={handleRepair}>
+              Repair
+            </button>
+          )}
+        </section>
+      </header>
+
+      {/* [MNG DAUNTLESS 2026-10-31] Home's announcements (the running event, server notices): in the space between the launch
+          panel and the cards. Other tabs show them at the top (DashboardShell NoticeDock). */}
+      <NoticeBanner className="home-notices" />
+
+      <div className="home-cards">
+        <section className="card-col reveal" style={at(4)} aria-label="Weekly activity">
+          <h2 className="card-label">Weekly activity</h2>
+          <div className="dcard">
+            <div className="dcard-row">
+              <span className="activity-avatar" aria-hidden="true">{(account?.displayName ?? "S").slice(0, 1).toUpperCase()}</span>
+              <div className="activity-bars" role="img" aria-label={`Play time over the last 7 days: ${week.map((d) => `${d.label} ${d.minutes} min`).join(", ")}`}>
+                {week.map((day, index) => (
+                  <div key={index} className="activity-day" title={`${day.title}: ${day.minutes > 0 ? formatMinutes(day.minutes) : "no play"}`}>
+                    <span className="activity-track"><span className="activity-fill" style={{ height: `${day.height}%` }} /></span>
+                    <span className={`activity-label${day.today ? " is-today" : ""}`}>{day.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="dcard-note">
+              {sessions == null ? "Reading your sessions…"
+                : lastSession && lastOutcome
+                  ? `${formatMinutes(weekMinutes)} this week · last ${formatWhen(lastSession.startedAt)}, ${lastOutcome.label.toLowerCase()}`
+                  : "No sessions yet. Your Play history on this PC appears here."}
+            </p>
+            <button type="button" className="dcard-action" onClick={() => onNavigate("settings")}><HistoryIcon />View logs</button>
+          </div>
+        </section>
+
+        <section className="card-col reveal" style={at(5)} aria-label="Your setup">
+          <h2 className="card-label">Your setup</h2>
+          <div className="dcard">
+            <div className="dcard-tiles">
+              <div className={`tile${buildMatches ? " good" : buildMismatch ? " warn" : ""}`} title={buildNote}>
+                <span className="tile-value">{targetName ?? (target ? `CL ${target}` : "—")}{buildMatches && <CheckIcon />}</span>
+                <span className="tile-label">Build</span>
+              </div>
+              <div className={`tile${runtimeTone}`} title={`${runtimeValue} · ${runtimeNote}`}>
+                <span className="tile-value"><span key={runtimeValue} className="swap">{runtimeValue.replace("Runtime ", "")}</span>{runtimeTone === " warn" && <AlertIcon />}</span>
+                <span className="tile-label">Runtime</span>
+              </div>
+            </div>
+            <p className="dcard-note" title={located && install?.exePath ? gameRootPath(install.exePath) : undefined}>
+              {located && install?.exePath ? gameRootPath(install.exePath) : "No game folder yet"}{launcherVersion ? ` · Launcher v${launcherVersion}` : ""}
+            </p>
+            <button type="button" className="dcard-action" onClick={() => onNavigate("library")}><BuildIcon />View library</button>
+          </div>
+        </section>
+
+        <section className="card-col reveal" style={at(6)} aria-label="Your server">
+          <h2 className="card-label">Your server</h2>
+          <div className="dcard">
+            <div className="dcard-tiles is-three">
+              <div className={`tile${statusBadge?.tone === "good" ? " good" : statusBadge?.tone === "bad" || statusBadge?.tone === "warn" ? " warn" : ""}`} title={playServerName ?? serverKindLabel}>
+                <span className="tile-value">{statusBadge?.text ?? "—"}</span>
+                <span className="tile-label">Server</span>
+              </div>
+              <button type="button" className="tile" onClick={onOpenAccount} title={accountNote} aria-label={`Account: ${accountShort}. ${accountNote}. Manage your account.`}>
+                <span className="tile-value">{accountShort}</span>
+                <span className="tile-label">Account</span>
+              </button>
+              <div className={`tile${invites.length > 0 ? " peach" : ""}`}>
+                <span className="tile-value">{invites.length}</span>
+                <span className="tile-label">{invites.length === 1 ? "Invite" : "Invites"}</span>
+              </div>
+            </div>
+            <p className="dcard-note">{serverKindLabel}{playServerName ? ` · ${playServerName}` : ""}</p>
+            <button type="button" className="dcard-action" onClick={() => onNavigate("servers")}><AccountIcon />View servers</button>
+          </div>
+        </section>
       </div>
     </div>
   );
+}
+
+/** "2 h 14 min" / "35 min". */
+function formatMinutes(minutes: number): string {
+  const m = Math.max(0, Math.round(minutes));
+  if (m < 60) return `${m} min`;
+  return `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`;
+}
+
+type WeekDay = { label: string; title: string; minutes: number; height: number; today: boolean };
+
+/** [2026-10-31] Play minutes per day for the last 7 days (today last), from this PC's session folders. */
+function weeklyActivity(sessions: SessionSummary[] | null, running: boolean): WeekDay[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (6 - index));
+    return date;
+  });
+  const minutes = days.map(() => 0);
+  for (const session of sessions ?? []) {
+    const start = Date.parse(session.startedAt);
+    if (!Number.isFinite(start)) continue;
+    const end = session.exitedAt ? Date.parse(session.exitedAt) : running ? Date.now() : start;
+    const startDay = new Date(start);
+    startDay.setHours(0, 0, 0, 0);
+    const index = Math.round((startDay.getTime() - days[0].getTime()) / 86_400_000);
+    if (index >= 0 && index < 7 && Number.isFinite(end) && end > start) minutes[index] += (end - start) / 60_000;
+  }
+  const max = Math.max(...minutes, 1);
+  return days.map((date, index) => ({
+    label: "SMTWTFS"[date.getDay()],
+    title: date.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }),
+    minutes: Math.round(minutes[index]),
+    height: minutes[index] > 0 ? Math.max(12, (minutes[index] / max) * 100) : 0,
+    today: index === 6,
+  }));
 }

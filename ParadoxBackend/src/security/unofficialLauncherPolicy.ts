@@ -24,8 +24,8 @@ export const UNOFFICIAL_LAUNCHER_ENV = "MYSTICPARADOX_UNOFFICIAL_LAUNCHER";
 export const LAUNCHER_ALLOWED_HASHES_ENV = "MYSTICPARADOX_LAUNCHER_ALLOWED_HASHES";
 export const UNOFFICIAL_LAUNCHER_TESTERS_EXEMPT_ENV = "MYSTICPARADOX_UNOFFICIAL_LAUNCHER_TESTERS_EXEMPT";
 
-export const UNOFFICIAL_LAUNCHER_MESSAGE = "This launcher isn't an official Mystic Paradox build. Install the official launcher " +
-    "(github.com/pranav158/Mystic-Paradox/releases) to play on Mystic Paradox.";
+export const UNOFFICIAL_LAUNCHER_MESSAGE = "This launcher isn't an official MNG DAUNTLESS build. Ask the MNG DAUNTLESS team for the " +
+    "current launcher to play on MNG DAUNTLESS.";
 
 export type UnofficialLauncherMode = "observe" | "refuse";
 

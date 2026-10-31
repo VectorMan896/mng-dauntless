@@ -1,7 +1,11 @@
 import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
-import "@fontsource-variable/cinzel";
-import "@fontsource-variable/inter";
+// [MNG DAUNTLESS 2026-10-31] Outfit, a geometric sans, for text and the heavy headings (the original used Cinzel and Inter).
+import "@fontsource/outfit/400.css";
+import "@fontsource/outfit/500.css";
+import "@fontsource/outfit/600.css";
+import "@fontsource/outfit/700.css";
+import "@fontsource/outfit/800.css";
 import App from "./App";
 import { installPointerFx } from "./lib/pointerFx";
 import { applyUiScale } from "./lib/prefs";

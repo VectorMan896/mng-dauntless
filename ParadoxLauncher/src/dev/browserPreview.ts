@@ -150,7 +150,7 @@ function previewUsernameAnswer(name: string): { available: boolean; reason?: str
 }
 
 let servers: PreviewServer[] = [
-  { id: "official", kind: "official", name: "Mystic Paradox", gameExePath: "exePath" in install ? install.exePath : null },
+  { id: "official", kind: "official", name: "MNG DAUNTLESS", gameExePath: "exePath" in install ? install.exePath : null },
   ...(params.has("noservers") ? [] : [
     { id: "s-realm", kind: "paradox_realm" as const, name: "Ember Hold", realmName: "ember-hold", gameExePath: null, hostPublicKey: params.has("realmnokey") ? null : "KEY-0123456789abcdefghijklmnop" },
     { id: "s-local", kind: "local" as const, name: "My server", backendUrl: "https://realm.example.com:8443", gameExePath: null },
@@ -233,7 +233,7 @@ mockIPC((cmd, args) => {
   switch (cmd) {
     case "native_restore_session": {
       if (screen === "checking") return new Promise(() => {});
-      if (screen === "restore") return Promise.reject("Couldn't reach the Mystic Paradox account server.");
+      if (screen === "restore") return Promise.reject("Couldn't reach the MNG DAUNTLESS account server.");
       const target = servers.find((candidate) => candidate.id === (payload.serverId ?? selectedServerId));
       // A local server keeps a session of its own: signed out here until the player signs in to it.
       if (target?.kind === "local") return delay(signedInServers.has(target.id) ? localAccount : null, 250);
@@ -338,6 +338,8 @@ mockIPC((cmd, args) => {
       if (params.get("channelswitch") === "playing") return Promise.reject("Close the game first: the channel decides which runtime the next Play installs.");
       previewChannel = String(payload.channel);
       return delay({ channel: previewChannel }, 400);
+    case "native_ping_server":
+      return params.has("offline") ? Promise.reject("offline") : delay(42, 300);
     case "native_get_server_status":
       return params.has("offline") ? Promise.reject("offline") : delay({ online: true, supportedBuildChangelist: 647472 }, 300);
     case "get_install_status":
@@ -380,7 +382,7 @@ mockIPC((cmd, args) => {
     case "native_recent_sessions":
       return delay(sessions, 300);
     case "native_get_log_paths":
-      return delay({ sessionsRoot: "C:\\Users\\Slayer\\AppData\\Local\\MysticParadox\\Logs\\Sessions", latestSessionDir: "C:\\Users\\Slayer\\AppData\\Local\\MysticParadox\\Logs\\Sessions\\s1" });
+      return delay({ sessionsRoot: "C:\\Users\\Slayer\\AppData\\Local\\MNGDauntless\\Logs\\Sessions", latestSessionDir: "C:\\Users\\Slayer\\AppData\\Local\\MNGDauntless\\Logs\\Sessions\\s1" });
     // [2026-10-17] Upload logs. ?uploadstopped: the hourly limit stops it after the first files.
     case "native_upload_logs":
       return delay(params.has("uploadstopped")
@@ -407,7 +409,7 @@ mockIPC((cmd, args) => {
     case "realm_lookup": {
       const server = servers.find((candidate) => candidate.id === payload.serverId);
       if (!server || server.kind !== "paradox_realm" || !server.realmName) return Promise.reject("Only a Paradox realm has a host to confirm.");
-      if (params.has("nosignin")) return Promise.reject("Sign in to Mystic Paradox to look up this realm.");
+      if (params.has("nosignin")) return Promise.reject("Sign in to MNG DAUNTLESS to look up this realm.");
       const key = previewHostKey();
       return delay({
         name: server.realmName,

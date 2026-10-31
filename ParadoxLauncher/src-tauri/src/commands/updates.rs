@@ -90,18 +90,55 @@ fn runtime_update_public_key_b64() -> &'static str {
 }
 
 /// Downloads must come over HTTPS from the feed's own host and port.
+/// [MNG DAUNTLESS] A debug build (the MNG launcher) also accepts plain HTTP when the launcher's own server is plain
+/// HTTP: the MNG servers have no HTTPS yet. The host and port must still be the server's own, and every file is still
+/// checked against the server's Ed25519 signature before it is installed.
 fn is_approved_runtime_url_for(endpoint: &str, candidate: &str) -> bool {
     let (Ok(endpoint), Ok(candidate)) = (Url::parse(endpoint), Url::parse(candidate)) else {
         return false;
     };
-    candidate.scheme() == "https"
-        && endpoint.scheme() == "https"
+    let secure = candidate.scheme() == "https" && endpoint.scheme() == "https";
+    #[cfg(debug_assertions)]
+    let secure = secure || (candidate.scheme() == "http" && endpoint.scheme() == "http");
+    secure
         && candidate.host_str() == endpoint.host_str()
         && candidate.port_or_known_default() == endpoint.port_or_known_default()
 }
 
-fn is_approved_runtime_url(candidate: &str) -> bool {
-    is_approved_runtime_url_for(runtime_endpoint(), candidate)
+fn is_loopback_url(url: &Url) -> bool {
+    match url.host() {
+        Some(url::Host::Domain(name)) => name.eq_ignore_ascii_case("localhost"),
+        Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
+        Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
+        None => false,
+    }
+}
+
+/// The URL to download a runtime file from, or None when it is not approved.
+/// [MNG DAUNTLESS] A server whose UPDATE_PUBLIC_BASE_URL was left at 127.0.0.1 hands out links to "this PC"; a debug
+/// build on another PC then downloads the same path from the server it is connected to.
+fn approved_runtime_download_url_for(endpoint: &str, candidate: &str) -> Option<String> {
+    if is_approved_runtime_url_for(endpoint, candidate) {
+        return Some(candidate.to_string());
+    }
+    #[cfg(debug_assertions)]
+    {
+        let (Ok(feed), Ok(mut link)) = (Url::parse(endpoint), Url::parse(candidate)) else {
+            return None;
+        };
+        if is_loopback_url(&link) && !is_loopback_url(&feed) {
+            link.set_scheme(feed.scheme()).ok()?;
+            link.set_host(feed.host_str()).ok()?;
+            link.set_port(feed.port()).ok()?;
+            let rewritten = link.to_string();
+            return is_approved_runtime_url_for(endpoint, &rewritten).then_some(rewritten);
+        }
+    }
+    None
+}
+
+fn approved_runtime_download_url(candidate: &str) -> Option<String> {
+    approved_runtime_download_url_for(runtime_endpoint(), candidate)
 }
 const MAX_RUNTIME_BYTES: usize = 200 * 1024 * 1024;
 pub(crate) const RUNTIME_DLL_NAME: &str = "MysticParadox.dll";
@@ -490,9 +527,9 @@ pub(crate) async fn install_runtime_update_for(
         });
     }
 
-    if !is_approved_runtime_url(&manifest.url) {
+    let Some(download_url) = approved_runtime_download_url(&manifest.url) else {
         return Err("Runtime update URL is not an approved HTTPS endpoint.".to_string());
-    }
+    };
     let mut download_request = Client::builder()
         .timeout(std::time::Duration::from_secs(120))
         .build()
@@ -500,12 +537,12 @@ pub(crate) async fn install_runtime_update_for(
             eprintln!("[runtime update] download client build failed: {e}");
             "Couldn't prepare the download. Try again.".to_string()
         })?
-        .get(manifest.url.clone());
+        .get(download_url.clone());
     if let Some(token) = token.as_deref() {
         download_request = download_request.bearer_auth(token);
     }
     let response = download_request.send().await.map_err(|e| {
-        eprintln!("[runtime update] download failed for {}: {e}", manifest.url);
+        eprintln!("[runtime update] download failed for {download_url}: {e}");
         "Runtime download failed. Check your connection.".to_string()
     })?;
     if !response.status().is_success() {
@@ -570,9 +607,9 @@ async fn install_extra_file(
     if !is_safe_extra_name(&extra.name) {
         return Err(format!("Rejected unsafe extra file name: {}", extra.name));
     }
-    if !is_approved_runtime_url(&extra.url) {
+    let Some(extra_url) = approved_runtime_download_url(&extra.url) else {
         return Err("Extra file URL is not an approved HTTPS endpoint.".to_string());
-    }
+    };
     let target = directory.join(&extra.name);
     // Already up to date? skip.
     if target.is_file() {
@@ -589,7 +626,7 @@ async fn install_extra_file(
             eprintln!("[runtime update] extra download client build failed: {e}");
             "Couldn't prepare the download. Try again.".to_string()
         })?
-        .get(&extra.url);
+        .get(&extra_url);
     if let Some(token) = token {
         extra_request = extra_request.bearer_auth(token);
     }
@@ -668,7 +705,7 @@ pub(crate) fn update_hold_reason(game_running: bool, hosting: bool) -> Option<&'
     if game_running {
         Some("Installs after you close the game: installing restarts the launcher, which closes the game.")
     } else if hosting {
-        Some("Installs after you stop hosting: installing restarts the launcher, which ends your realm's servers.")
+        Some("Installs after you stop hosting: installing restarts the launcher, which ends your MNG Server's servers.")
     } else {
         None
     }
@@ -819,6 +856,34 @@ mod tests {
             endpoint,
             "https://community.example:8443/runtime.dll"
         ));
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn debug_builds_accept_plain_http_from_their_own_server_only() {
+        for host in ["127.0.0.1:3000", "192.168.1.20:3000", "100.101.102.103:3000", "203.0.113.7:3000", "play.example.com"] {
+            let endpoint = format!("http://{host}/launcher/v1/runtime");
+            assert!(is_approved_runtime_url_for(&endpoint, &format!("http://{host}/x/winmm.dll")), "{host}");
+            assert!(!is_approved_runtime_url_for(&endpoint, "http://8.8.8.8:3000/x/winmm.dll"), "{host}");
+            assert!(!is_approved_runtime_url_for(&endpoint, &format!("http://{host}:9999/x/winmm.dll")), "{host}");
+        }
+        // An https feed still never accepts plain http.
+        assert!(!is_approved_runtime_url_for("https://play.example.com/r", "http://play.example.com/x.dll"));
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn links_to_the_servers_own_pc_are_fetched_from_the_connected_server() {
+        let endpoint = "http://203.0.113.7:3000/launcher/v1/runtime";
+        assert_eq!(
+            approved_runtime_download_url_for(endpoint, "http://127.0.0.1:3000/launcher/v1/runtime/client/stable/windows-x86_64/extra/winmm.dll").as_deref(),
+            Some("http://203.0.113.7:3000/launcher/v1/runtime/client/stable/windows-x86_64/extra/winmm.dll")
+        );
+        // A link to another real host is not rewritten.
+        assert_eq!(approved_runtime_download_url_for(endpoint, "http://8.8.8.8:3000/x.dll"), None);
+        // On the server's own PC nothing changes.
+        let local = "http://127.0.0.1:3000/launcher/v1/runtime";
+        assert_eq!(approved_runtime_download_url_for(local, "http://127.0.0.1:3000/x.dll").as_deref(), Some("http://127.0.0.1:3000/x.dll"));
     }
 
     #[test]

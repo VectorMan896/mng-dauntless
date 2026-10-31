@@ -37,7 +37,7 @@ export function isCodeComplete(code: string): boolean {
 
 /** [2026-10-15] The sentence for a Discord link that did not complete (`mysticparadox://link/error?code=...`). */
 export function discordLinkErrorText(code: string): string {
-  if (code === "AUTH_DISCORD_ALREADY_LINKED") return "That Discord account is already linked to another Mystic Paradox account.";
+  if (code === "AUTH_DISCORD_ALREADY_LINKED") return "That Discord account is already linked to another MNG DAUNTLESS account.";
   if (code === "AUTH_DISCORD_ACCOUNT_HAS_LINK") return "This account already has a Discord account linked.";
   return "Discord linking didn't complete. Please try again.";
 }

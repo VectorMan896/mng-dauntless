@@ -7,6 +7,7 @@ import { AlertIcon, FolderIcon, LibraryIcon, RuntimeIcon, ShieldIcon } from "../
 import { ArtBackdrop, heroArt } from "../../components/ArtBackdrop";
 import { useServer } from "../../servers/ServerContext";
 import { statusNaming } from "../../servers/serverNames";
+import { NoticeBanner } from "../../components/NoticeBanner";
 
 type Feedback = { kind: "ok" | "bad"; message: string } | null;
 
@@ -165,8 +166,11 @@ export function LibraryTab() {
         <header className="page-head reveal" style={at(0)}>
           <p className="eyebrow">Game library</p>
           <h1 className="page-title">Library</h1>
-          <p className="page-desc">Your Dauntless installation and the signed Mystic Paradox runtime it uses.</p>
+          <p className="page-desc">Your Dauntless installation and the signed MNG DAUNTLESS runtime it uses.</p>
         </header>
+
+        {/* [MNG DAUNTLESS 2026-10-31] Announcements (the running event, server notices), on the page's art. */}
+        <NoticeBanner />
 
         {located ? (
           <>
@@ -220,7 +224,7 @@ export function LibraryTab() {
                       {hasError ? <AlertIcon /> : <RuntimeIcon />}
                     </div>
                     <div>
-                      <h3 className="section-title">Mystic Paradox runtime</h3>
+                      <h3 className="section-title">MNG DAUNTLESS runtime</h3>
                       <p className="section-desc">{runtimeLabel}</p>
                     </div>
                   </div>

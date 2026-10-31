@@ -234,11 +234,11 @@ export class RoomService {
                 realmId = await this.realmHubs.realmOfHubRoom(roomLocal.slice("City-".length));
             } catch (error) {
                 logger.warn(`[XMPP] realm lookup for a City room failed; refusing the join: ${error}`);
-                return { ok: false, reason: "realm lookup failed" };
+                return { ok: false, reason: "MNG Server lookup failed" };
             }
             if (realmId !== undefined) {
-                if (await this.realmHubs.isBanned(realmId, accountId)) return { ok: false, reason: "realm banned" };
-                if (!(await this.realmHubs.isMember(realmId, accountId))) return { ok: false, reason: "not a realm member" };
+                if (await this.realmHubs.isBanned(realmId, accountId)) return { ok: false, reason: "MNG Server banned" };
+                if (!(await this.realmHubs.isMember(realmId, accountId))) return { ok: false, reason: "not an MNG Server member" };
                 return { ok: true, reason: "" };
             }
             if (!this.devCityMuc) return { ok: false, reason: "city muc disabled" };

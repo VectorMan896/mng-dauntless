@@ -604,12 +604,12 @@ impl Failure {
     fn readable(&self) -> String {
         match self.code.as_str() {
             "REALM_HOST_INELIGIBLE" => format!(
-                "This PC cannot host the realm right now: {}",
+                "This PC cannot host the MNG Server right now: {}",
                 ineligible_text(self.reason.as_deref())
             ),
-            "REALM_FULL" => "This realm already runs the most servers its host allows.".to_string(),
-            "REALM_NOT_FOUND" => "This account does not host a realm yet.".to_string(),
-            "REALM_HUB_EXISTS" => "This realm already has a running hub.".to_string(),
+            "REALM_FULL" => "This MNG Server already runs the most servers its host allows.".to_string(),
+            "REALM_NOT_FOUND" => "This account does not host an MNG Server yet.".to_string(),
+            "REALM_HUB_EXISTS" => "This MNG Server already has a running hub.".to_string(),
             _ if !self.message.is_empty() => self.message.clone(),
             _ => format!("The server refused the request (status {}).", self.status),
         }
@@ -650,7 +650,7 @@ fn post(app: &AppHandle, path: &str, body: &Value) -> Result<Response, Failure> 
             .bearer_auth(token)
             .json(body)
             .send()
-            .map_err(|_| "Couldn't reach the Mystic Paradox server.".to_string())
+            .map_err(|_| "Couldn't reach the MNG DAUNTLESS server.".to_string())
     })
     .map_err(Failure::local)?;
     answered(response)
@@ -663,7 +663,7 @@ fn get(app: &AppHandle, path: &str) -> Result<Response, Failure> {
             .get(&url)
             .bearer_auth(token)
             .send()
-            .map_err(|_| "Couldn't reach the Mystic Paradox server.".to_string())
+            .map_err(|_| "Couldn't reach the MNG DAUNTLESS server.".to_string())
     })
     .map_err(Failure::local)?;
     answered(response)
@@ -675,7 +675,7 @@ fn realm_log(line: &str) {
     let Ok(local) = std::env::var("LOCALAPPDATA") else {
         return;
     };
-    let dir = PathBuf::from(local).join("MysticParadox").join("Logs");
+    let dir = PathBuf::from(local).join(crate::DATA_DIR_NAME).join("Logs");
     if std::fs::create_dir_all(&dir).is_err() {
         return;
     }
@@ -743,7 +743,7 @@ pub(crate) fn own_realm_label(display_name: Option<&str>, realm_name: &str) -> S
     display_name
         .map(str::trim)
         .filter(|name| !name.is_empty())
-        .map(|name| format!("{name}'s Realm"))
+        .map(|name| format!("{name}'s MNG Server"))
         .filter(|label| crate::servers::model::validate_display_name(label).is_ok())
         .unwrap_or_else(|| realm_name.to_string())
 }
@@ -799,13 +799,13 @@ fn list_own_realm(app: &AppHandle, realm: &HostedRealm) {
     });
     match outcome {
         Ok(true) => realm_log(&format!(
-            "own realm added to the server list name={}",
+            "own MNG Server added to the server list name={}",
             realm.name
         )),
         Ok(false) => {}
         Err(error) => {
             lock(&LISTED).retain(|name| name != &realm.name);
-            realm_log(&format!("own realm not added to the server list: {error}"));
+            realm_log(&format!("own MNG Server not added to the server list: {error}"));
         }
     }
 }
@@ -815,7 +815,7 @@ fn list_own_realm(app: &AppHandle, realm: &HostedRealm) {
 /// are warned if the name later belongs to a different host (it is compared, never used to sign).
 pub(crate) fn create_body(join_policy: &str, host_key: &str) -> Result<Value, String> {
     if !matches!(join_policy, "SOLO" | "INVITE_ONLY" | "PUBLIC") {
-        return Err("Choose who can join your realm.".to_string());
+        return Err("Choose who can join your MNG Server.".to_string());
     }
     let key = crate::servers::model::validate_host_key(host_key)?;
     Ok(json!({ "hostPublicKey": key, "joinPolicy": join_policy, "listed": false }))
@@ -827,7 +827,7 @@ fn create_realm(app: &AppHandle, join_policy: &str) -> Result<HostedRealm, Strin
     let body = create_body(join_policy, &key)?;
     let response = post(app, CREATE, &body).map_err(|failure| failure.readable())?;
     let created: CreatedView = response.json().map_err(|_| {
-        "The server created the realm, but its answer could not be read. Reopen this page."
+        "The server created the MNG Server, but its answer could not be read. Reopen this page."
             .to_string()
     })?;
     let mut realm = created.realm;
@@ -835,7 +835,7 @@ fn create_realm(app: &AppHandle, join_policy: &str) -> Result<HostedRealm, Strin
         realm.host_public_key = key;
     }
     realm_log(&format!(
-        "realm created name={} joinPolicy={join_policy}",
+        "MNG Server created name={} joinPolicy={join_policy}",
         realm.name
     ));
     Ok(realm)
@@ -881,7 +881,7 @@ fn read_limits(dir: &Path) -> Result<(BTreeMap<String, RealmHostOptions>, bool),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             return Ok((BTreeMap::new(), false));
         }
-        Err(_) => return Err("Couldn't read the saved realm limits.".to_string()),
+        Err(_) => return Err("Couldn't read the saved MNG Server limits.".to_string()),
     };
     match serde_json::from_str::<StoredLimits>(&text) {
         Ok(stored) => Ok((
@@ -906,10 +906,10 @@ fn write_limits(dir: &Path, servers: &BTreeMap<String, RealmHostOptions>) -> Res
         servers: servers.clone(),
     };
     let contents = serde_json::to_vec_pretty(&stored)
-        .map_err(|_| "Couldn't encode the saved realm limits.".to_string())?;
+        .map_err(|_| "Couldn't encode the saved MNG Server limits.".to_string())?;
     std::fs::write(&temporary, contents)
-        .map_err(|_| "Couldn't save the realm limits.".to_string())?;
-    std::fs::rename(&temporary, &path).map_err(|_| "Couldn't commit the realm limits.".to_string())
+        .map_err(|_| "Couldn't save the MNG Server limits.".to_string())?;
+    std::fs::rename(&temporary, &path).map_err(|_| "Couldn't commit the MNG Server limits.".to_string())
 }
 
 /// Applies `change` to the saved limits in `dir`. A change that leaves them as they were writes nothing.
@@ -928,7 +928,7 @@ fn update_limits_in(
         // Keep the damaged file for inspection; if it cannot be moved, nothing is written over it.
         let path = dir.join(LIMITS_FILE);
         std::fs::rename(&path, path.with_extension("json.bad")).map_err(|_| {
-            "The saved realm limits are damaged and couldn't be set aside.".to_string()
+            "The saved MNG Server limits are damaged and couldn't be set aside.".to_string()
         })?;
     }
     write_limits(dir, &servers)
@@ -959,7 +959,7 @@ pub(crate) fn forget_realm_host_limits(app: &AppHandle, server_id: &str) {
         if let Err(error) = update_limits_in(&dir, |servers| {
             servers.remove(server_id);
         }) {
-            realm_log(&format!("removing the saved realm limits failed: {error}"));
+            realm_log(&format!("removing the saved MNG Server limits failed: {error}"));
         }
     }
 }
@@ -981,10 +981,10 @@ pub struct RealmNotice {
 pub(super) fn leave_notice(reason: &str) -> Option<RealmNotice> {
     let (reason, message) = match reason {
         "HOST_OFFLINE" | "HOST_LEASE_LOST" | "HOST_STOPPED" => {
-            ("HOST_OFFLINE", "The realm host went offline.")
+            ("HOST_OFFLINE", "The MNG Server host went offline.")
         }
-        "KICKED" => ("KICKED", "You were removed from the realm."),
-        "BANNED" => ("BANNED", "You were banned from this realm."),
+        "KICKED" => ("KICKED", "You were removed from the MNG Server."),
+        "BANNED" => ("BANNED", "You were banned from this MNG Server."),
         _ => return None,
     };
     Some(RealmNotice { reason, message })
@@ -1244,7 +1244,7 @@ async fn run(
         Ok(status) => status,
         Err(_) => {
             let mut status = snapshot(None, false);
-            status.notice = Some("The realm host request stopped unexpectedly.".to_string());
+            status.notice = Some("The MNG Server host request stopped unexpectedly.".to_string());
             status.notice_kind = NoticeKind::Error;
             status
         }
@@ -1325,7 +1325,7 @@ pub async fn realm_host_kick(app: AppHandle, account_id: String) -> RealmHostSta
             &account_id,
             "kick",
             json!({}),
-            "The player was removed from the realm.",
+            "The player was removed from the MNG Server.",
         );
         snapshot(Some(app), true)
     })
@@ -1347,7 +1347,7 @@ pub async fn realm_host_ban(
                     &account_id,
                     "ban",
                     body,
-                    "The player was banned from the realm.",
+                    "The player was banned from the MNG Server.",
                 );
             }
             Err(message) => set_error(message),
@@ -1419,7 +1419,7 @@ pub async fn realm_host_approve_request(app: AppHandle, account_id: String) -> R
             app,
             &account_id,
             "approve",
-            "The player can join your realm now.",
+            "The player can join your MNG Server now.",
         );
         snapshot(Some(app), true)
     })
@@ -1458,7 +1458,7 @@ pub async fn realm_host_cancel_invite(app: AppHandle, account_id: String) -> Rea
                 &json!({}),
             ) {
                 Ok(_) => {
-                    realm_log("realm player invite cancelled");
+                    realm_log("MNG Server player invite cancelled");
                     set_notice(Some("The invite was cancelled.".to_string()));
                 }
                 Err(failure) => set_error(failure.readable()),
@@ -1496,7 +1496,7 @@ pub async fn realm_host_create(app: AppHandle, join_policy: String) -> RealmHost
                     &realm.name,
                 );
                 set_notice(Some(format!(
-                    "{label} is ready. Start it to let players in: they add it by entering your username on the Realms page."
+                    "{label} is ready. Start it to let players in: they add it by entering your username on the MNG Servers page."
                 )));
             }
             Err(message) => set_error(message),
@@ -1524,7 +1524,7 @@ fn request_action(app: &AppHandle, account_id: &str, action: &str, done: &str) {
     let path = format!("{MINE}/requests/{account_id}/{action}");
     match post(app, &path, &json!({})) {
         Ok(_) => {
-            realm_log(&format!("realm join request {action} done"));
+            realm_log(&format!("MNG Server join request {action} done"));
             set_notice(Some(done.to_string()));
         }
         Err(failure) => set_error(failure.readable()),
@@ -1552,7 +1552,7 @@ fn invite_player(app: &AppHandle, username: &str) {
         Ok(response) => {
             let answer: Value = response.json().unwrap_or(Value::Null);
             set_notice(Some(invite_sentence(&answer, name)));
-            realm_log("realm player invited by username");
+            realm_log("MNG Server player invited by username");
         }
         Err(failure) => set_error(failure.readable()),
     }
@@ -1565,7 +1565,7 @@ fn invite_sentence(answer: &Value, typed: &str) -> String {
         .filter(|text| !text.trim().is_empty())
         .unwrap_or(typed);
     if answer["status"].as_str() == Some("MEMBER") {
-        format!("{shown} can join your realm.")
+        format!("{shown} can join your MNG Server.")
     } else {
         format!("Invite sent to {shown}. They can join once they accept it in their launcher.")
     }
@@ -1667,9 +1667,9 @@ fn parse_people(body: &[u8]) -> Result<RealmPeopleStatus, String> {
 /// (Allowlisted mode, approved players) or `PUBLIC` (Public mode, anyone).
 fn set_join_policy(app: &AppHandle, join_policy: &str) {
     let sentence = match join_policy {
-        "SOLO" => "Your realm is in solo mode now: only you can enter. Players already inside stay until they leave.",
-        "PUBLIC" => "Anyone can join your realm now.",
-        "INVITE_ONLY" => "Only players you approve can join your realm now.",
+        "SOLO" => "Your MNG Server is in solo mode now: only you can enter. Players already inside stay until they leave.",
+        "PUBLIC" => "Anyone can join your MNG Server now.",
+        "INVITE_ONLY" => "Only players you approve can join your MNG Server now.",
         _ => {
             set_error("Choose who can join: solo, allowlisted or public.".to_string());
             return;
@@ -1681,7 +1681,7 @@ fn set_join_policy(app: &AppHandle, join_policy: &str) {
         &json!({ "joinPolicy": join_policy }),
     ) {
         Ok(_) => {
-            realm_log(&format!("realm join policy set to {join_policy}"));
+            realm_log(&format!("MNG Server join policy set to {join_policy}"));
             set_notice(Some(sentence.to_string()));
         }
         Err(failure) => set_error(failure.readable()),
@@ -1696,7 +1696,7 @@ fn member_action(app: &AppHandle, account_id: &str, action: &str, body: Value, d
     let path = format!("/launcher/v1/realms/mine/members/{account_id}/{action}");
     match post(app, &path, &body) {
         Ok(_) => {
-            realm_log(&format!("realm member {action} done"));
+            realm_log(&format!("MNG Server member {action} done"));
             set_notice(Some(done.to_string()));
         }
         Err(failure) => set_error(failure.readable()),
@@ -1708,7 +1708,7 @@ fn member_action(app: &AppHandle, account_id: &str, action: &str, body: Value, d
 fn set_limits(app: &AppHandle, options: RealmHostOptions) -> Result<(), String> {
     validate_options(&options)?;
     if let Err(error) = save_limits(app, options) {
-        realm_log(&format!("saving the realm limits failed: {error}"));
+        realm_log(&format!("saving the MNG Server limits failed: {error}"));
     }
     let _lifecycle = lock(lifecycle());
     let (running, changed_live) = {
@@ -1724,7 +1724,7 @@ fn set_limits(app: &AppHandle, options: RealmHostOptions) -> Result<(), String> 
     if running {
         if let Err(failure) = post(app, HEARTBEAT, &heartbeat_body(options)) {
             realm_log(&format!(
-                "realm limits heartbeat failed: {}",
+                "MNG Server limits heartbeat failed: {}",
                 failure.readable()
             ));
         }
@@ -1744,20 +1744,20 @@ fn start_realm(app: &AppHandle, options: RealmHostOptions) -> Result<(), String>
     validate_options(&options)?;
     let _lifecycle = lock(lifecycle());
     if lock(host_state()).state != HostState::Stopped {
-        return Err("The realm host is already running.".to_string());
+        return Err("The MNG Server host is already running.".to_string());
     }
     // The limits the player starts with are the ones this PC shows next time, whatever the start then does.
     if let Err(error) = save_limits(app, options) {
-        realm_log(&format!("saving the realm limits failed: {error}"));
+        realm_log(&format!("saving the MNG Server limits failed: {error}"));
     }
     if coop_artifacts().is_none() {
         return Err(
-            "Co-op hunts are off on this server, so this PC cannot host a realm.".to_string(),
+            "Co-op hunts are off on this server, so this PC cannot host an MNG Server.".to_string(),
         );
     }
     let target = active_target(app);
     if !target.uses_official_feed() {
-        return Err("Select the official server or a Paradox realm to host a realm.".to_string());
+        return Err("Select the official server or an MNG Server to host an MNG Server.".to_string());
     }
     let (free_mib, commit_mib) = control::memory_status();
     if commit_mib < HOST_COMMIT_FLOOR_MIB {
@@ -1783,7 +1783,7 @@ fn start_realm(app: &AppHandle, options: RealmHostOptions) -> Result<(), String>
     }
     set_hub_afk_seconds(options.afk_seconds);
     realm_log(&format!(
-        "realm host starting maxPlayers={} maxServers={} afkSeconds={}",
+        "MNG Server host starting maxPlayers={} maxServers={} afkSeconds={}",
         options.max_players,
         options.max_servers,
         options
@@ -1808,14 +1808,14 @@ fn start_realm(app: &AppHandle, options: RealmHostOptions) -> Result<(), String>
                 host.supervisor_stop = Some(supervisor_tx);
             }
             spawn_supervisor(app.clone(), supervisor_rx);
-            realm_log(&format!("realm host online hub={session_id}"));
+            realm_log(&format!("MNG Server host online hub={session_id}"));
             Ok(())
         }
         Err(error) => {
             let mut host = lock(host_state());
             host.heartbeat_stop = None;
             host.state = HostState::Stopped;
-            realm_log(&format!("realm host start failed: {error}"));
+            realm_log(&format!("MNG Server host start failed: {error}"));
             Err(error)
         }
     }
@@ -1908,20 +1908,20 @@ fn start_hub(app: &AppHandle, max_players: u32) -> Result<String, String> {
     let mut token = session.access_token;
     match start_host_bundle(app, &mut token, &hub.session_id) {
         Ok(_) => {
-            realm_log(&format!("realm hub RUNNING session={}", hub.session_id));
+            realm_log(&format!("MNG Server hub RUNNING session={}", hub.session_id));
             Ok(hub.session_id)
         }
         Err(error) => {
             // A hub bootstrap the control loop ran first holds the session id: the hub is up, so count it.
             if is_session_running(&hub.session_id) {
                 realm_log(&format!(
-                    "realm hub already registered session={}",
+                    "MNG Server hub already registered session={}",
                     hub.session_id
                 ));
                 return Ok(hub.session_id);
             }
             let _ = post(app, HUB_STOP, &json!({ "hubKind": "RAMSGATE" }));
-            Err(format!("The realm hub did not start. {error}"))
+            Err(format!("The MNG Server hub did not start. {error}"))
         }
     }
 }
@@ -1959,7 +1959,7 @@ fn stop_locked(app: &AppHandle, notice: Option<Notice>) {
     }
     if !wait_for_sessions(&ids, SESSION_WAIT) && warning.is_none() {
         warning = Some(info_notice(
-            "Some of the realm's servers are still closing.",
+            "Some of the MNG Server's servers are still closing.",
         ));
     }
     let mut host = lock(host_state());
@@ -1967,7 +1967,7 @@ fn stop_locked(app: &AppHandle, notice: Option<Notice>) {
     host.hub = None;
     host.account = None;
     host.notice = notice.or(warning);
-    realm_log("realm host stopped");
+    realm_log("MNG Server host stopped");
 }
 
 /// The sessions this launcher hosts for the realm: its hubs (Ramsgate and Training) and its realm hunts.
@@ -2012,7 +2012,7 @@ fn spawn_heartbeat(app: AppHandle, stop: Receiver<()>) {
         loop {
             let options = lock(host_state()).options;
             if let Err(failure) = post(&app, HEARTBEAT, &heartbeat_body(options)) {
-                realm_log(&format!("realm heartbeat failed: {}", failure.readable()));
+                realm_log(&format!("MNG Server heartbeat failed: {}", failure.readable()));
             }
             if !matches!(
                 stop.recv_timeout(HEARTBEAT_INTERVAL),
@@ -2023,9 +2023,9 @@ fn spawn_heartbeat(app: AppHandle, stop: Receiver<()>) {
         }
         if lock(host_state()).heartbeat_stop.is_none() {
             match post(&app, HEARTBEAT, &json!({ "online": false })) {
-                Ok(_) => realm_log("realm closed"),
+                Ok(_) => realm_log("MNG Server closed"),
                 Err(failure) => realm_log(&format!(
-                    "realm could not be closed: {}",
+                    "MNG Server could not be closed: {}",
                     failure.readable()
                 )),
             }
@@ -2075,20 +2075,20 @@ fn supervise(app: AppHandle, stop: Receiver<()>) {
             HostState::Online => {
                 // Online always has a hub record; without one, treat it as a lost hub and take the restart path.
                 let Some(run) = hub else {
-                    realm_log("realm online without a hub record; restarting the hub");
+                    realm_log("MNG Server online without a hub record; restarting the hub");
                     mark_restarting(Some(
-                        "The realm hub stopped. Starting it again.".to_string(),
+                        "The MNG Server hub stopped. Starting it again.".to_string(),
                     ));
                     due = Some(now);
                     continue;
                 };
                 if !is_session_running(&run.session_id) {
                     realm_log(&format!(
-                        "realm hub ended without a stop request session={}",
+                        "MNG Server hub ended without a stop request session={}",
                         run.session_id
                     ));
                     mark_restarting(Some(
-                        "The realm hub stopped. Starting it again.".to_string(),
+                        "The MNG Server hub stopped. Starting it again.".to_string(),
                     ));
                     due = Some(now + restart_backoff(attempts_in_window(&attempts, now)));
                     continue;
@@ -2139,10 +2139,10 @@ fn supervise(app: AppHandle, stop: Receiver<()>) {
                     continue;
                 }
                 if !restart_allowed(&attempts, now) {
-                    realm_log("realm hub kept stopping; hosting stopped");
+                    realm_log("MNG Server hub kept stopping; hosting stopped");
                     stop_locked(
                         &app,
-                        Some(error_notice("The realm hub kept stopping, so hosting was stopped. Start it again when this PC is steady.")),
+                        Some(error_notice("The MNG Server hub kept stopping, so hosting was stopped. Start it again when this PC is steady.")),
                     );
                     return;
                 }
@@ -2167,15 +2167,15 @@ fn supervise(app: AppHandle, stop: Receiver<()>) {
                         });
                         due = None;
                         realm_log(&format!(
-                            "realm hub restarted attempt={attempt} session={session_id}"
+                            "MNG Server hub restarted attempt={attempt} session={session_id}"
                         ));
                     }
                     Err(error) => {
                         realm_log(&format!(
-                            "realm hub restart attempt={attempt} failed: {error}"
+                            "MNG Server hub restart attempt={attempt} failed: {error}"
                         ));
                         lock(host_state()).notice = Some(error_notice(format!(
-                            "Restarting the realm hub failed: {error}"
+                            "Restarting the MNG Server hub failed: {error}"
                         )));
                         due = Some(now + restart_backoff(attempts_in_window(&attempts, now)));
                     }
@@ -2296,7 +2296,7 @@ mod tests {
         let member = json!({ "accountId": "a", "displayName": "Lyra", "status": "MEMBER" });
         assert_eq!(
             invite_sentence(&member, "lyra"),
-            "Lyra can join your realm."
+            "Lyra can join your MNG Server."
         );
         assert_eq!(
             invite_sentence(&json!({}), "typed"),
@@ -2632,9 +2632,9 @@ mod tests {
     fn the_hosts_own_realm_is_labelled_after_the_username() {
         assert_eq!(
             own_realm_label(Some("MysticFox"), "mysticfox"),
-            "MysticFox's Realm"
+            "MysticFox's MNG Server"
         );
-        assert_eq!(own_realm_label(Some("  Pal "), "pal"), "Pal's Realm");
+        assert_eq!(own_realm_label(Some("  Pal "), "pal"), "Pal's MNG Server");
         assert_eq!(own_realm_label(None, "mysticfox"), "mysticfox");
         assert_eq!(own_realm_label(Some(" "), "mysticfox"), "mysticfox");
         // A label over the 40-character server-name limit falls back to the realm name.
@@ -2717,7 +2717,7 @@ mod tests {
                 leave_notice(reason),
                 Some(RealmNotice {
                     reason: "HOST_OFFLINE",
-                    message: "The realm host went offline."
+                    message: "The MNG Server host went offline."
                 }),
                 "{reason}"
             );
@@ -2726,14 +2726,14 @@ mod tests {
             leave_notice("KICKED"),
             Some(RealmNotice {
                 reason: "KICKED",
-                message: "You were removed from the realm."
+                message: "You were removed from the MNG Server."
             })
         );
         assert_eq!(
             leave_notice("BANNED"),
             Some(RealmNotice {
                 reason: "BANNED",
-                message: "You were banned from this realm."
+                message: "You were banned from this MNG Server."
             })
         );
         // A travel to a realm hunt, a plain leave and the other end reasons need no banner.
@@ -2957,17 +2957,17 @@ mod tests {
         };
         assert_eq!(
             failure.readable(),
-            "This PC cannot host the realm right now: it has too little free memory."
+            "This PC cannot host the MNG Server right now: it has too little free memory."
         );
         let other = Failure {
             status: 503,
             code: "P2P_DISABLED".into(),
-            message: "Realm hosting is switched off on this server.".into(),
+            message: "MNG Server hosting is switched off on this server.".into(),
             reason: None,
         };
         assert_eq!(
             other.readable(),
-            "Realm hosting is switched off on this server."
+            "MNG Server hosting is switched off on this server."
         );
     }
 }

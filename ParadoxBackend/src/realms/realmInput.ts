@@ -91,8 +91,8 @@ export function ParseCreateRealmBody(body: unknown): Parsed<CreateRealmInput> {
         const checked = ValidateRealmName(source.name);
         if (!checked.ok) {
             return checked.reason === "RESERVED"
-                ? Fail("That realm name is reserved.", "REALM_NAME_RESERVED")
-                : Fail("A realm name is 3-24 letters, digits or hyphens, and cannot start or end with a hyphen.", "REALM_NAME_INVALID");
+                ? Fail("That MNG Server name is reserved.", "REALM_NAME_RESERVED")
+                : Fail("An MNG Server name is 3-24 letters, digits or hyphens, and cannot start or end with a hyphen.", "REALM_NAME_INVALID");
         }
         name = checked.name;
     }
@@ -192,14 +192,14 @@ export function ParseJoinBody(body: unknown): Parsed<JoinInput> {
         const name = ValidateRealmName(source.name);
         if (name.ok) input.name = name.name;
         else if (name.reason === "RESERVED" && typeof source.name === "string") input.name = source.name.trim().toLowerCase();
-        else return Fail("That is not a realm name.", "REALM_NAME_INVALID");
+        else return Fail("That is not an MNG Server name.", "REALM_NAME_INVALID");
     }
     if (Has(source, "inviteCode")) {
         const code = NormalizeInviteCode(source.inviteCode);
         if (code === undefined) return Fail("That is not an invite code.");
         input.inviteCode = code;
     }
-    if (input.name === undefined && input.inviteCode === undefined) return Fail("Send a realm name and/or an invite code.");
+    if (input.name === undefined && input.inviteCode === undefined) return Fail("Send an MNG Server name and/or an invite code.");
     if (Has(source, "knownHostKey")) {
         const key = ParseHostPublicKey(source.knownHostKey);
         if (key === undefined) return Fail("knownHostKey is malformed.");
@@ -277,7 +277,7 @@ export interface EntryRealmInput {
  * name is well-formed and simply finds no realm. A `null` is read as absent by the caller, never here.
  */
 export function ParseEntryRealm(value: unknown): Parsed<EntryRealmInput> {
-    if (typeof value !== "object" || value === null || Array.isArray(value)) return Fail("realm must be an object with a name.");
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return Fail("MNG Server must be an object with a name.");
     const source = value as Record<string, unknown>;
     if (!Has(source, "name")) return Fail("realm.name is required.");
     const name = ParseNameParam(source.name);
@@ -372,7 +372,7 @@ export function ParseNameParam(value: unknown): Parsed<string> {
     if (name.ok) return Ok(name.name);
     // A reserved name is well-formed: a lookup answers "not found" rather than "invalid".
     if (name.reason === "RESERVED" && typeof value === "string") return Ok(value.trim().toLowerCase());
-    return Fail("That is not a realm name.", "REALM_NAME_INVALID");
+    return Fail("That is not an MNG Server name.", "REALM_NAME_INVALID");
 }
 
 export function ParseInviteCodeParam(value: unknown): Parsed<string> {

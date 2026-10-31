@@ -62,11 +62,11 @@ export function DeleteAccountDialog({ username, holdDays, onCancel, onConfirm }:
       )}
     >
       <ul className="modal-points">
-        <li>Your account is deactivated at once. You cannot play, host or join realms with it.</li>
+        <li>Your account is deactivated at once. You cannot play, host or join MNG Servers with it.</li>
         <li>It is permanently deleted after {holdDays} days.</li>
         <li>Within those {holdDays} days you can sign in and choose Restore to undo this.</li>
         <li>After deletion we keep only a minimal record, as the Privacy Policy says.</li>
-        <li>Your progress, items and realms cannot be recovered after deletion.</li>
+        <li>Your progress, items and MNG Servers cannot be recovered after deletion.</li>
       </ul>
       <TextField
         label={`Type ${username} to confirm`}

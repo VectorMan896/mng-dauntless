@@ -121,7 +121,7 @@ export function RealmTrustProvider({ children }: { children: ReactNode }) {
   const trustNewHost = useCallback(async (server: Host): Promise<boolean> => {
     const lookup = await realmLookup(server.id);
     if (!lookup.ownershipChanged) {
-      throw new Error("The realm's host did not change. Press Play again.");
+      throw new Error("The MNG Server's host did not change. Press Play again.");
     }
     return new Promise<boolean>((resolve) => open({ kind: "owner", serverId: server.id, lookup, resolve }));
   }, [open]);
@@ -173,7 +173,7 @@ function RealmHostDialog({ pending, onAgree, onCancel }: {
 
   return (
     <Modal
-      title={joining ? "Join this realm?" : "This realm has a new host"}
+      title={joining ? "Join this MNG Server?" : "This MNG Server has a new host"}
       tone={joining ? "default" : "danger"}
       onClose={busy ? () => {} : onCancel}
       footer={(
@@ -185,7 +185,7 @@ function RealmHostDialog({ pending, onAgree, onCancel }: {
             loading={busy}
             loadingLabel={joining ? "Joining…" : "Trusting…"}
           >
-            {joining ? "Join realm" : "Trust the new host"}
+            {joining ? "Join MNG Server" : "Trust the new host"}
           </Button>
         </div>
       )}
@@ -194,15 +194,15 @@ function RealmHostDialog({ pending, onAgree, onCancel }: {
         <>
           <p className="modal-lead">
             {hostName
-              ? <>Join realm <strong>{lookup.name}</strong> hosted by <strong>{hostName}</strong>?</>
-              : <>Join realm <strong>{lookup.name}</strong>? Its host has not given a name.</>}
+              ? <>Join MNG Server <strong>{lookup.name}</strong> hosted by <strong>{hostName}</strong>?</>
+              : <>Join MNG Server <strong>{lookup.name}</strong>? Its host has not given a name.</>}
           </p>
           <p>
-            The host runs this realm&apos;s Ramsgate server and its hunts on their own PC. Only join a realm whose host you trust.
-            Your progress saves to your Mystic Paradox account.
+            The host runs this MNG Server&apos;s Ramsgate server and its hunts on their own PC. Only join an MNG Server whose host you trust.
+            Your progress saves to your MNG DAUNTLESS account.
           </p>
           <p className="modal-fine">
-            Host key <span className="mono">{lookup.fingerprint}</span>. The launcher remembers it, and asks again if the realm&apos;s
+            Host key <span className="mono">{lookup.fingerprint}</span>. The launcher remembers it, and asks again if the MNG Server&apos;s
             name ever belongs to another host.
           </p>
           <RealmTrustNote />
@@ -210,10 +210,10 @@ function RealmHostDialog({ pending, onAgree, onCancel }: {
       ) : (
         <>
           <p className="modal-lead">
-            The realm <strong>{lookup.name}</strong> now belongs to a different host{hostName ? <>, <strong>{hostName}</strong></> : ""}.
+            The MNG Server <strong>{lookup.name}</strong> now belongs to a different host{hostName ? <>, <strong>{hostName}</strong></> : ""}.
           </p>
           <p>
-            You agreed to join this realm with its earlier host. Its name now belongs to someone else, so Play was stopped.
+            You agreed to join this MNG Server with its earlier host. Its name now belongs to someone else, so Play was stopped.
             Trust the new host only if you know who they are. Cancel keeps the earlier host and does not start the game.
           </p>
           <p className="modal-fine">New host key <span className="mono">{lookup.fingerprint}</span>.</p>

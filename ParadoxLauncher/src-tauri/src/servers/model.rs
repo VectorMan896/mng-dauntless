@@ -15,7 +15,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::path::{Component, Path};
 
 pub const OFFICIAL_ID: &str = "official";
-pub const OFFICIAL_NAME: &str = "Mystic Paradox";
+pub const OFFICIAL_NAME: &str = "MNG DAUNTLESS";
 /// More than this is a mistake or a hand-edited file, not a player's server list.
 pub const MAX_SERVERS: usize = 32;
 const MAX_NAME_CHARS: usize = 40;
@@ -166,7 +166,7 @@ pub fn validate_realm_name(raw: &str) -> Result<String, String> {
         .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
     if !length_ok || !chars_ok {
         return Err(
-            "A realm name uses 3 to 24 lowercase letters, digits or hyphens, for example ember-hold.".to_string(),
+            "An MNG Server name uses 3 to 24 lowercase letters, digits or hyphens, for example ember-hold.".to_string(),
         );
     }
     Ok(name.to_string())
@@ -182,7 +182,7 @@ pub fn validate_host_key(raw: &str) -> Result<String, String> {
         .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'_' | b'=' | b'-'));
     if !length_ok || !chars_ok {
         return Err(
-            "The realm directory sent a host key this launcher does not accept.".to_string(),
+            "The MNG Server directory sent a host key this launcher does not accept.".to_string(),
         );
     }
     Ok(key.to_string())
@@ -406,7 +406,7 @@ impl ServerList {
                     .is_some_and(|url| !url.trim().is_empty())
                 {
                     return Err(
-                        "A Paradox realm uses the Mystic Paradox backend; it has no server address."
+                        "An MNG Server uses the MNG DAUNTLESS backend; it has no server address."
                             .to_string(),
                     );
                 }
@@ -419,7 +419,7 @@ impl ServerList {
                     .iter()
                     .any(|other| other.realm_name.as_deref() == Some(realm_name.as_str()))
                 {
-                    return Err(format!("The realm {realm_name} is already in your list."));
+                    return Err(format!("The MNG Server {realm_name} is already in your list."));
                 }
                 ServerEntry {
                     id: new_id,
@@ -440,7 +440,7 @@ impl ServerList {
                     .is_some_and(|name| !name.trim().is_empty())
                 {
                     return Err(
-                        "A local server is reached by its address, not a realm name.".to_string(),
+                        "A local server is reached by its address, not an MNG Server name.".to_string(),
                     );
                 }
                 let name = validate_display_name(request.name.as_deref().unwrap_or(""))?;
@@ -541,7 +541,7 @@ impl ServerList {
             if let Some(path) = other.game_exe_path.as_deref() {
                 if installs_overlap(exe, Path::new(path)) {
                     return Err(format!(
-                        "That folder already belongs to \"{}\" (or overlaps it). Only a Paradox realm may share the official install; every other server needs its own separate Dauntless folder.",
+                        "That folder already belongs to \"{}\" (or overlaps it). Only an MNG Server may share the official install; every other server needs its own separate Dauntless folder.",
                         other.name
                     ));
                 }
@@ -580,7 +580,7 @@ impl ServerList {
             .ok_or_else(|| "That server is not in your list.".to_string())?;
         if entry.kind != ServerKind::ParadoxRealm {
             return Err(
-                "Only a Paradox realm can use the official install. A local server keeps its own folder.".to_string(),
+                "Only an MNG Server can use the official install. A local server keeps its own folder.".to_string(),
             );
         }
         entry.game_exe_path = None;
@@ -596,7 +596,7 @@ impl ServerList {
             .find(|entry| entry.id == id)
             .ok_or_else(|| "That server is not in your list.".to_string())?;
         if entry.kind != ServerKind::ParadoxRealm {
-            return Err("Only a Paradox realm has a host to confirm.".to_string());
+            return Err("Only an MNG Server has a host to confirm.".to_string());
         }
         entry.host_public_key = Some(key);
         Ok(())
@@ -846,7 +846,7 @@ mod tests {
             .is_err());
         assert!(list
             .add(
-                local("mystic paradox", "https://other.example.com"),
+                local("mng dauntless", "https://other.example.com"),
                 "a3".into()
             )
             .is_err());
@@ -941,16 +941,16 @@ mod tests {
         assert!(installs_overlap(&official, &official));
         assert!(!installs_overlap(
             &official,
-            &exe("D:\\Games\\Dauntless-Realm")
+            &exe("D:\\Games\\Dauntless-MNG Server")
         ));
         assert!(!installs_overlap(&official, &exe("E:\\Games\\Dauntless")));
         // Nested either way.
         assert!(installs_overlap(
             &official,
-            &exe("D:\\Games\\Dauntless\\Realm")
+            &exe("D:\\Games\\Dauntless\\MNG Server")
         ));
         assert!(installs_overlap(
-            &exe("D:\\Games\\Dauntless\\Realm"),
+            &exe("D:\\Games\\Dauntless\\MNG Server"),
             &official
         ));
         // Flat and Binaries\Win64 layouts.
@@ -985,7 +985,7 @@ mod tests {
         assert_eq!(list.find("a1").unwrap().game_exe_path, None);
 
         // A separate folder works, and another server cannot take the same one.
-        let own = exe("D:\\Games\\Realm One");
+        let own = exe("D:\\Games\\MNG Server One");
         list.set_game_exe("a1", &own, Some(&official)).unwrap();
         assert_eq!(
             list.find("a1").unwrap().game_exe_path.as_deref(),
@@ -1042,7 +1042,7 @@ mod tests {
         list.set_game_exe("a2", &official, Some(&official)).unwrap();
         assert!(!list.find("a2").unwrap().uses_official_install());
         list.clear_game_exe("a2").unwrap();
-        list.set_game_exe("a2", &exe("D:\\Games\\Dauntless\\Realm"), Some(&official))
+        list.set_game_exe("a2", &exe("D:\\Games\\Dauntless\\MNG Server"), Some(&official))
             .unwrap();
         assert!(list
             .check_folder_available(OFFICIAL_ID, &official, None)
@@ -1067,14 +1067,14 @@ mod tests {
         list.set_game_exe("a1", &own, Some(&official)).unwrap();
         assert!(list.set_game_exe("a2", &own, Some(&official)).is_err());
         assert!(list
-            .set_game_exe("a2", &exe("d:\\games\\own one\\Realm"), Some(&official))
+            .set_game_exe("a2", &exe("d:\\games\\own one\\MNG Server"), Some(&official))
             .is_err());
         assert!(list.find("a2").unwrap().uses_official_install());
 
-        list.set_game_exe("a2", &exe("D:\\Games\\Realm Own"), Some(&official))
+        list.set_game_exe("a2", &exe("D:\\Games\\MNG Server Own"), Some(&official))
             .unwrap();
         assert!(list
-            .set_game_exe("a1", &exe("D:\\Games\\Realm Own\\Local"), Some(&official))
+            .set_game_exe("a1", &exe("D:\\Games\\MNG Server Own\\Local"), Some(&official))
             .is_err());
     }
 
@@ -1085,7 +1085,7 @@ mod tests {
         list.add(local("My PC", "https://realm.example.com"), "a1".into())
             .unwrap();
         list.add(realm("Realm", "ember-hold"), "a2".into()).unwrap();
-        let realm_folder = exe("D:\\Games\\Realm One");
+        let realm_folder = exe("D:\\Games\\MNG Server One");
         let local_folder = exe("D:\\Games\\Local One");
         list.set_game_exe("a2", &realm_folder, Some(&official))
             .unwrap();
@@ -1198,7 +1198,7 @@ mod tests {
                 entry(
                     "r2",
                     ServerKind::ParadoxRealm,
-                    "Bad realm",
+                    "Bad MNG Server",
                     None,
                     Some("Ember Hold"),
                 ),

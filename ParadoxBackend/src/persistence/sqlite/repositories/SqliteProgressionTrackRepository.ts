@@ -11,7 +11,7 @@
 
 import crypto from "node:crypto";
 import { ClientSession } from "mongodb";
-import { ProgressionTrackRepository } from "../../contracts/ProgressionTrackRepository";
+import { ConfirmedRankField, ProgressionTrackRepository } from "../../contracts/ProgressionTrackRepository";
 import {
     ProgressionObjectiveEventRecord,
     ProgressionObjectiveRecord,
@@ -120,12 +120,12 @@ export class SqliteProgressionTrackRepository implements ProgressionTrackReposit
     }
 
     /** confirmedFremiumRank with a max-guard; creates the row with progress 0 when missing. */
-    async setConfirmedFremiumRank(userId: string, progressionId: string, rank: number): Promise<ProgressionTrackRecord> {
+    async setConfirmedFremiumRank(userId: string, progressionId: string, rank: number, field: ConfirmedRankField = "confirmedFremiumRank"): Promise<ProgressionTrackRecord> {
         return this.db.write(undefined, (c) => {
             const Now = new Date().toISOString();
             const Base = this.upsertBase(c, userId, progressionId, { progress: 0 }, Now);
             const Doc = Base.doc;
-            Doc.confirmedFremiumRank = Max(Doc.confirmedFremiumRank, rank);
+            Doc[field] = Max(Doc[field], rank);
             Doc.updateVersion = (typeof Doc.updateVersion === "number" ? Doc.updateVersion : 0) + 1;
             Doc.userId = userId;
             Doc.progressionId = progressionId;

@@ -11,7 +11,7 @@ import { DedicatedServersConfigured } from "./dedicatedServers";
 
 export const OFFICIAL_PLAY_ENV = "MYSTICPARADOX_OFFICIAL_PLAY";
 /** What the launcher shows when official play is off (the status route and the refused game session both say it). */
-export const OFFICIAL_PLAY_UNAVAILABLE_MESSAGE = "The official server is currently unavailable. Join or host a realm.";
+export const OFFICIAL_PLAY_UNAVAILABLE_MESSAGE = "The official server is currently unavailable. Join or host an MNG Server.";
 
 export interface OfficialPlayStatus {
     /** Whether a launch with no realm (official play) is offered. */

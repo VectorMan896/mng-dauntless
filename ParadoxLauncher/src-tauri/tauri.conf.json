@@ -1,9 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Mystic Paradox Launcher",
+  "productName": "MNG DAUNTLESS Launcher",
   "mainBinaryName": "launcher",
-  "version": "0.1.78",
-  "identifier": "dev.mysticfox.launcher",
+  "version": "0.2.0",
+  "identifier": "gg.mngdauntless.launcher",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Mystic Paradox Launcher",
+        "title": "MNG DAUNTLESS Launcher",
         "width": 1120,
         "height": 700,
         "minWidth": 960,

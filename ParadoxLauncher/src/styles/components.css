@@ -14,7 +14,7 @@
 }
 
 .glass-strong {
-  background: linear-gradient(180deg, rgba(18, 29, 47, 0.9), rgba(8, 14, 25, 0.94));
+  background: linear-gradient(180deg, rgba(var(--panel-rgb), 0.9), rgba(var(--panel-deep-rgb), 0.94));
 }
 
 /* Cursor spotlight and rim light; pointerFx.ts feeds --mx/--my. */
@@ -38,13 +38,13 @@
 .glow::before {
   inset: 0;
   z-index: -1;
-  background: radial-gradient(380px circle at var(--mx) var(--my), rgba(110, 175, 255, 0.11), transparent 62%);
+  background: radial-gradient(380px circle at var(--mx) var(--my), rgba(var(--frost-rgb), 0.11), transparent 62%);
 }
 
 .glow::after {
   inset: -1px;
   padding: 1px;
-  background: radial-gradient(240px circle at var(--mx) var(--my), rgba(160, 205, 255, 0.6), transparent 70%);
+  background: radial-gradient(240px circle at var(--mx) var(--my), rgba(var(--frost-rgb), 0.6), transparent 70%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -68,7 +68,7 @@
 .lift:hover {
   transform: translateY(-3px);
   border-color: var(--line-2);
-  box-shadow: inset 0 1px 0 var(--sheen), 0 32px 70px -32px rgba(0, 0, 0, 0.92), 0 0 0 1px rgba(91, 163, 255, 0.05);
+  box-shadow: inset 0 1px 0 var(--sheen), 0 32px 70px -32px rgba(0, 0, 0, 0.92), 0 0 0 1px rgba(var(--aether-rgb), 0.05);
 }
 
 .lift:active {
@@ -87,7 +87,7 @@
   height: var(--h);
   padding: 0 16px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 13.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -116,14 +116,14 @@
 }
 
 .btn-primary {
-  color: #fff;
-  background: linear-gradient(180deg, #67adff, #2f7bef);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 0 0 1px rgba(170, 210, 255, 0.25), 0 10px 26px -12px rgba(47, 123, 239, 0.85);
+  color: var(--aether-ink);
+  background: var(--aether);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 10px 26px -14px rgba(var(--aether-rgb), 0.55);
 }
 
 .btn-primary:hover:not(:disabled) {
-  filter: brightness(1.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 0 0 1px rgba(170, 210, 255, 0.3), 0 16px 34px -12px rgba(47, 123, 239, 0.95);
+  background: var(--aether-hi);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 14px 32px -14px rgba(var(--aether-rgb), 0.7);
 }
 
 .btn-secondary {
@@ -159,14 +159,14 @@
 .btn-lg {
   --h: 48px;
   padding: 0 22px;
-  border-radius: 14px;
+  border-radius: 999px;
   font-size: 15px;
 }
 
 .btn-sm {
   --h: 32px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius: 999px;
   font-size: 12.5px;
 }
 
@@ -304,7 +304,7 @@
   padding: 0 14px;
   border: 1px solid var(--line-2);
   border-radius: 12px;
-  background: rgba(4, 9, 16, 0.55);
+  background: rgba(var(--panel-deep-rgb), 0.55);
   color: var(--ink);
   font-size: 14px;
   transition: border-color var(--t-med), box-shadow var(--t-med), background-color var(--t-med);
@@ -320,8 +320,8 @@
 
 .input:focus {
   border-color: var(--aether);
-  background: rgba(4, 9, 16, 0.78);
-  box-shadow: 0 0 0 4px rgba(91, 163, 255, 0.16);
+  background: rgba(var(--panel-deep-rgb), 0.78);
+  box-shadow: 0 0 0 4px rgba(var(--aether-rgb), 0.16);
 }
 
 .input[aria-invalid="true"] {
@@ -482,8 +482,8 @@
   left: 4px;
   width: calc((100% - 8px) / var(--count));
   border-radius: 9px;
-  background: linear-gradient(180deg, rgba(91, 163, 255, 0.36), rgba(91, 163, 255, 0.18));
-  box-shadow: inset 0 0 0 1px rgba(140, 190, 255, 0.36), 0 6px 16px -8px rgba(91, 163, 255, 0.7);
+  background: linear-gradient(180deg, rgba(var(--aether-rgb), 0.36), rgba(var(--aether-rgb), 0.18));
+  box-shadow: inset 0 0 0 1px rgba(var(--frost-rgb), 0.36), 0 6px 16px -8px rgba(var(--aether-rgb), 0.7);
   transform: translateX(calc(var(--index) * 100%));
   transition: transform var(--t-slow) var(--ease-spring);
 }

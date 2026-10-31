@@ -9,6 +9,7 @@
 import type { CSSProperties } from "react";
 import { ArtBackdrop } from "../../components/ArtBackdrop";
 import { OPTIONAL_PANELS } from "../../lib/optionalPanels";
+import { NoticeBanner } from "../../components/NoticeBanner";
 
 // [2026-10-14] The Host realm page: the panels of an optional module (src/p2p/*Panel.tsx, such as RealmHostPanel). The
 // DashboardShell offers this tab only when at least one such panel is present, so a public build never reaches this page.
@@ -24,13 +25,16 @@ export function HostRealmTab() {
       <ArtBackdrop motes={false} depth={6} />
       <div className="subpage-inner">
         <header className="page-head reveal" style={at(0)}>
-          <p className="eyebrow">Paradox realm</p>
-          <h1 className="page-title">Host realm</h1>
+          <p className="eyebrow">MNG Server</p>
+          <h1 className="page-title">Host MNG Server</h1>
           <p className="page-desc">
-            Run your realm on this PC: Ramsgate, Training and the hunts, for the players you invite. It is available when
-            the official server or a Paradox realm is selected on the Realms page.
+            Run your MNG Server on this PC: Ramsgate, Training and the hunts, for the players you invite. It is available when
+            the official server or an MNG Server is selected on the MNG Servers page.
           </p>
         </header>
+
+        {/* [MNG DAUNTLESS 2026-10-31] Announcements (the running event, server notices), on the page's art. */}
+        <NoticeBanner />
 
         {OPTIONAL_PANELS.map((Panel, index) => <Panel key={index} style={at(1 + index)} />)}
       </div>

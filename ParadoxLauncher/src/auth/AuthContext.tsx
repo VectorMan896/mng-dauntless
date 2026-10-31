@@ -488,7 +488,7 @@ export function describeAuthError(error: unknown): string {
   if (error instanceof Error && !(error instanceof LauncherApiError) && error.message) return stripAuthCode(error.message);
   if (isLauncherApiError(error)) {
     const known: Partial<Record<LauncherErrorCode, string>> = {
-      SERVER_UNAVAILABLE: "Can't reach the Mystic Paradox server right now. Check your connection and try again.",
+      SERVER_UNAVAILABLE: "Can't reach the MNG DAUNTLESS server right now. Check your connection and try again.",
       AUTH_VALIDATION_FAILED: "Check the highlighted fields and try again.",
       AUTH_INVALID_CREDENTIALS: "The email or password is incorrect.",
       AUTH_EMAIL_TAKEN: "That email is already registered.",
@@ -498,14 +498,14 @@ export function describeAuthError(error: unknown): string {
       AUTH_APPROVAL_PENDING: "Your closed-test access request is waiting for approval.",
       AUTH_APPROVAL_REJECTED: "Your closed-test access request was not approved.",
       // [2026-10-15] The sign-in deep link for a Discord user with no Mystic Paradox account (sign-in never creates one).
-      AUTH_DISCORD_NOT_LINKED: "Your Discord isn't linked to a Mystic Paradox account. Register with your email, then link Discord on the Account page.",
+      AUTH_DISCORD_NOT_LINKED: "Your Discord isn't linked to a MNG DAUNTLESS account. Register with your email, then link Discord on the Account page.",
       AUTH_USERNAME_REQUIRED: "Choose your launcher username before playing.",
       AUTH_REFRESH_INVALID: "Your session has expired. Please sign in again.",
       AUTH_UNAUTHORIZED: "Please sign in again.",
       AUTH_RATE_LIMITED: "Too many attempts. Please wait a moment and try again.",
       AUTH_DISCORD_NOT_CONFIGURED: "Discord sign-in isn't available right now.",
       AUTH_DISCORD_CANCELLED: "Discord sign-in was cancelled.",
-      AUTH_DISCORD_ALREADY_LINKED: "That Discord account is already linked to another Mystic Paradox account.",
+      AUTH_DISCORD_ALREADY_LINKED: "That Discord account is already linked to another MNG DAUNTLESS account.",
       GAME_BUILD_UNSUPPORTED: "This Dauntless build isn't supported. Verify or repair your installation.",
     };
     return known[error.code] ?? error.message;

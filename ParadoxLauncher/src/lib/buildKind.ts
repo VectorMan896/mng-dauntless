@@ -27,14 +27,14 @@ const BADGES: Record<BuildKind, BuildBadge | null> = {
   official: null,
   unofficial: {
     text: "UNOFFICIAL BUILD",
-    title: "Built from source, not by Mystic Paradox.",
-    about: "Unofficial build: compiled from source, not published by Mystic Paradox.",
+    title: "Built from source, not by MNG DAUNTLESS.",
+    about: "Unofficial build: compiled from source, not published by MNG DAUNTLESS.",
     tone: "bad",
   },
   development: {
     text: "DEVELOPMENT BUILD",
     title: "A debug build for development, not a release.",
-    about: "Development build: a debug build for development, not a release published by Mystic Paradox.",
+    about: "Development build: a debug build for development, not a release published by MNG DAUNTLESS.",
     tone: "",
   },
 };

@@ -243,8 +243,10 @@ static bool SafeSerializeStoreItemViewModel(UStoreItemViewModel* vm, std::string
     __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
 
+// [MNG DAUNTLESS 2026-10-30] GetRawString, not FNm/ToString: the Dumper-7 FName::ToString() keeps only the text after the last
+// '/', so every image came out as a short name (single_glider_clearskies.single_glider_clearskies) instead of its /Game path.
 static std::string SoftPath(const TSoftObjectPtr<UTexture2D>& value) {
-    return FNm(value.ObjectID.AssetPathName);
+    try { return value.ObjectID.AssetPathName.GetRawString(); } catch (...) { return std::string(); }
 }
 
 __declspec(noinline) static void RawSerializeImageRow(const std::string& tableName,

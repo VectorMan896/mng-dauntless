@@ -46,7 +46,7 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
             await body(repo);
         });
 
-    Case("a realm round-trips exactly, with its optional fields absent until they are written", async (repo) => {
+    Case("an MNG Server round-trips exactly, with its optional fields absent until they are written", async (repo) => {
         const realm = MakeRealm("friends", "host-1");
         assert.equal(await repo.insertRealm(realm), "INSERTED");
         assert.deepEqual(await repo.findById("id-friends"), realm);
@@ -65,14 +65,14 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.equal(await repo.insertRealm(MakeRealm("second", "host-2", { realmId: "second-id" })), "INSERTED");
     });
 
-    Case("racing claims for one name produce exactly one realm", async (repo) => {
+    Case("racing claims for one name produce exactly one MNG Server", async (repo) => {
         const results = await Promise.all(Array.from({ length: 8 }, (_, index) =>
             repo.insertRealm(MakeRealm("friends", `host-${index}`, { realmId: `race-${index}` }))));
         assert.equal(results.filter((result) => result === "INSERTED").length, 1);
         assert.equal(results.filter((result) => result === "NAME_TAKEN").length, 7);
     });
 
-    Case("settings and heartbeats change only the host's own realm", async (repo) => {
+    Case("settings and heartbeats change only the host's own MNG Server", async (repo) => {
         await repo.insertRealm(MakeRealm("friends", "host-1"));
         assert.equal(await repo.setSettings("id-friends", "intruder", { listed: true }), false);
         assert.equal((await repo.findById("id-friends"))!.listed, false);
@@ -111,7 +111,7 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.equal(await repo.addMember("id-friends", member("banned"), 10), "BANNED");
     });
 
-    Case("racing joins never fill a realm past its ceiling", async (repo) => {
+    Case("racing joins never fill an MNG Server past its ceiling", async (repo) => {
         await repo.insertRealm(MakeRealm("friends", "host-1"));
         const results = await Promise.all(Array.from({ length: 12 }, (_, index) =>
             repo.addMember("id-friends", { accountId: `joiner-${index}`, role: "MEMBER", joinedAt: NOW }, 5)));
@@ -179,7 +179,7 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.deepEqual(await repo.listListed(10, 3), []);
     });
 
-    Case("name release deletes only a realm that has not been online since it was read, with its invites", async (repo) => {
+    Case("name release deletes only an MNG Server that has not been online since it was read, with its invites", async (repo) => {
         await repo.insertRealm(MakeRealm("never", "host-1"));
         await repo.insertInvite(MakeInvite("ABCDEFGHJK", "id-never"));
         await repo.insertRealm(MakeRealm("seen", "host-2", { lastOnlineAt: NOW }));
@@ -192,13 +192,13 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.equal(await repo.deleteRealmIfLastOnline("id-seen", NOW), true);
         assert.equal(await repo.findById("id-seen"), undefined);
         assert.equal(await repo.deleteRealmIfLastOnline("id-never", LATER), true);
-        assert.equal(await repo.findInvite("ABCDEFGHJK"), undefined, "invites go with the realm");
+        assert.equal(await repo.findInvite("ABCDEFGHJK"), undefined, "invites go with the MNG Server");
 
         await repo.insertRealm(MakeRealm("fresh", "host-3"));
         assert.equal(await repo.deleteRealmIfLastOnline("id-fresh", undefined), true);
     });
 
-    Case("the host releases its own realm, with its invites; nobody else can", async (repo) => {
+    Case("the host releases its own MNG Server, with its invites; nobody else can", async (repo) => {
         await repo.insertRealm(MakeRealm("friends", "host-1"));
         await repo.insertRealm(MakeRealm("rivals", "host-2"));
         await repo.insertInvite(MakeInvite("ABCDEFGHJK", "id-friends"));
@@ -208,7 +208,7 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.equal(await repo.deleteRealmOfHost("id-friends", "host-1"), true);
         assert.equal(await repo.deleteRealmOfHost("id-friends", "host-1"), false);
         assert.equal(await repo.findInvite("ABCDEFGHJK"), undefined);
-        assert.ok(await repo.findInvite("ABCDEFGHJL"), "another realm's invites stay");
+        assert.ok(await repo.findInvite("ABCDEFGHJL"), "another MNG Server's invites stay");
     });
 
     Case("an invite round-trips, its code is unique, and the host's list is newest first", async (repo) => {
@@ -254,7 +254,7 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.equal((await repo.findInvite("ABCDEFGHJK"))!.uses, 3);
     });
 
-    Case("revoking marks an invite once, keeps the first time, and only for its own realm", async (repo) => {
+    Case("revoking marks an invite once, keeps the first time, and only for its own MNG Server", async (repo) => {
         await repo.insertRealm(MakeRealm("friends", "host-1"));
         await repo.insertInvite(MakeInvite("ABCDEFGHJK", "id-friends"));
         assert.equal(await repo.revokeInvite("other-realm", "ABCDEFGHJK", NOW), undefined);
@@ -316,7 +316,7 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.deepEqual([hosting.maxServers, hosting.maxPlayers, hosting.hubState, hosting.trainingState, hosting.activeServers], [3, 20, "RUNNING", "STARTING", 2]);
     });
 
-    Case("markOffline ends a lasting online state at the given time, only once, and only for a realm that was online", async (repo) => {
+    Case("markOffline ends a lasting online state at the given time, only once, and only for an MNG Server that was online", async (repo) => {
         await repo.insertRealm(MakeRealm("friends", "host-1"));
         assert.equal(await repo.markOffline("id-friends", NOW), false, "never online");
         assert.equal(await repo.markOffline("missing", NOW), false);
@@ -328,7 +328,7 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.equal(await repo.markOffline("id-friends", "2026-10-13T12:00:20.000Z"), false, "already offline");
     });
 
-    Case("claimLapsedHosts returns each recent lapse once, claimed atomically, and not older, still-online or never-online realms", async (repo) => {
+    Case("claimLapsedHosts returns each recent lapse once, claimed atomically, and not older, still-online or never-online MNG Servers", async (repo) => {
         await repo.insertRealm(MakeRealm("never", "host-0"));
         await repo.insertRealm(MakeRealm("fresh", "host-1"));
         await repo.insertRealm(MakeRealm("stale", "host-2"));
@@ -365,7 +365,7 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.equal((await repo.claimLapsedHosts(args[0], args[1], 2)).length, 0);
     });
 
-    Case("a realm is found by either of its hub room ids, by exact match only", async (repo) => {
+    Case("an MNG Server is found by either of its hub room ids, by exact match only", async (repo) => {
         await repo.insertRealm(MakeRealm("friends", "host-1", { hubRoomIds: ["11111111-1111-5111-8111-111111111111", "22222222-2222-5222-8222-222222222222"] }));
         await repo.insertRealm(MakeRealm("rivals", "host-2", { hubRoomIds: ["33333333-3333-5333-8333-333333333333", "44444444-4444-5444-8444-444444444444"] }));
         await repo.insertRealm(MakeRealm("old", "host-3"));
@@ -437,7 +437,7 @@ export function RunRealmsRepositoryContract(label: string, harness: () => Promis
         assert.equal(await repo.addPlayerInvite("id-friends", { accountId: "guest-3", at: NOW }, 2), "ADDED", "a withdrawn invite frees its place");
     });
 
-    Case("a membership and a ban each remove the account's player invite, and findByPlayerInvite finds the inviting realms", async (repo) => {
+    Case("a membership and a ban each remove the account's player invite, and findByPlayerInvite finds the inviting MNG Servers", async (repo) => {
         await repo.insertRealm(MakeRealm("friends", "host-1"));
         await repo.insertRealm(MakeRealm("embers", "host-2"));
         await repo.addPlayerInvite("id-friends", { accountId: "guest", at: NOW }, 10);

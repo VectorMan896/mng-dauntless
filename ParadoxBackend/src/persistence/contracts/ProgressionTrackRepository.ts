@@ -12,6 +12,9 @@
 import { ClientSession } from "mongodb";
 import { ProgressionTrackRecord, ProgressionObjectiveEventRecord, ProgressionObjectiveRecord, WeaponReforgeState } from "../mapping/domainTypes";
 
+/** Which confirmed rank a confirm writes: the free track (confirm/public) or the Hunt Pass Elite track (confirm/premium). */
+export type ConfirmedRankField = "confirmedFremiumRank" | "confirmedPremiumRank";
+
 // Repository contract for WP-1 (Plans/PROGRESSION_XP_COMBAT_DATA_IMPLEMENTATION_PLAN.md
 // section 5.2). Covers the `progressionTracks` collection (raw per-track XP totals), the
 // `progressionObjectives` collection (resolved mastery/objective state), and the
@@ -58,7 +61,9 @@ export interface ProgressionTrackRepository {
      * happen but must be handled without fabricating a progress value), creates it with
      * progress:0 rather than inventing a number.
      */
-    setConfirmedFremiumRank(userId: string, progressionId: string, rank: number): Promise<ProgressionTrackRecord>;
+    // [MNG DAUNTLESS 2026-10-30] `field` "confirmedPremiumRank" stores a Hunt Pass Elite claim (POST .../confirm/premium) the
+    // same way; the default is the free rank, so existing callers are unchanged.
+    setConfirmedFremiumRank(userId: string, progressionId: string, rank: number, field?: ConfirmedRankField): Promise<ProgressionTrackRecord>;
 
     /** Appends one raw mastery/objective event. Append-only — never updates or dedupes here. */
     appendObjectiveEvent(event: ProgressionObjectiveEventRecord): Promise<void>;

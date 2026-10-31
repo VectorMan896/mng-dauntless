@@ -10,6 +10,9 @@
 // store read error) and the manager's GET and PUT through the real admin router, signed as the manager signs them (the manager operator
 // credential, security/managerOperator.ts). Checked: the version conflict, the refusals and their field names, the audit record, the rollback
 // of a save whose audit record fails, and the refusal of an unsigned request.
+// [MNG DAUNTLESS 2026-10-31] No seasonal event notice in these tests (src/seasonalEvents.ts adds one while an event runs).
+process.env.MNG_SEASONAL_EVENT = "off";
+
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import http from "node:http";

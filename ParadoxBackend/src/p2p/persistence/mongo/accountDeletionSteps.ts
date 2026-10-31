@@ -26,7 +26,7 @@ export function P2PAccountDeletionSteps(): AccountDeletionStep[] {
             match: (c) => ({ $or: [{ hostAccountId: c.userId }, { "roster.accountId": c.userId }], state: { $nin: [...TERMINAL_HUNT_STATES] } })
         },
         {
-            kind: "delete", collection: P2PCollections.P2PHuntSessions, description: "hunts and hubs of the realms it hosts",
+            kind: "delete", collection: P2PCollections.P2PHuntSessions, description: "hunts and hubs of the MNG Servers it hosts",
             match: (c) => ({ realmId: { $in: c.ownedRealmIds } })
         },
         {
@@ -85,7 +85,7 @@ export function P2PAccountDeletionSteps(): AccountDeletionStep[] {
             update: (c) => ({ $set: { actorAccountId: c.pseudonymousId } })
         },
         {
-            kind: "delete", collection: P2PCollections.RealmHubPresence, description: "presence in realm hubs",
+            kind: "delete", collection: P2PCollections.RealmHubPresence, description: "presence in MNG Server hubs",
             match: (c) => ({ $or: [{ accountId: c.userId }, { realmId: { $in: c.ownedRealmIds } }] })
         }
     ];

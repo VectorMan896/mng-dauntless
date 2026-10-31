@@ -328,7 +328,7 @@ export function HubTicketDenialError(reason: HubTicketDenial): { code: LauncherE
     switch (reason) {
         case "HUB_NOT_RUNNING":
         case "HUB_EXPIRED":
-            return { code: "P2P_SESSION_NOT_READY", message: "The realm's hub is not accepting players." };
+            return { code: "P2P_SESSION_NOT_READY", message: "The MNG Server's hub is not accepting players." };
         case "GENERATION_MISMATCH":
             return { code: "P2P_GENERATION_FENCED", message: "This request belongs to a stale hub generation." };
         case "IS_HOST":
@@ -336,9 +336,9 @@ export function HubTicketDenialError(reason: HubTicketDenial): { code: LauncherE
         case "ENTRY_EXPIRED":
             return { code: "P2P_NOT_ROSTERED", message: "This account has no open entry into the hub." };
         case "BANNED":
-            return { code: "REALM_BANNED", message: "You cannot join this realm." };
+            return { code: "REALM_BANNED", message: "You cannot join this MNG Server." };
         case "NOT_MEMBER":
-            return { code: "REALM_NOT_MEMBER", message: "You are not a member of this realm." };
+            return { code: "REALM_NOT_MEMBER", message: "You are not a member of this MNG Server." };
         case "PEER_LINK_MISSING":
         case "PEER_ID_MISMATCH":
             return { code: "P2P_STEAM_LINK_REQUIRED", message: "The current co-op transport no longer matches this hub entry." };

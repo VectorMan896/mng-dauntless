@@ -12,7 +12,7 @@
 import { ClientSession } from "mongodb";
 import { GetMongoDb } from "../client";
 import { Collections } from "../collections";
-import { ProgressionTrackRepository } from "../../contracts/ProgressionTrackRepository";
+import { ConfirmedRankField, ProgressionTrackRepository } from "../../contracts/ProgressionTrackRepository";
 import { ProgressionTrackRecord, ProgressionObjectiveEventRecord, ProgressionObjectiveRecord, WeaponReforgeState } from "../../mapping/domainTypes";
 
 // WP-1 (Plans/PROGRESSION_XP_COMBAT_DATA_IMPLEMENTATION_PLAN.md section 5.1/16). _id is the
@@ -158,10 +158,12 @@ export class MongoProgressionTrackRepository implements ProgressionTrackReposito
         };
     }
 
-    async setConfirmedFremiumRank(userId: string, progressionId: string, rank: number): Promise<ProgressionTrackRecord> {
+    async setConfirmedFremiumRank(userId: string, progressionId: string, rank: number, field: ConfirmedRankField = "confirmedFremiumRank"): Promise<ProgressionTrackRecord> {
         const Db = await GetMongoDb();
         const Now = new Date().toISOString();
         const Id = this.TrackId(userId, progressionId);
+        // [MNG DAUNTLESS 2026-10-30] The rank not being written is the one set on insert.
+        const OtherField: ConfirmedRankField = field === "confirmedFremiumRank" ? "confirmedPremiumRank" : "confirmedFremiumRank";
 
         // [stage 4 fix] $max instead of $set — a stale/replayed confirm (e.g. out-of-order
         // network retry) can never LOWER an already-higher confirmed rank. The controller
@@ -171,12 +173,12 @@ export class MongoProgressionTrackRepository implements ProgressionTrackReposito
         const Result = await Db.collection(Collections.ProgressionTracks).findOneAndUpdate(
             { _id: Id as any },
             {
-                $max: { confirmedFremiumRank: rank },
+                $max: { [field]: rank },
                 $set: { userId, progressionId, updatedAt: Now },
                 $inc: { updateVersion: 1 },
                 $setOnInsert: {
                     progress: 0,
-                    confirmedPremiumRank: 0,
+                    [OtherField]: 0,
                     createdAt: Now
                 }
             },

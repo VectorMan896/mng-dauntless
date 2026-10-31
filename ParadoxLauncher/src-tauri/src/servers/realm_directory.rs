@@ -78,7 +78,7 @@ pub struct RealmLookupView {
 /// Reads a successful lookup answer. A key of the wrong shape is refused, so nothing malformed is ever stored.
 pub fn parse_lookup(body: &[u8]) -> Result<RealmLookupView, String> {
     let envelope: LookupEnvelope = serde_json::from_slice(body).map_err(|_| {
-        "The realm directory answered in a form this launcher does not read.".to_string()
+        "The MNG Server directory answered in a form this launcher does not read.".to_string()
     })?;
     let info = envelope.realm;
     let key = validate_host_key(&info.host_public_key)?;
@@ -120,7 +120,7 @@ fn refusal_text(status: u16, body: &[u8]) -> String {
     let message = value
         .and_then(|value| value["error"]["message"].as_str().map(str::to_string))
         .filter(|text| !text.trim().is_empty());
-    message.unwrap_or_else(|| format!("The realm directory refused the request (status {status})."))
+    message.unwrap_or_else(|| format!("The MNG Server directory refused the request (status {status})."))
 }
 
 /// Looks `realm_name` up on our backend with the official sign-in. Without a sign-in the call fails with the usual
@@ -138,7 +138,7 @@ pub fn lookup(
         }
         request
             .send()
-            .map_err(|_| "Couldn't reach the Mystic Paradox server.".to_string())
+            .map_err(|_| "Couldn't reach the MNG DAUNTLESS server.".to_string())
     })?;
     let status = response.status();
     let body = response
@@ -195,7 +195,7 @@ pub enum JoinAnswer {
 
 pub fn parse_invites(body: &[u8]) -> Result<Vec<RealmInviteView>, String> {
     let envelope: InvitesEnvelope = serde_json::from_slice(body).map_err(|_| {
-        "The realm directory answered in a form this launcher does not read.".to_string()
+        "The MNG Server directory answered in a form this launcher does not read.".to_string()
     })?;
     Ok(envelope
         .invites
@@ -240,7 +240,7 @@ fn send(
         }
         request
             .send()
-            .map_err(|_| "Couldn't reach the Mystic Paradox server.".to_string())
+            .map_err(|_| "Couldn't reach the MNG DAUNTLESS server.".to_string())
     })?;
     let status = response.status().as_u16();
     let bytes = response
@@ -345,8 +345,8 @@ mod tests {
         );
         // Other refusals keep the directory's own sentence.
         let body =
-            br#"{"error":{"code":"REALM_NAME_INVALID","message":"That realm name is not valid."}}"#;
-        assert_eq!(refusal_text(400, body), "That realm name is not valid.");
+            br#"{"error":{"code":"REALM_NAME_INVALID","message":"That MNG Server name is not valid."}}"#;
+        assert_eq!(refusal_text(400, body), "That MNG Server name is not valid.");
     }
 
     #[test]
@@ -411,8 +411,8 @@ mod tests {
 
     #[test]
     fn refusals_read_as_the_directory_said_them() {
-        let body = br#"{"error":{"code":"REALM_NOT_FOUND","message":"There is no realm with that name.","requestId":"r"}}"#;
-        assert_eq!(refusal_text(404, body), "There is no realm with that name.");
+        let body = br#"{"error":{"code":"REALM_NOT_FOUND","message":"There is no MNG Server with that name.","requestId":"r"}}"#;
+        assert_eq!(refusal_text(404, body), "There is no MNG Server with that name.");
         // A deactivated account's lookup says the day its deletion is set, as every other route does.
         assert_eq!(
             refusal_text(
@@ -423,11 +423,11 @@ mod tests {
         );
         assert_eq!(
             refusal_text(502, b"<html>"),
-            "The realm directory refused the request (status 502)."
+            "The MNG Server directory refused the request (status 502)."
         );
         assert_eq!(
             refusal_text(409, br#"{"error":{"code":"X","message":""}}"#),
-            "The realm directory refused the request (status 409)."
+            "The MNG Server directory refused the request (status 409)."
         );
     }
 }

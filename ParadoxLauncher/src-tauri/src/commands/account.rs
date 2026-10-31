@@ -48,10 +48,10 @@ const MONTHS: [&str; 12] = [
     "November",
     "December",
 ];
-const ON_OFFICIAL_ONLY: &str = "Terms and account deletion belong to Mystic Paradox accounts. This server keeps its own accounts and rules.";
+const ON_OFFICIAL_ONLY: &str = "Terms and account deletion belong to MNG DAUNTLESS accounts. This server keeps its own accounts and rules.";
 const AGE_NOT_CONFIRMED: &str = "Confirm that you are old enough to create an account.";
 const LEGAL_NOT_VALID: &str = "The launcher's legal documents are not valid. Update the launcher.";
-const UNREACHABLE: &str = "Couldn't reach the Mystic Paradox account server.";
+const UNREACHABLE: &str = "Couldn't reach the MNG DAUNTLESS account server.";
 const INVALID_RESPONSE: &str = "The account server returned an invalid response.";
 const DEFAULT_HOLD_DAYS: u32 = 30;
 
@@ -385,7 +385,7 @@ pub(crate) fn channel_switch_hold_reason(
     if game_running {
         Some("Close the game first: the channel decides which runtime the next Play installs.")
     } else if hosting {
-        Some("Stop hosting first: your realm's servers run this channel's files.")
+        Some("Stop hosting first: your MNG Server's servers run this channel's files.")
     } else {
         None
     }

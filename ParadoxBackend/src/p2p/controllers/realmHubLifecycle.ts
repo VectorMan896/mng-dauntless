@@ -68,14 +68,14 @@ function IsDuplicateKeyError(error: unknown): boolean {
 
 /** The switches every hub request needs: realm hosting on, P2P on, no emergency stop, and the ICE transport selected. */
 export async function RequireRealmHosting(): Promise<void> {
-    if (!IsRealmHostingEnabled()) throw new LauncherApiError("P2P_DISABLED", "Realm hosting is switched off on this server.");
+    if (!IsRealmHostingEnabled()) throw new LauncherApiError("P2P_DISABLED", "MNG Server hosting is switched off on this server.");
     if (!ReadP2PPolicy().enabled) throw new LauncherApiError("P2P_DISABLED", "Player-hosted hunts are disabled.");
     const policy = await GetP2POperationsPolicy();
     if (policy.p2pEmergencyStop) {
         throw new LauncherApiError("P2P_EMERGENCY_STOP", "Player-hosted hunts are currently stopped by operations policy.");
     }
     if ((policy.coopTransport ?? "ICE") !== "ICE") {
-        throw new LauncherApiError("REALM_TRANSPORT_UNSUPPORTED", "Realm hosting needs the ICE co-op transport, which is not selected on this server.");
+        throw new LauncherApiError("REALM_TRANSPORT_UNSUPPORTED", "MNG Server hosting needs the ICE co-op transport, which is not selected on this server.");
     }
 }
 
@@ -138,7 +138,7 @@ export async function CreateRealmHubSession(accountId: string, body: unknown, no
     if (!parsed.ok) throw new LauncherApiError("REALM_VALIDATION_FAILED", parsed.message);
     const realms = GetRealmsPort();
     const realm = await realms.findHostedRealm(accountId);
-    if (realm == undefined || realm.hostAccountId !== accountId) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+    if (realm == undefined || realm.hostAccountId !== accountId) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
 
     const hostPolicy = ReadP2PHostEligibilityPolicy();
     const realmPolicy = ReadRealmHubPolicy();
@@ -173,7 +173,7 @@ export async function CreateRealmHubSession(accountId: string, body: unknown, no
     };
     const capacity = DecideRealmCapacity(capacityInput);
     if (!capacity.ok) {
-        if (capacity.reason === "REALM_SERVER_LIMIT") throw new LauncherApiError("REALM_FULL", "This realm already runs the most servers its host allows.");
+        if (capacity.reason === "REALM_SERVER_LIMIT") throw new LauncherApiError("REALM_FULL", "This MNG Server already runs the most servers its host allows.");
         throw new DetailedLauncherApiError("REALM_HOST_INELIGIBLE", `This PC cannot host the realm right now (${capacity.reason}).`, { reason: capacity.reason });
     }
     if (capacity.lowFreeMemory) logger.warn(RealmLowMemoryNote(realm.realmId, `${parsed.hubKind} hub`, capacityInput));
@@ -225,7 +225,7 @@ export async function CreateRealmHubSession(accountId: string, body: unknown, no
                 throw new LauncherApiError("P2P_EMERGENCY_STOP", "Player-hosted hunts are currently stopped by operations policy.");
             }
             if (await txRepos.p2pHunts.findActiveHuntForParty(partyKey, session) != undefined) {
-                throw new LauncherApiError("REALM_HUB_EXISTS", "This realm already has a running hub of that kind.");
+                throw new LauncherApiError("REALM_HUB_EXISTS", "This MNG Server already has a running hub of that kind.");
             }
             await txRepos.p2pHunts.createHunt(hub, session);
             await txRepos.p2pHunts.appendHuntTransition({
@@ -239,7 +239,7 @@ export async function CreateRealmHubSession(accountId: string, body: unknown, no
         });
     } catch (error) {
         // The unique index on activePartyKey decides a race between two starts that both passed the check above.
-        if (IsDuplicateKeyError(error)) throw new LauncherApiError("REALM_HUB_EXISTS", "This realm already has a running hub of that kind.");
+        if (IsDuplicateKeyError(error)) throw new LauncherApiError("REALM_HUB_EXISTS", "This MNG Server already has a running hub of that kind.");
         throw error;
     }
     logger.info({ event: "realm_hub_created", sessionId, realmId: realm.realmId, hubKind: parsed.hubKind, maxPeers: parsed.maxPlayers },
@@ -258,7 +258,7 @@ export async function StopRealmHubSession(accountId: string, body: unknown) {
     if (!parsed.ok) throw new LauncherApiError("REALM_VALIDATION_FAILED", parsed.message);
     const realms = GetRealmsPort();
     const realm = await realms.findHostedRealm(accountId);
-    if (realm == undefined || realm.hostAccountId !== accountId) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+    if (realm == undefined || realm.hostAccountId !== accountId) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
     const hub = await GetP2PRepositories().p2pHunts.findActiveHuntForParty(HubPartyKey(realm.realmId, parsed.hubKind));
     if (hub == undefined || !IsRealmHub(hub) || hub.hostAccountId !== accountId) return { stopped: false, hubKind: parsed.hubKind };
     await MirrorHubState(realms, hub, "STOPPING");

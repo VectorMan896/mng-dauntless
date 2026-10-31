@@ -3475,12 +3475,12 @@ namespace CreditsBranding {
 
 // Layout: title, subheading, empty line, disclaimer, empty line, names | titles, two empty lines, Phoenix Labs.
 // The empty lines are trailing newlines; both columns end with the same two so their rows stay aligned.
-static const wchar_t* const kTitle = L"Mystic Paradox";
-static const wchar_t* const kSubheading = L"Private Server Development\n";
+static const wchar_t* const kTitle = L"MNG DAUNTLESS";
+static const wchar_t* const kSubheading = L"Community Server\n";
 static const wchar_t* const kDisclaimer =
-    L"Mystic Paradox is a community preservation server\nand is not affiliated with Phoenix Labs.\n";
-static const wchar_t* const kNames = L"Mystic / Pranav Karande\nHarmonicRain\ngwog / SyST3MDeV\n\n";
-static const wchar_t* const kRoles = L"Mystic Paradox\nUndaunted Fork\nUndaunted 1.4.4\n\n";
+    L"MNG DAUNTLESS is a community server based on Mystic Paradox\nand is not affiliated with Phoenix Labs.\n";
+static const wchar_t* const kNames = L"MNG DAUNTLESS Team\nMystic / Pranav Karande\nHarmonicRain\ngwog / SyST3MDeV\n\n";
+static const wchar_t* const kRoles = L"MNG DAUNTLESS\nMystic Paradox\nUndaunted Fork\nUndaunted 1.4.4\n\n";
 
 static SDK::UObject* s_Section = nullptr;            // last injected section, for the PreConstruct re-check
 static int32_t s_SectionIndex = -1;
@@ -3683,9 +3683,9 @@ namespace PressStartBranding {
 // The empty line sets the credit apart (the TextBlock has one style for all lines).
 static const wchar_t* const kWelcome =
     L"Welcome back to the Shattered Isles, Slayer.\n"
-    L"Mystic Paradox keeps the hunt going, together.\n"
+    L"MNG DAUNTLESS keeps the hunt going, together.\n"
     L"\n"
-    L"Credits: Mystic  •  github.com/pranav158/Mystic-Paradox";
+    L"Based on Mystic Paradox by Mystic  \u2022  github.com/pranav158/Mystic-Paradox";
 
 static bool IsPressStartScreen(SDK::UObject* Object) {
     return Object && IsReadablePointer(Object, sizeof(SDK::UPressStartScreen_bps_C))
@@ -6784,6 +6784,233 @@ static void MpWorldCensusTick() {
     if (s_stage == 1 && Now - s_changedAtMs >= 10000) { s_stage = 2; MpWorldCensus("arrival+10s"); MpAsyncFlagCensus("arrival+10s"); }
     else if (s_stage == 2 && Now - s_changedAtMs >= 60000) { s_stage = 0; MpWorldCensus("arrival+60s"); MpAsyncFlagCensus("arrival+60s"); }
 }
+
+// ============================================================================
+// [MNG DAUNTLESS 2026-10-31] Ramsgate city events (Dark Harvest, Frostfall, Saint's Bond, Springtide).
+// The event's feature flag (city_event_dark_harvest_bpff and friends) is switched on through the user Game.ini
+// (scripts/mng-seasonal-events.mjs), and on 31 Oct both Ramsgate's server and the client read it as on ([FeatureFlags] ...
+// bEnabled=1) - yet no decoration appeared, and the event sub-level (/Game/Maps/ramsgate/events/city_01_event_dark_harvest,
+// present in the 1.14.7 paks) never loaded. Whatever the live game used to stream it in is gone. So for 90 s after Ramsgate
+// loads, every 2 s, on the server and on the client: find Ramsgate's streaming sub-level whose name carries an enabled event's
+// token and ask it to load and show (ULevelStreaming::SetShouldBeLoaded / SetShouldBeVisible). The streaming list is logged once
+// per world ([CityEvent]), so a sub-level that is not in the list shows up in the log. NO_CITY_EVENT_LEVELS.flag turns it off.
+namespace CityEventLevels {
+struct Entry { const char* FlagClass; const char* LevelToken; const char* Label; };
+static const Entry kEntries[] = {
+    { "city_event_dark_harvest_bpff_C", "event_dark_harvest", "Dark Harvest" },
+    { "enable_city_event_frostfall_bpff_C", "frostfall", "Frostfall" },
+    { "city_event_SaintsBond_bpff_C", "saintsbond", "Saint's Bond" },
+    { "city_event_Springtide_bpff_C", "springtide", "Springtide" },
+    // [31 Oct] The event merchant's stall is its own sub-level (city_01_event_stall); with only the event's own sub-level
+    // streamed in, the stall's stage in Ramsgate stood empty.
+    { "city_event_stall_bpff_C", "event_stall", "Event stall" },
+};
+static constexpr int kCount = static_cast<int>(sizeof(kEntries) / sizeof(kEntries[0]));
+
+static std::string Lower(std::string Text) {
+    for (char& C : Text) C = static_cast<char>(std::tolower(static_cast<unsigned char>(C)));
+    return Text;
+}
+
+// The flag's class default object holds the switch (UFeatureFlag::bEnabled at +0x118, the [FeatureFlags] dump's reading).
+static bool FlagEnabled(const char* ClassName) {
+    SDK::UClass* Cls = SDK::UObject::FindClassFast(ClassName);
+    if (!Cls || !IsRegisteredLiveObject(Cls)) return false;
+    SDK::UObject* Cdo = Cls->ClassDefaultObject;
+    if (!Cdo || !IsReadablePointer(Cdo, 0x120)) return false;
+    return *reinterpret_cast<bool*>(reinterpret_cast<uintptr_t>(Cdo) + 0x118);
+}
+
+static std::string LevelName(SDK::ULevelStreaming* Streaming) {
+    std::string Name;
+    try { Name = Streaming->WorldAsset.ObjectID.AssetPathName.GetRawString(); } catch (...) {}
+    if (Name.empty() || Name == "None") {
+        try { Name = Streaming->PackageNameToLoad.GetRawString(); } catch (...) {}
+    }
+    return Name;
+}
+
+static void Tick(const char* Side) {
+    static int s_disabled = -1;
+    if (s_disabled < 0) {
+        s_disabled = MpExeRelativeFlagPresent(L"NO_CITY_EVENT_LEVELS.flag") ? 1 : 0;
+        MpLog(std::string("[CityEvent] ") + (s_disabled ? "OFF (NO_CITY_EVENT_LEVELS.flag)"
+            : "ON: an enabled city event's Ramsgate sub-level is streamed in for 90 s after Ramsgate loads"));
+    }
+    if (s_disabled) return;
+
+    static void* s_world = nullptr;
+    static uint64_t s_sinceMs = 0;
+    static uint64_t s_lastMs = 0;
+    static bool s_listed = false;
+    static bool s_enabled[kCount] = {};
+    static bool s_shown[kCount] = {};
+    void* WorldPtr = *reinterpret_cast<void**>(Globals::BaseAddress + 0x06FC7F58);
+    const uint64_t Now = GetTickCount64();
+    if (WorldPtr != s_world) {
+        s_world = WorldPtr;
+        s_sinceMs = Now;
+        s_lastMs = 0;
+        s_listed = false;
+        for (int i = 0; i < kCount; ++i) { s_enabled[i] = false; s_shown[i] = false; }
+    }
+    if (!WorldPtr || Now - s_sinceMs > 90000 || Now - s_lastMs < 2000) return;
+    s_lastMs = Now;
+
+    auto* World = reinterpret_cast<SDK::UWorld*>(WorldPtr);
+    if (!IsRegisteredLiveObject(World) || !IsReadablePointer(World, 0xA0)) return;
+    if (World->GetName().find("ramsgate_01_persistent") == std::string::npos) return;
+
+    bool Any = false;
+    for (int i = 0; i < kCount; ++i) {
+        if (!s_enabled[i]) s_enabled[i] = FlagEnabled(kEntries[i].FlagClass);
+        Any = Any || s_enabled[i];
+    }
+    if (!Any && s_listed) return;
+
+    auto& Levels = World->StreamingLevels;
+    const int32_t Num = Levels.Num();
+    if (Num < 0 || Num > 4096) return;
+    if (!s_listed) {
+        s_listed = true;
+        std::string Enabled;
+        for (int i = 0; i < kCount; ++i) if (s_enabled[i]) Enabled += std::string(Enabled.empty() ? "" : ", ") + kEntries[i].Label;
+        std::string Events;
+        for (int32_t i = 0; i < Num; ++i) {
+            SDK::ULevelStreaming* Streaming = Levels[i];
+            if (!Streaming || !IsRegisteredLiveObject(Streaming)) continue;
+            const std::string Name = LevelName(Streaming);
+            if (Lower(Name).find("event") != std::string::npos) Events += " | " + Name;
+        }
+        MpLog(std::string("[CityEvent] ") + Side + " Ramsgate streaming levels=" + std::to_string(Num)
+            + " enabled events=[" + (Enabled.empty() ? "none" : Enabled) + "] event sub-levels:" + (Events.empty() ? " none" : Events));
+    }
+
+    for (int e = 0; e < kCount; ++e) {
+        if (!s_enabled[e] || s_shown[e]) continue;
+        bool Found = false;
+        for (int32_t i = 0; i < Num; ++i) {
+            SDK::ULevelStreaming* Streaming = Levels[i];
+            if (!Streaming || !IsRegisteredLiveObject(Streaming)) continue;
+            const std::string Name = LevelName(Streaming);
+            if (Lower(Name).find(kEntries[e].LevelToken) == std::string::npos) continue;
+            Found = true;
+            if (Streaming->IsLevelVisible()) {
+                s_shown[e] = true;
+                MpLog(std::string("[CityEvent] ") + Side + " " + kEntries[e].Label + " sub-level visible: " + Name);
+                continue;
+            }
+            Streaming->SetShouldBeLoaded(true);
+            Streaming->SetShouldBeVisible(true);
+            static std::atomic<int> s_requests{ 0 };
+            if (s_requests.fetch_add(1, std::memory_order_relaxed) < 40) {
+                MpLog(std::string("[CityEvent] ") + Side + " asked " + Name + " to load and show (" + kEntries[e].Label + ")");
+            }
+        }
+        if (!Found) {
+            s_shown[e] = true;   // nothing to stream in this world; logged once
+            MpLog(std::string("[CityEvent] ") + Side + " " + kEntries[e].Label
+                + " is on, but Ramsgate has no streaming sub-level named *" + kEntries[e].LevelToken + "*");
+        }
+    }
+}
+}   // namespace CityEventLevels
+
+// [MNG DAUNTLESS 2026-10-31] [StoreProbe] Read-only, client only. Logs each store screen's view model once: its class, the
+// store tag it asks the server for (TagFilter, GET /product/skus/public?requiredTags=<tag>) and every tab's subTagIds (the
+// tags a SKU needs to show in that tab). Written for the event merchant's shop (event_store_view_model), whose tag no export
+// captured. Walks GUObjectArray 16k objects per call (called every 250 ms), so a full pass takes a few seconds and never
+// hitches. Off with NO_STORE_PROBE.flag.
+namespace StoreProbe {
+__declspec(noinline) static void RawDescribe(SDK::UObject* Obj, std::string* Out) {
+    auto* Vm = static_cast<SDK::UStoreViewModel*>(Obj);
+    const auto& Tag = *reinterpret_cast<const SDK::FString*>(reinterpret_cast<const uint8_t*>(Vm) + 0x0170);
+    std::string Line = "class=" + Obj->Class->GetName() + " object=" + Obj->GetName() + " tagFilter=\"" + Tag.ToString() + "\" tabs=";
+    const auto& Cats = Vm->StoreCategoryViewModels;
+    const int32_t NumCats = Cats.Num();
+    for (int32_t c = 0; c < NumCats && c < 64; ++c) {
+        const auto& Subs = Cats[c].SubCategoryViewModels;
+        for (int32_t s = 0; s < Subs.Num() && s < 64; ++s) {
+            Line += "[";
+            const auto& Ids = Subs[s].SubTagIds;
+            for (int32_t t = 0; t < Ids.Num() && t < 32; ++t) Line += (t ? "," : "") + Ids[t].ToString();
+            Line += "]";
+        }
+    }
+    *Out = Line;
+}
+
+static bool Describe(SDK::UObject* Obj, std::string* Out) {
+    __try { RawDescribe(Obj, Out); return true; }
+    __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
+}
+
+// [MNG DAUNTLESS 2026-10-31] [SeasonalProbe] The seasonal event tables: every DataTable whose name or row struct mentions
+// "seasonal" is listed once (name, row struct, row names), and the SeasonalEventTableData rows in full (EventID, EventTag,
+// currency row, rounds). The server's GET /game_tuning/seasonal_event_schedule (served empty) lists events by these ids.
+__declspec(noinline) static void RawDescribeSeasonalTable(SDK::UObject* Obj, std::vector<std::string>* Out) {
+    auto* Table = static_cast<SDK::UDataTable*>(Obj);
+    const std::string Struct = Table->RowStruct ? Table->RowStruct->GetName() : std::string("?");
+    std::string Head = "table=" + Obj->GetName() + " rowStruct=" + Struct + " rows=" + std::to_string(Table->RowMap.Num()) + ":";
+    const bool Events = Struct == "SeasonalEventTableData";
+    for (auto& Pair : Table->RowMap) {
+        const std::string Row = Pair.Key().GetRawString();
+        Head += " " + Row;
+        uint8_t* Data = Pair.Value();
+        if (!Events || !Data || !IsReadablePointer(Data, 0xA0)) continue;
+        const auto* Ev = reinterpret_cast<const SDK::FSeasonalEventTableData*>(Data);
+        std::string Line = "  row=" + Row + " eventId=" + Ev->EventID.GetRawString() + " eventTag=" + Ev->EventTag.TagName.GetRawString()
+            + " currency=" + Ev->EventCurrencyReference.RowName.GetRawString() + " rounds=[";
+        for (int32_t r = 0; r < Ev->EventRounds.Num() && r < 16; ++r) Line += (r ? "," : "") + Ev->EventRounds[r].ContentName.GetRawString();
+        Out->push_back(Line + "]");
+    }
+    Out->insert(Out->begin(), Head);
+}
+
+static bool DescribeSeasonalTable(SDK::UObject* Obj, std::vector<std::string>* Out) {
+    __try { RawDescribeSeasonalTable(Obj, Out); return true; }
+    __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
+}
+
+static void Tick() {
+    static int s_disabled = -1;
+    if (s_disabled < 0) s_disabled = MpExeRelativeFlagPresent(L"NO_STORE_PROBE.flag") ? 1 : 0;
+    if (s_disabled) return;
+    static SDK::UClass* s_vmClass = nullptr;
+    if (!s_vmClass) s_vmClass = SDK::UObject::FindClassFast("StoreViewModel");
+    if (!s_vmClass || !IsRegisteredLiveObject(s_vmClass)) return;
+    static SDK::UClass* s_tableClass = nullptr;
+    if (!s_tableClass) s_tableClass = SDK::UDataTable::StaticClass();
+    static std::unordered_set<void*> s_tables;
+
+    static int32_t s_next = 0;
+    static std::unordered_set<std::string> s_logged;
+    const int32_t Count = SDK::UObject::GObjects->Num();
+    if (s_next >= Count) s_next = 0;
+    const int32_t End = (std::min)(Count, s_next + 16384);
+    for (int32_t i = s_next; i < End; ++i) {
+        SDK::UObject* Obj = SDK::UObject::GObjects->GetByIndex(i);
+        if (!Obj || !Obj->Class) continue;
+        if (s_tableClass && Obj->Class == s_tableClass && s_tables.size() < 32 && !s_tables.count(Obj)) {
+            const std::string Name = Obj->GetName();
+            auto* Table = static_cast<SDK::UDataTable*>(Obj);
+            const std::string Struct = IsReadablePointer(Table, 0x40) && Table->RowStruct ? Table->RowStruct->GetName() : std::string();
+            if (CityEventLevels::Lower(Name).find("seasonal") != std::string::npos || CityEventLevels::Lower(Struct).find("seasonal") != std::string::npos) {
+                s_tables.insert(Obj);
+                std::vector<std::string> Lines;
+                if (DescribeSeasonalTable(Obj, &Lines)) for (const auto& L : Lines) MpLog("[SeasonalProbe] " + L);
+            }
+            continue;
+        }
+        if (!Obj->IsA(s_vmClass) || !IsReadablePointer(Obj, 0x180)) continue;
+        std::string Line;
+        if (!Describe(Obj, &Line) || s_logged.size() > 200 || !s_logged.insert(Line.substr(Line.find(" tagFilter="))
+            + Obj->Class->GetName()).second) continue;
+        MpLog("[StoreProbe] " + Line);
+    }
+    s_next = End;
+}
+}   // namespace StoreProbe
 // A natural OnInputModeChanged can arrive before the new map's LocalPlayer/PC/Pawn chain has
 // remained stable long enough for compatibility calls. Remember that edge and replay the input
 // activation only after the existing travel-settle gate passes; never advance the cinematic from
@@ -7287,6 +7514,7 @@ void GameEngineTickHook(UGameEngine* GameEngine, float DeltaTime, char CanRender
         }
         g_MpReadableCacheThread = GetCurrentThreadId();
         MpReadableCacheNextEpoch();
+        CityEventLevels::Tick("server");   // [MNG DAUNTLESS 2026-10-31] throttled to every 2 s inside
     }
     if (GameEngine != nullptr && g_GameEnginePtr == nullptr) {
         g_GameEnginePtr = GameEngine;
@@ -14358,6 +14586,31 @@ namespace TravelCause {
     }
 }
 
+// [MNG DAUNTLESS 2026-10-31] Hunt Pass "Skip to Next Level": the server sells no rank skips (MYSTICPARADOX_HUNTPASS_NO_SKIP), so
+// the Hunt Pass screen's store lookup ends in huntpass_screen_bpw_C.OnDidNotFindBuyLevelOffer - which only greys the button out.
+// After that event the button (BuyLevelButton, a w_huntpass_level_button) is collapsed through the game's own
+// Widget.SetVisibility (UMG's functions are not compiled into this DLL, so it is called by name, as the HUD calls are).
+// KEEP_HUNTPASS_SKIP_BUTTON.flag leaves the button alone.
+static void HideHuntPassSkipButton(UObject* Screen) {
+    static int s_disabled = -1;
+    if (s_disabled < 0) {
+        s_disabled = MpExeRelativeFlagPresent(L"KEEP_HUNTPASS_SKIP_BUTTON.flag") ? 1 : 0;
+        MpLog(std::string("[HuntPassSkip] ") + (s_disabled ? "OFF (KEEP_HUNTPASS_SKIP_BUTTON.flag)" : "ON: the Skip to Next Level button is hidden"));
+    }
+    if (s_disabled || !Screen || !OrigProcessEventClient || !IsRegisteredLiveObject(Screen)) return;
+    UObject* Button = reinterpret_cast<UObject*>(reinterpret_cast<SDK::Uhuntpass_screen_bpw_C*>(Screen)->BuyLevelButton);
+    if (!Button || !IsRegisteredLiveObject(Button) || !Button->Class) return;
+    UFunction* Fn = Button->Class->GetFunction("Widget", "SetVisibility");
+    static std::atomic<int> s_logs{ 0 };
+    if (!Fn) {
+        if (s_logs.fetch_add(1, std::memory_order_relaxed) < 5) MpLog("[HuntPassSkip] Widget.SetVisibility not found - button left as is");
+        return;
+    }
+    struct { uint8_t InVisibility; } Params{ 1 };   // ESlateVisibility::Collapsed
+    reinterpret_cast<void(*)(UObject*, UFunction*, void*)>(OrigProcessEventClient)(Button, Fn, &Params);
+    if (s_logs.fetch_add(1, std::memory_order_relaxed) < 5) MpLog("[HuntPassSkip] Skip to Next Level button collapsed");
+}
+
 void ProcessEventClientHook(UObject* Object, UFunction* Function, void* Parms) {
     g_clientProcessEventCount.fetch_add(1, std::memory_order_relaxed);
     if (g_clientGameThreadId.load(std::memory_order_relaxed) == 0) {
@@ -14371,6 +14624,8 @@ void ProcessEventClientHook(UObject* Object, UFunction* Function, void* Parms) {
         if (NowMs - s_worldCensusCheckMs >= 250) {
             s_worldCensusCheckMs = NowMs;
             MpWorldCensusTick();
+            CityEventLevels::Tick("client");   // [MNG DAUNTLESS 2026-10-31]
+            StoreProbe::Tick();                // [MNG DAUNTLESS 2026-10-31]
         }
     }
     // s_LastPossessedPC is now file-scope (see above) so GameEngineTickHook's timeout fallback
@@ -14832,6 +15087,10 @@ void ProcessEventClientHook(UObject* Object, UFunction* Function, void* Parms) {
     GauntletCensus::Exit(GauntletCensusSeq, Function, Parms);
     TraceArtificerDroneEvent("Client", "EXIT", Object, FunctionName, Parms);
 
+    // [MNG DAUNTLESS 2026-10-31] After the screen greyed the skip button out, hide it (HideHuntPassSkipButton).
+    if (FunctionName.find("huntpass_screen_bpw_C.OnDidNotFindBuyLevelOffer") != std::string::npos) {
+        HideHuntPassSkipButton(Object);
+    }
     // After the screen's own handler, so SetSplashImage / HandleGetPatchNotesPayloadSuccess cannot undo it.
     if (FunctionName.find("LoginScreen") != std::string::npos) {
         LoginBranding::OnLoginScreenEvent(Object, FunctionName);
@@ -17073,8 +17332,12 @@ void ProcessEventHook(UObject* Object, UFunction* Function, void* Parms) {
         static std::atomic<int> s_returnToMenuSeq{ 0 };
         const int Seq = s_returnToMenuSeq.fetch_add(1, std::memory_order_relaxed);
         if (Seq < 32) {
+            // [MNG DAUNTLESS] Also log the reason text: ClientReturnToMainMenuWithTextReason's first parameter is an FText.
+            const std::string ReasonText = FunctionName.find("WithTextReason") != std::string::npos
+                ? RedactForLog(SafeFTextToString(Parms), 200) : std::string("n/a");
             MpLog("[ReturnToMenuTrace #" + std::to_string(Seq) + "] fn=" + FunctionName
                 + " obj=" + (Object ? SafeObjectNameForDiagnostic(Object) : std::string("null"))
+                + " reason=\"" + ReasonText + "\""
                 + " native=" + MpGrantTraceCallChain() + " reflected=" + MpGrantTraceUFunctionChain());
         }
     }

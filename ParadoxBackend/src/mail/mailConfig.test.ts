@@ -25,7 +25,7 @@ test("complete settings: port 587, STARTTLS, and the default From header", () =>
         host: "smtp.example.test", port: 587, implicitTls: false, user: "postmaster",
         password: "SECRET_PASSWORD_VALUE", from: MAIL_FROM_DEFAULT
     });
-    assert.equal(MAIL_FROM_DEFAULT, "Mystic Paradox <no-reply@mysticfox.dev>");
+    assert.equal(MAIL_FROM_DEFAULT, "MNG DAUNTLESS <no-reply@example.invalid>");
 });
 
 test("the port, the secure mode and the From header can be set", () => {

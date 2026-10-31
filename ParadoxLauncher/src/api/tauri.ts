@@ -239,6 +239,11 @@ export async function getServerStatus(serverId?: string): Promise<ServerStatusRe
   return invoke<ServerStatusResponse>("native_get_server_status", { serverId });
 }
 
+/** [MNG DAUNTLESS 2026-10-31] Round trip to the selected server in ms (best of three on an open connection). */
+export async function pingServer(serverId?: string): Promise<number> {
+  return invoke<number>("native_ping_server", { serverId });
+}
+
 /**
  * [2026-10-15] The official server's play switch, read from its own status whatever server is selected. It rejects when
  * the status cannot be read; the caller then shows no note (the official server is not marked unavailable).

@@ -192,7 +192,7 @@ export class MongoRealmHubRepository implements RealmHubRepository {
             );
             if (restarted != undefined) return { record: ToRecord(restarted), outcome: "REENTERED" };
         }
-        throw new Error("realm hub entry request kept racing; try again");
+        throw new Error("MNG Server hub entry request kept racing; try again");
     }
 
     async admitHost(input: {
@@ -227,7 +227,7 @@ export class MongoRealmHubRepository implements RealmHubRepository {
             );
             if (updated != undefined) return ToRecord(updated);
         }
-        throw new Error("realm hub host admission kept racing; try again");
+        throw new Error("MNG Server hub host admission kept racing; try again");
     }
 
     async findPresence(sessionId: string, accountId: string, session?: ClientSession): Promise<RealmHubPresenceRecord | undefined> {

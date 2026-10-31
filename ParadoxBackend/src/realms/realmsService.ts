@@ -208,13 +208,13 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
     function Throttle(bucket: keyof typeof RATE_BUDGETS, accountId: string): void {
         const budget = RATE_BUDGETS[bucket];
         if (RateLimited(`realms:${bucket}:${accountId}`, budget.max, budget.windowMs)) {
-            throw new LauncherApiError("AUTH_RATE_LIMITED", "Too many realm requests. Please wait a moment and try again.");
+            throw new LauncherApiError("AUTH_RATE_LIMITED", "Too many MNG Server requests. Please wait a moment and try again.");
         }
     }
 
     async function RequireHostedRealm(accountId: string): Promise<RealmRecord> {
         const realm = await repo.findByHost(accountId);
-        if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+        if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
         return realm;
     }
 
@@ -566,14 +566,14 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
         const own = RealmNameForUsername((await NamesFor([accountId])).get(accountId));
         if (requested === undefined) {
             if (own === undefined) {
-                throw new LauncherApiError("REALM_USERNAME_REQUIRED", "Set a username before you host a realm: your realm is named after it.");
+                throw new LauncherApiError("REALM_USERNAME_REQUIRED", "Set a username before you host an MNG Server: your MNG Server is named after it.");
             }
             return own;
         }
         if (requested !== own && deps.resolveUsername !== undefined) {
             const holder = await deps.resolveUsername(requested);
             if (holder !== undefined && holder !== accountId) {
-                throw new LauncherApiError("REALM_NAME_IS_USERNAME", "That name is another player's username. A realm is named after its host.");
+                throw new LauncherApiError("REALM_NAME_IS_USERNAME", "That name is another player's username. An MNG Server is named after its host.");
             }
         }
         return requested;
@@ -585,7 +585,7 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
             Throttle("create", accountId);
             // Check the host first: releasing a dormant name only to find the host cannot use it would cost someone their name.
             if ((await repo.findByHost(accountId)) !== undefined) {
-                throw new LauncherApiError("REALM_ALREADY_EXISTS", "You already host a realm. Release it before claiming another name.");
+                throw new LauncherApiError("REALM_ALREADY_EXISTS", "You already host an MNG Server. Release it before claiming another name.");
             }
             const name = await RealmNameToClaim(accountId, input.name);
             const nowMs = Now();
@@ -617,10 +617,10 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
                 }
             }
             if (result === "HOST_HAS_REALM") {
-                throw new LauncherApiError("REALM_ALREADY_EXISTS", "You already host a realm. Release it before claiming another name.");
+                throw new LauncherApiError("REALM_ALREADY_EXISTS", "You already host an MNG Server. Release it before claiming another name.");
             }
             if (result === "NAME_TAKEN") {
-                throw new LauncherApiError("REALM_NAME_TAKEN", "That realm name is taken.");
+                throw new LauncherApiError("REALM_NAME_TAKEN", "That MNG Server name is taken.");
             }
             logger.info(`[Realms] realm created realmId=${realm.realmId} name=${realm.name} policy=${realm.joinPolicy} listed=${realm.listed}`);
             return { realm: await ToHostView(realm, accountId) };
@@ -639,7 +639,7 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
         async getByName(accountId: string, name: string, knownHostKey?: string): Promise<{ realm: RealmPublicInfo }> {
             Throttle("read", accountId);
             const realm = await repo.findByName(name);
-            if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "There is no realm with that name.");
+            if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "There is no MNG Server with that name.");
             return { realm: (await PublicInfos([realm], accountId, knownHostKey))[0] };
         },
 
@@ -654,7 +654,7 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
             const realm = await repo.findById(invite.realmId);
             if (realm === undefined) throw new LauncherApiError("REALM_INVITE_INVALID", "That invite code is not valid.");
             if (realm.bans.some((ban) => ban.accountId === accountId)) {
-                throw new LauncherApiError("REALM_BANNED", "You cannot join this realm.");
+                throw new LauncherApiError("REALM_BANNED", "You cannot join this MNG Server.");
             }
             return { realm: (await PublicInfos([realm], accountId))[0] };
         },
@@ -671,10 +671,10 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
             Throttle("write", accountId);
             const realm = await RequireHostedRealm(accountId);
             if (!(await repo.setSettings(realm.realmId, accountId, settings))) {
-                throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+                throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
             }
             const updated = await repo.findById(realm.realmId);
-            if (updated === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+            if (updated === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
             logger.info(`[Realms] settings changed realmId=${realm.realmId} policy=${updated.joinPolicy} listed=${updated.listed}`);
             return { realm: await ToHostView(updated, accountId) };
         },
@@ -815,12 +815,12 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
         async leave(accountId: string, name: string): Promise<{ left: true }> {
             Throttle("write", accountId);
             const realm = await repo.findByName(name);
-            if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "There is no realm with that name.");
+            if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "There is no MNG Server with that name.");
             if (realm.hostAccountId === accountId) {
-                throw new LauncherApiError("REALM_HOST_CANNOT_LEAVE", "You host this realm. Release it instead of leaving it.");
+                throw new LauncherApiError("REALM_HOST_CANNOT_LEAVE", "You host this MNG Server. Release it instead of leaving it.");
             }
             if (!(await repo.removeMember(realm.realmId, accountId))) {
-                throw new LauncherApiError("REALM_NOT_MEMBER", "You are not a member of this realm.");
+                throw new LauncherApiError("REALM_NOT_MEMBER", "You are not a member of this MNG Server.");
             }
             logger.info(`[Realms] member left realmId=${realm.realmId}`);
             await DropPresenceInRealm(accountId, realm.realmId);
@@ -831,9 +831,9 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
         async kick(accountId: string, targetAccountId: string): Promise<{ accountId: string; status: "KICKED" }> {
             Throttle("write", accountId);
             const realm = await RequireHostedRealm(accountId);
-            if (targetAccountId === accountId) throw new LauncherApiError("REALM_INVALID_TARGET", "You cannot remove yourself from your own realm.");
+            if (targetAccountId === accountId) throw new LauncherApiError("REALM_INVALID_TARGET", "You cannot remove yourself from your own MNG Server.");
             if (!(await repo.removeMember(realm.realmId, targetAccountId))) {
-                throw new LauncherApiError("REALM_NOT_MEMBER", "That account is not a member of your realm.");
+                throw new LauncherApiError("REALM_NOT_MEMBER", "That account is not a member of your MNG Server.");
             }
             logger.info(`[Realms] member kicked realmId=${realm.realmId}`);
             await DropPresenceInRealm(targetAccountId, realm.realmId);
@@ -845,13 +845,13 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
         async ban(accountId: string, targetAccountId: string, reason?: string): Promise<{ accountId: string; status: "BANNED"; changed: boolean }> {
             Throttle("write", accountId);
             const realm = await RequireHostedRealm(accountId);
-            if (targetAccountId === accountId) throw new LauncherApiError("REALM_INVALID_TARGET", "You cannot ban yourself from your own realm.");
+            if (targetAccountId === accountId) throw new LauncherApiError("REALM_INVALID_TARGET", "You cannot ban yourself from your own MNG Server.");
             const result = await repo.addBan(
                 realm.realmId,
                 reason === undefined ? { accountId: targetAccountId, at: Iso(Now()) } : { accountId: targetAccountId, reason, at: Iso(Now()) },
                 Limits.maxBans
             );
-            if (result === "NOT_FOUND") throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+            if (result === "NOT_FOUND") throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
             if (result === "FULL") throw new LauncherApiError("REALM_FULL", "The ban list is full; lift a ban first.");
             if (result === "BANNED") {
                 logger.info(`[Realms] account banned realmId=${realm.realmId}`);
@@ -897,15 +897,15 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
             Throttle("write", accountId);
             const realm = await RequireHostedRealm(accountId);
             if (!(realm.joinRequests ?? []).some((request) => request.accountId === targetAccountId)) {
-                throw new LauncherApiError("REALM_REQUEST_NOT_FOUND", "That player has not asked to join your realm.");
+                throw new LauncherApiError("REALM_REQUEST_NOT_FOUND", "That player has not asked to join your MNG Server.");
             }
             const added = await repo.addMember(realm.realmId, { accountId: targetAccountId, role: "MEMBER", joinedAt: Iso(Now()) }, Limits.maxMembers);
             switch (added) {
-                case "NOT_FOUND": throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+                case "NOT_FOUND": throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
                 case "BANNED":
                     await repo.removeJoinRequest(realm.realmId, targetAccountId);
-                    throw new LauncherApiError("REALM_BANNED", "That player is banned from your realm.");
-                case "FULL": throw new LauncherApiError("REALM_FULL", "This realm cannot take more members.");
+                    throw new LauncherApiError("REALM_BANNED", "That player is banned from your MNG Server.");
+                case "FULL": throw new LauncherApiError("REALM_FULL", "This MNG Server cannot take more members.");
             }
             await repo.removeJoinRequest(realm.realmId, targetAccountId);
             logger.info(`[Realms] join request approved realmId=${realm.realmId}`);
@@ -917,7 +917,7 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
             Throttle("write", accountId);
             const realm = await RequireHostedRealm(accountId);
             if (!(await repo.removeJoinRequest(realm.realmId, targetAccountId))) {
-                throw new LauncherApiError("REALM_REQUEST_NOT_FOUND", "That player has not asked to join your realm.");
+                throw new LauncherApiError("REALM_REQUEST_NOT_FOUND", "That player has not asked to join your MNG Server.");
             }
             logger.info(`[Realms] join request denied realmId=${realm.realmId}`);
             return { accountId: targetAccountId, status: "DENIED" };
@@ -936,9 +936,9 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
             if (target === undefined) throw new LauncherApiError("REALM_PLAYER_NOT_FOUND", "No player has that username.");
             const added = await repo.addMember(realm.realmId, { accountId: target, role: "MEMBER", joinedAt: Iso(Now()) }, Limits.maxMembers);
             switch (added) {
-                case "NOT_FOUND": throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
-                case "BANNED": throw new LauncherApiError("REALM_BANNED", "That player is banned from your realm. Lift the ban first.");
-                case "FULL": throw new LauncherApiError("REALM_FULL", "This realm cannot take more members.");
+                case "NOT_FOUND": throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
+                case "BANNED": throw new LauncherApiError("REALM_BANNED", "That player is banned from your MNG Server. Lift the ban first.");
+                case "FULL": throw new LauncherApiError("REALM_FULL", "This MNG Server cannot take more members.");
             }
             await repo.removeJoinRequest(realm.realmId, target);
             if (added === "ADDED") logger.info(`[Realms] player added by the host realmId=${realm.realmId}`);
@@ -964,15 +964,15 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
             const trimmed = username.trim();
             const target = deps.resolveUsername === undefined ? undefined : await deps.resolveUsername(trimmed);
             if (target === undefined) throw new LauncherApiError("REALM_PLAYER_NOT_FOUND", "No player has that username.");
-            if (target === accountId) throw new LauncherApiError("REALM_INVALID_TARGET", "You are the host of this realm.");
+            if (target === accountId) throw new LauncherApiError("REALM_INVALID_TARGET", "You are the host of this MNG Server.");
             const displayName = (await NamesFor([target])).get(target) ?? trimmed;
 
             if ((realm.joinRequests ?? []).some((request) => request.accountId === target)) {
                 const accepted = await AcceptPlayerInvite(realm, target);
                 if (!accepted.member) {
-                    if (accepted.code === "REALM_BANNED") throw new LauncherApiError("REALM_BANNED", "That player is banned from your realm. Lift the ban first.");
-                    if (accepted.code === "REALM_FULL") throw new LauncherApiError("REALM_FULL", "This realm cannot take more members.");
-                    throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+                    if (accepted.code === "REALM_BANNED") throw new LauncherApiError("REALM_BANNED", "That player is banned from your MNG Server. Lift the ban first.");
+                    if (accepted.code === "REALM_FULL") throw new LauncherApiError("REALM_FULL", "This MNG Server cannot take more members.");
+                    throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
                 }
                 logger.info(`[Realms] invited player had asked to join; let in realmId=${realm.realmId}`);
                 return { accountId: target, displayName, status: "MEMBER" };
@@ -980,8 +980,8 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
 
             const result = await repo.addPlayerInvite(realm.realmId, { accountId: target, at: Iso(Now()) }, Limits.maxPlayerInvites);
             switch (result) {
-                case "NOT_FOUND": throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
-                case "BANNED": throw new LauncherApiError("REALM_BANNED", "That player is banned from your realm. Lift the ban first.");
+                case "NOT_FOUND": throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
+                case "BANNED": throw new LauncherApiError("REALM_BANNED", "That player is banned from your MNG Server. Lift the ban first.");
                 case "FULL": throw new LauncherApiError("REALM_PLAYER_INVITES_FULL", "Too many invites are waiting for an answer. Cancel one first.");
                 case "ALREADY_MEMBER": return { accountId: target, displayName, status: "MEMBER" };
             }
@@ -1017,8 +1017,8 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
         async acceptPlayerInvite(accountId: string, name: string): Promise<{ realm: RealmPublicInfo; joined: true }> {
             Throttle("write", accountId);
             const realm = await repo.findByName(name);
-            if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "There is no realm with that name.");
-            if (!HasPlayerInvite(realm, accountId)) throw new LauncherApiError("REALM_PLAYER_INVITE_NOT_FOUND", "You have no invite to this realm.");
+            if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "There is no MNG Server with that name.");
+            if (!HasPlayerInvite(realm, accountId)) throw new LauncherApiError("REALM_PLAYER_INVITE_NOT_FOUND", "You have no invite to this MNG Server.");
             const accepted = await AcceptPlayerInvite(realm, accountId);
             if (!accepted.member) {
                 if (accepted.code === "REALM_BANNED") await repo.removePlayerInvite(realm.realmId, accountId);
@@ -1032,9 +1032,9 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
         async declinePlayerInvite(accountId: string, name: string): Promise<{ declined: true }> {
             Throttle("write", accountId);
             const realm = await repo.findByName(name);
-            if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "There is no realm with that name.");
+            if (realm === undefined) throw new LauncherApiError("REALM_NOT_FOUND", "There is no MNG Server with that name.");
             if (!(await repo.removePlayerInvite(realm.realmId, accountId))) {
-                throw new LauncherApiError("REALM_PLAYER_INVITE_NOT_FOUND", "You have no invite to this realm.");
+                throw new LauncherApiError("REALM_PLAYER_INVITE_NOT_FOUND", "You have no invite to this MNG Server.");
             }
             logger.info(`[Realms] player invite declined realmId=${realm.realmId}`);
             return { declined: true };
@@ -1049,7 +1049,7 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
             const realm = await RequireHostedRealm(accountId);
             const update = ApplyHeartbeat(Now(), input);
             if (!(await repo.recordHeartbeat(realm.realmId, accountId, update))) {
-                throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+                throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
             }
             if (input.hosting !== undefined) {
                 // Only the three host-chosen fields: the hub fields belong to the p2p module and are never self-reported.
@@ -1073,7 +1073,7 @@ export function CreateRealmsService(deps: RealmsServiceDeps) {
             Throttle("write", accountId);
             const realm = await RequireHostedRealm(accountId);
             if (!(await repo.deleteRealmOfHost(realm.realmId, accountId))) {
-                throw new LauncherApiError("REALM_NOT_FOUND", "You do not host a realm.");
+                throw new LauncherApiError("REALM_NOT_FOUND", "You do not host an MNG Server.");
             }
             logger.info(`[Realms] realm released realmId=${realm.realmId} name=${realm.name}`);
             await DropPresenceOfRealm(realm.realmId);

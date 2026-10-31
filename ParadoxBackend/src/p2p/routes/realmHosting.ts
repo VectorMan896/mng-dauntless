@@ -57,7 +57,7 @@ async function Handle(res: Response, operation: string, action: () => Promise<un
         }
         IncrementMetric("mysticparadox_p2p_errors_total", 1, { code: "INTERNAL" });
         logger.error(`Unhandled realm hosting error requestId=${GetRequestId() ?? "missing"}: ${error}`);
-        SendDetailedLauncherError(res, new LauncherApiError("INTERNAL", "The realm hosting request failed."));
+        SendDetailedLauncherError(res, new LauncherApiError("INTERNAL", "The MNG Server hosting request failed."));
     }
 }
 

@@ -10,6 +10,7 @@ import crypto from "node:crypto";
 import { Request, Response } from "express";
 import { GetRepositories, GetUnitOfWork, LauncherAccountRecord, LauncherNoticesRecord } from "../persistence";
 import { logger } from "../logger";
+import { SeasonalEventNotice } from "../seasonalEvents";
 import { LauncherApiError, SendLauncherError } from "../security/launcherErrors";
 import {
     AdminLauncherNoticesView,
@@ -43,7 +44,14 @@ export async function GetPublicLauncherNotices(_req: Request, res: Response): Pr
         }
         record = undefined;
     }
-    res.status(200).json(PublicLauncherNoticesView(record, Date.now(), new Date().toISOString()));
+    const View = PublicLauncherNoticesView(record, Date.now(), new Date().toISOString());
+    // [MNG DAUNTLESS 2026-10-31] The running seasonal event, added to whatever the operator saved (src/seasonalEvents.ts).
+    const Season = SeasonalEventNotice();
+    if (Season) {
+        View.announcements.push(Season.announcement);
+        View.tags.push(Season.tag);
+    }
+    res.status(200).json(View);
 }
 
 /** GET /admin/v1/launcher-notices: the whole document, inactive items included. */

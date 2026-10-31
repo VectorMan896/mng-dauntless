@@ -188,7 +188,7 @@ pub(crate) fn fetch_notices(base: &str) -> Result<NativeNotices, String> {
         .get(format!("{base}/launcher/v1/notices"))
         .timeout(REQUEST_TIMEOUT)
         .send()
-        .map_err(|_| "Can't reach the Mystic Paradox service right now.".to_string())?;
+        .map_err(|_| "Can't reach the MNG DAUNTLESS service right now.".to_string())?;
     if response.status().as_u16() == 404 {
         return Ok(NativeNotices::default());
     }
@@ -202,7 +202,7 @@ pub(crate) fn fetch_notices(base: &str) -> Result<NativeNotices, String> {
     response
         .take(MAX_BODY_BYTES)
         .read_to_end(&mut body)
-        .map_err(|_| "Can't reach the Mystic Paradox service right now.".to_string())?;
+        .map_err(|_| "Can't reach the MNG DAUNTLESS service right now.".to_string())?;
     Ok(parse_notices(&body))
 }
 

@@ -469,7 +469,7 @@ export async function RankRealmHost(hunt: P2PHuntSessionRecord, nowMs = Date.now
         { minimumFreeMemoryMiB: 0, minimumCommitHeadroomMiB: 0 }, guardRequired, nowMs);
     if (!guardRequired && guardRule && RealmHostIneligibilityReason(presence, hostPolicy,
         { minimumFreeMemoryMiB: 0, minimumCommitHeadroomMiB: 0 }, true, nowMs) === "HOST_GUARD_UNVERIFIED") {
-        NoteGuardWouldRefuse(await PresenceGuardDetail("realm host", presence));
+        NoteGuardWouldRefuse(await PresenceGuardDetail("MNG Server host", presence));
     }
     if (reason != undefined) {
         logger.info(`[P2P] realm host ${host} for realm ${realmId} ineligible reason=${reason}`);

@@ -11,7 +11,7 @@ import { RenderCodeEmail } from "./codeEmail";
 
 test("a code email carries the code, the expiry and the single-use note in its subject, text and HTML", () => {
     const mail = RenderCodeEmail("verify", "482913", 5);
-    assert.equal(mail.subject, "Your Mystic Paradox code: 482913");
+    assert.equal(mail.subject, "Your MNG DAUNTLESS code: 482913");
     assert.match(mail.text, /482913/);
     assert.match(mail.text, /expires in 5 minutes and works only once/);
     assert.match(mail.html, />482913</, "the code is one unbroken word, so a copied code pastes cleanly");
@@ -21,14 +21,14 @@ test("a code email carries the code, the expiry and the single-use note in its s
 
 test("a reset email has its own subject and wording", () => {
     const mail = RenderCodeEmail("reset", "000017", 1);
-    assert.equal(mail.subject, "Your Mystic Paradox password reset code: 000017");
+    assert.equal(mail.subject, "Your MNG DAUNTLESS password reset code: 000017");
     assert.match(mail.html, /Reset your password/);
     assert.match(mail.text, /expires in 1 minute and/);
 });
 
 test("an unlink email has its own subject and a warning about the password", () => {
     const mail = RenderCodeEmail("unlink", "552019", 5);
-    assert.equal(mail.subject, "Your Mystic Paradox code to unlink Discord: 552019");
+    assert.equal(mail.subject, "Your MNG DAUNTLESS code to unlink Discord: 552019");
     assert.match(mail.html, /Unlink Discord/);
     assert.match(mail.text, /Discord stays linked/);
 });

@@ -50,7 +50,7 @@ impl AuthScope {
                 }
                 if is_official_backend_address(url, api_base_url()) {
                     return Err(
-                        "That is the official Mystic Paradox address. Use the built-in official server instead."
+                        "That is the official MNG DAUNTLESS address. Use the built-in official server instead."
                             .to_string(),
                     );
                 }
@@ -170,7 +170,7 @@ mod tests {
         assert_eq!(
             realm,
             AuthScope::Official,
-            "a realm is played with the official account"
+            "an MNG Server is played with the official account"
         );
         assert_eq!(realm.base_url(), api_base_url());
         assert_eq!(realm.key(), "official");

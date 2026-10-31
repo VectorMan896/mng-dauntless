@@ -10,7 +10,7 @@ export function AuthLayout({ children, banner }: { children: ReactNode; banner?:
       <ArtBackdrop depth={14} />
       <div className="auth-brand">
         <div className="auth-brand-mark"><AetherMark title={null} /></div>
-        <p className="auth-brand-name">Mystic Paradox</p>
+        <p className="auth-brand-name">MNG DAUNTLESS</p>
         <p className="auth-brand-tag">A community preservation of Dauntless. The Shattered Isles are waiting, Slayer.</p>
       </div>
       <div className="auth-panel">

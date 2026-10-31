@@ -80,7 +80,7 @@ export function AddServerForm({ onAdded, style }: AddServerFormProps) {
       // parent that closed this form has already been told about the server; the popup belongs to the provider.
       if (added) await ensureHost(added);
     } catch {
-      if (mountedRef.current) setNote(`Added ${added ? serverNaming(added).primary : "the realm"}. You will be asked to confirm its host the first time you play.`);
+      if (mountedRef.current) setNote(`Added ${added ? serverNaming(added).primary : "the MNG Server"}. You will be asked to confirm its host the first time you play.`);
     } finally {
       busyRef.current = false;
       if (mountedRef.current) setBusy(false);
@@ -93,8 +93,8 @@ export function AddServerForm({ onAdded, style }: AddServerFormProps) {
         <div className="section-head">
           <div className="section-icon"><ServersIcon /></div>
           <div>
-            <h2 className="section-title">Add a realm</h2>
-            <p className="section-desc">Every realm is named after the player who hosts it. Enter their username; the host gets your join request.</p>
+            <h2 className="section-title">Add an MNG Server</h2>
+            <p className="section-desc">Every MNG Server is named after the player who hosts it. Enter their username; the host gets your join request.</p>
           </div>
         </div>
       </div>
@@ -103,8 +103,8 @@ export function AddServerForm({ onAdded, style }: AddServerFormProps) {
           label="Host's username"
           value={hostName}
           onChange={(event) => setHostName(event.target.value)}
-          placeholder="MysticFox"
-          hint="The username of the player whose realm you want to join."
+          placeholder="YourName"
+          hint="The username of the player whose MNG Server you want to join."
           maxLength={24}
           autoComplete="off"
           spellCheck={false}
@@ -113,7 +113,7 @@ export function AddServerForm({ onAdded, style }: AddServerFormProps) {
           label="Name (optional)"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder={realmLabelForUsername(hostName) ? `Defaults to ${realmLabelForUsername(hostName)}` : "Defaults to <username>'s Realm"}
+          placeholder={realmLabelForUsername(hostName) ? `Defaults to ${realmLabelForUsername(hostName)}` : "Defaults to <username>'s MNG Server"}
           maxLength={40}
           autoComplete="off"
           spellCheck={false}
@@ -123,12 +123,12 @@ export function AddServerForm({ onAdded, style }: AddServerFormProps) {
       {note && <p className="feedback" role="status">{note}</p>}
       <div className="server-actions">
         <Button type="submit" loading={busy} loadingLabel="Adding…" disabled={busy}>
-          Add realm
+          Add MNG Server
         </Button>
       </div>
       <p className="note with-icon">
         <ShieldIcon />
-        <span>A realm uses your Mystic Paradox account and plays from the official Dauntless install, so there is no folder to pick.</span>
+        <span>An MNG Server uses your MNG DAUNTLESS account and plays from the official Dauntless install, so there is no folder to pick.</span>
       </p>
       <RealmTrustNote />
     </form>

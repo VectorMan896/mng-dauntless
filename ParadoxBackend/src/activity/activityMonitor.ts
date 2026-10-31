@@ -8,6 +8,7 @@
 
 import { logger } from "../logger";
 import { GetRepositories } from "../persistence";
+import { PaySeasonalEventHunt } from "../seasonalEvents";
 import type { ActivityHuntResult, ActivityRepository } from "../persistence/contracts/ActivityRepository";
 import { LogToken } from "../diagnostics/economyLedgerMonitor";
 import {
@@ -400,6 +401,8 @@ export async function RecordDedicatedHuntEnds(userIds: readonly string[], endRea
                 const Result: ActivityHuntResult = Hunt.kills > 0 ? "completed" : "abandoned";
                 const Closed = await Store().closeHuntIfOpen(Hunt._id, { endedAt: new Date(atMs).toISOString(), endReason, result: Result });
                 if (Closed) AddDaily(UserId, DayOf(atMs), { [`${Result === "completed" ? "huntsCompleted" : "huntsAbandoned"}.dedicated`]: 1 });
+                // [MNG DAUNTLESS 2026-10-31] The running seasonal event's currency, once per completed hunt (src/seasonalEvents.ts).
+                if (Closed && Result === "completed") await PaySeasonalEventHunt(UserId, Hunt._id);
             }
         });
     }

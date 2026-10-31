@@ -17,7 +17,6 @@ import { AuthCard, AuthLayout } from "./components/AuthLayout";
 import { AetherMark } from "./components/AetherMark";
 import { SparkIcon } from "./components/icons";
 import { checkLauncherUpdate, installLauncherUpdate, launcherUpdateHoldReason, type LauncherUpdate } from "./api/updates";
-import { startPublicBuildCheckAtStartup } from "./components/PublicBuildCheck";
 import { sanitizeError } from "./lib/sanitize";
 import { NoticesProvider } from "./notices/NoticesContext";
 
@@ -162,11 +161,6 @@ function AppShell() {
     };
   }, []);
 
-  // [2026-10-15] The GitHub build check runs once at startup, in the background; About shows its cached result.
-  useEffect(() => {
-    startPublicBuildCheckAtStartup();
-  }, []);
-
   const toast = launcherUpdate ? <UpdateToast update={launcherUpdate} /> : null;
 
   let screen;
@@ -175,7 +169,7 @@ function AppShell() {
   } else if (status === "checking") {
     screen = (
       <StatusScreen title="Restoring your session" busy>
-        <p className="auth-sub">{officialNetwork ? "Contacting the Mystic Paradox account server…" : `Contacting ${selected?.name ?? "the server"}…`}</p>
+        <p className="auth-sub">{officialNetwork ? "Contacting the MNG DAUNTLESS account server…" : `Contacting ${selected?.name ?? "the server"}…`}</p>
       </StatusScreen>
     );
   } else if (status === "awaitingDiscord") {

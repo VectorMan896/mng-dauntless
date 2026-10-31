@@ -91,30 +91,30 @@ export function CoreAccountDeletionSteps(): AccountDeletionStep[] {
     return [
         // Live activity first: an online realm hosted by the account is never erased under its players.
         {
-            kind: "guard", collection: RealmsCollections.Realms, description: "online realm hosted by the account",
+            kind: "guard", collection: RealmsCollections.Realms, description: "online MNG Server hosted by the account",
             match: (c) => ({ hostAccountId: c.userId, onlineUntil: { $gt: c.now } })
         },
 
         // Realms the account hosts go with it (their members and invites too); elsewhere the account is only a member or a ban.
         {
-            kind: "delete", collection: RealmsCollections.RealmInvites, description: "invites of the realms it hosts, and invites it created",
+            kind: "delete", collection: RealmsCollections.RealmInvites, description: "invites of the MNG Servers it hosts, and invites it created",
             match: (c) => ({ $or: [{ realmId: { $in: c.ownedRealmIds } }, { createdBy: c.userId }] })
         },
         {
-            kind: "delete", collection: RealmsCollections.RealmPresence, description: "realm presence of the account and of its realms",
+            kind: "delete", collection: RealmsCollections.RealmPresence, description: "MNG Server presence of the account and of its MNG Servers",
             match: (c) => ({ $or: [{ _id: c.userId }, { accountId: c.userId }, { realmId: { $in: c.ownedRealmIds } }] })
         },
         {
-            kind: "delete", collection: RealmsCollections.Realms, description: "realms the account hosts",
+            kind: "delete", collection: RealmsCollections.Realms, description: "MNG Servers the account hosts",
             match: (c) => ({ hostAccountId: c.userId })
         },
         {
-            kind: "update", collection: RealmsCollections.Realms, description: "realm memberships of the account",
+            kind: "update", collection: RealmsCollections.Realms, description: "MNG Server memberships of the account",
             match: (c) => ({ "members.accountId": c.userId }),
             update: (c) => ({ $pull: { members: { accountId: c.userId } } })
         },
         {
-            kind: "update", collection: RealmsCollections.Realms, description: "realm bans of the account",
+            kind: "update", collection: RealmsCollections.Realms, description: "MNG Server bans of the account",
             match: (c) => ({ "bans.accountId": c.userId }),
             update: (c) => ({ $pull: { bans: { accountId: c.userId } } })
         },

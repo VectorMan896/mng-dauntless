@@ -59,10 +59,10 @@ export function RunRealmPresenceRepositoryContract(
         assert.equal(await repo.touch("nobody", T0, T120), undefined);
     });
 
-    Case("remove deletes the row, and with a realm id only that realm's row", async (repo) => {
+    Case("remove deletes the row, and with an MNG Server id only that MNG Server's row", async (repo) => {
         await repo.bind(Row("a", "realm-1"));
         await repo.bind(Row("b", "realm-2"));
-        assert.equal(await repo.remove("a", "realm-2"), false, "bound to another realm");
+        assert.equal(await repo.remove("a", "realm-2"), false, "bound to another MNG Server");
         assert.ok(await repo.findActive("a", T0));
         assert.equal(await repo.remove("a", "realm-1"), true);
         assert.equal(await repo.remove("a"), false);
@@ -70,7 +70,7 @@ export function RunRealmPresenceRepositoryContract(
         assert.equal(await repo.remove("nobody"), false);
     });
 
-    Case("removeForRealm deletes every row of that realm and no other", async (repo) => {
+    Case("removeForRealm deletes every row of that MNG Server and no other", async (repo) => {
         await repo.bind(Row("a", "realm-1"));
         await repo.bind(Row("b", "realm-1"));
         await repo.bind(Row("c", "realm-2"));
@@ -80,7 +80,7 @@ export function RunRealmPresenceRepositoryContract(
         assert.ok(await repo.findActive("c", T0));
     });
 
-    Case("the active rows of each realm are counted at the given time", async (repo) => {
+    Case("the active rows of each MNG Server are counted at the given time", async (repo) => {
         await repo.bind(Row("a", "realm-1"));
         await repo.bind(Row("b", "realm-1", { expiresAt: T60 }));
         await repo.bind(Row("c", "realm-2"));

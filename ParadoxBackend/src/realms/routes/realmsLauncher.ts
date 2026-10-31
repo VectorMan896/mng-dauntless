@@ -99,7 +99,7 @@ async function Handle(res: Response, action: () => Promise<unknown>, successStat
             return;
         }
         logger.error(`Unhandled realms error requestId=${GetRequestId() ?? "missing"}: ${error}`);
-        SendLauncherError(res, new LauncherApiError("INTERNAL", "The realm request failed. Please try again."));
+        SendLauncherError(res, new LauncherApiError("INTERNAL", "The MNG Server request failed. Please try again."));
     }
 }
 
@@ -230,7 +230,7 @@ export function CreateRealmsRouter(deps: RealmsRouterDeps): Router {
     // Anything else under the prefix is unknown here: answer in the launcher envelope instead of falling through
     // to the app's empty 404 (the caller is already authenticated at this point).
     router.use(BASE, (_req, res) => {
-        SendLauncherError(res, new LauncherApiError("NOT_FOUND", "Unknown realms route."));
+        SendLauncherError(res, new LauncherApiError("NOT_FOUND", "Unknown MNG Servers route."));
     });
 
     return router;

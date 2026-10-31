@@ -159,7 +159,7 @@ export async function ResolveOrCreateAccountForDiscordUser(discordUser: DiscordU
     if (Identity == undefined) {
         throw new LauncherApiError(
             "AUTH_DISCORD_NOT_LINKED",
-            "Your Discord isn't linked to a Mystic Paradox account. Register with your email, then link Discord on the Account page."
+            "Your Discord isn't linked to a MNG DAUNTLESS account. Register with your email, then link Discord on the Account page."
         );
     }
 
@@ -180,7 +180,7 @@ async function LinkDiscordIdentity(linkUserId: string, discordUser: DiscordUser)
         throw new LauncherApiError("AUTH_DISCORD_ACCOUNT_HAS_LINK", "This account already has a Discord account linked.");
     }
     if ((await Repos.authIdentities.findByProviderSubject("discord", discordUser.id)) != undefined) {
-        throw new LauncherApiError("AUTH_DISCORD_ALREADY_LINKED", "That Discord account is linked to another Mystic Paradox account.");
+        throw new LauncherApiError("AUTH_DISCORD_ALREADY_LINKED", "That Discord account is linked to another MNG DAUNTLESS account.");
     }
 
     try {
@@ -196,7 +196,7 @@ async function LinkDiscordIdentity(linkUserId: string, discordUser: DiscordUser)
         });
     } catch (error) {
         if (IsDuplicateKeyError(error)) {
-            throw new LauncherApiError("AUTH_DISCORD_ALREADY_LINKED", "That Discord account is linked to another Mystic Paradox account.");
+            throw new LauncherApiError("AUTH_DISCORD_ALREADY_LINKED", "That Discord account is linked to another MNG DAUNTLESS account.");
         }
         throw error;
     }

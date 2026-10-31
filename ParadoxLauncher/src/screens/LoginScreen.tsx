@@ -62,7 +62,7 @@ export function LoginScreen({ onCreateAccount }: LoginScreenProps) {
     try {
       await select(official.id);
     } catch (err) {
-      setError(typeof err === "string" && err.trim() ? err.trim().slice(0, 300) : "Couldn't switch to the Mystic Paradox account.");
+      setError(typeof err === "string" && err.trim() ? err.trim().slice(0, 300) : "Couldn't switch to the MNG DAUNTLESS account.");
     }
   }
 
@@ -82,7 +82,7 @@ export function LoginScreen({ onCreateAccount }: LoginScreenProps) {
       <AuthCard
         title={serverName ? `Sign in to ${serverName}` : "Welcome back, Slayer"}
         subtitle={serverName
-          ? "Use your account on this server. It is not your Mystic Paradox account, and Mystic Paradox never sees it."
+          ? "Use your account on this server. It is not your MNG DAUNTLESS account, and MNG DAUNTLESS never sees it."
           : "Sign in to return to the Shattered Isles."}
       >
         <form onSubmit={handleSubmit} className="auth-form" noValidate>
@@ -131,12 +131,12 @@ export function LoginScreen({ onCreateAccount }: LoginScreenProps) {
           )}
 
           <p className="auth-foot">
-            {serverName ? "New to this server?" : "New to Mystic Paradox?"}
+            {serverName ? "New to this server?" : "New to MNG DAUNTLESS?"}
             <button type="button" className="link" onClick={onCreateAccount}>Create an account</button>
           </p>
           {serverName && (
             <p className="auth-foot">
-              <button type="button" className="link" onClick={() => void switchToOfficialAccount()}>Use your Mystic Paradox account instead</button>
+              <button type="button" className="link" onClick={() => void switchToOfficialAccount()}>Use your MNG DAUNTLESS account instead</button>
             </p>
           )}
         </form>

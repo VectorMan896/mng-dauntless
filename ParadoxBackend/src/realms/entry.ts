@@ -35,7 +35,7 @@ export async function AuthorizeGameSessionRealm(
 ): Promise<{ realmId: string; isHost: boolean } | undefined> {
     if (rawRealm === undefined || rawRealm === null) return undefined;
     if (!(deps.enabled ?? (() => IsRealmsModuleEnabled()))()) {
-        throw new LauncherApiError("REALMS_DISABLED", "Realms are not available on this server.");
+        throw new LauncherApiError("REALMS_DISABLED", "MNG Servers are not available on this server.");
     }
     const parsed = ParseEntryRealm(rawRealm);
     if (!parsed.ok) throw new LauncherApiError(parsed.code, parsed.message);

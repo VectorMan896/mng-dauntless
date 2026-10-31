@@ -15,7 +15,7 @@ export const SMTP_SECURE_ENV = "MYSTICPARADOX_SMTP_SECURE";
 export const SMTP_USER_ENV = "MYSTICPARADOX_SMTP_USER";
 export const SMTP_PASSWORD_ENV = "MYSTICPARADOX_SMTP_PASSWORD";
 export const MAIL_FROM_ENV = "MYSTICPARADOX_MAIL_FROM";
-export const MAIL_FROM_DEFAULT = "Mystic Paradox <no-reply@mysticfox.dev>";
+export const MAIL_FROM_DEFAULT = "MNG DAUNTLESS <no-reply@example.invalid>";
 
 export interface SmtpSettings {
     host: string;

@@ -146,7 +146,7 @@ pub async fn add_server(app: AppHandle, server: NewServer) -> Result<Vec<ServerV
             {
                 if is_official_backend_address(&candidate, api_base_url()) {
                     return Err(
-                        "That is the official Mystic Paradox address. Use the built-in official server instead."
+                        "That is the official MNG DAUNTLESS address. Use the built-in official server instead."
                             .to_string(),
                     );
                 }
@@ -257,12 +257,12 @@ pub async fn realm_lookup(app: AppHandle, server_id: String) -> Result<RealmLook
             .find(&server_id)
             .ok_or_else(|| "That server is not in your list.".to_string())?;
         if entry.kind != ServerKind::ParadoxRealm {
-            return Err("Only a Paradox realm has a host to confirm.".to_string());
+            return Err("Only an MNG Server has a host to confirm.".to_string());
         }
         let realm = entry
             .realm_name
             .as_deref()
-            .ok_or_else(|| "That realm has no name to look up.".to_string())?;
+            .ok_or_else(|| "That MNG Server has no name to look up.".to_string())?;
         realm_directory::lookup(&app, realm, entry.host_public_key.as_deref())
     })
     .await
@@ -294,12 +294,12 @@ pub async fn realm_request_join(app: AppHandle, server_id: String) -> Result<Joi
             .find(&server_id)
             .ok_or_else(|| "That server is not in your list.".to_string())?;
         if entry.kind != ServerKind::ParadoxRealm {
-            return Err("Only a Paradox realm can be asked to join.".to_string());
+            return Err("Only an MNG Server can be asked to join.".to_string());
         }
         let realm = entry
             .realm_name
             .as_deref()
-            .ok_or_else(|| "That realm has no name to ask.".to_string())?;
+            .ok_or_else(|| "That MNG Server has no name to ask.".to_string())?;
         realm_directory::request_join(&app, realm, entry.host_public_key.as_deref())
     })
     .await

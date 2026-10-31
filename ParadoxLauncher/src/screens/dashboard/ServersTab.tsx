@@ -17,7 +17,8 @@ import { serverNaming } from "../../servers/serverNames";
 import { serverUnavailable } from "../../servers/officialPlay";
 import { realmStanding, type RealmStanding } from "../../servers/realmStatus";
 import { AddServerForm } from "../../servers/AddServerForm";
-import { RealmInvitations } from "../../servers/RealmInvites";
+import { RealmInvitations, MNG_PLAYER_SERVERS } from "../../servers/RealmInvites";
+import { NoticeBanner } from "../../components/NoticeBanner";
 
 // [2026-10-13 realms S1] The launcher's server list: the built-in official server, Paradox realms (our backend, playing
 // from the official install unless they have a folder of their own) and local servers (the player's own backend). Every
@@ -46,9 +47,9 @@ function friendly(err: unknown): string {
 function serverDetail(server: ServerView): string {
   switch (server.kind) {
     case "official":
-      return "Built-in Mystic Paradox servers";
+      return "Built-in MNG DAUNTLESS servers";
     case "paradox_realm":
-      return `Realm ${server.realmName ?? ""}`;
+      return `MNG Server ${server.realmName ?? ""}`;
     default:
       return server.backendUrl ?? "";
   }
@@ -62,7 +63,7 @@ function serverDetail(server: ServerView): string {
 type Standing = RealmStanding;
 
 const STANDING_CHIP: Record<Standing, { text: string; tone: string }> = {
-  own: { text: "Your realm", tone: "good" },
+  own: { text: "Your MNG Server", tone: "good" },
   member: { text: "Allowed", tone: "good" },
   open: { text: "Open to all", tone: "good" },
   requested: { text: "Request sent", tone: "warn" },
@@ -74,8 +75,8 @@ const STANDING_CHIP: Record<Standing, { text: string; tone: string }> = {
 
 function signInDetail(kind: ServerView["kind"]): string {
   return kind === "local"
-    ? "This server's own accounts. Their sign-in is stored on this PC only, and is never your Mystic Paradox account."
-    : "Your Mystic Paradox account.";
+    ? "This server's own accounts. Their sign-in is stored on this PC only, and is never your MNG DAUNTLESS account."
+    : "Your MNG DAUNTLESS account.";
 }
 
 export function ServersTab() {
@@ -214,30 +215,34 @@ export function ServersTab() {
       <div className="subpage-inner">
         <header className="page-head reveal" style={at(0)}>
           <p className="eyebrow">Where you play</p>
-          <h1 className="page-title">Realms</h1>
+          <h1 className="page-title">MNG Server</h1>
+          {/* [MNG DAUNTLESS 2026-10-31] One community server, built into the launcher: this page only sets where the game is. */}
           <p className="page-desc">
-            A Paradox realm is a player&apos;s game hosted on their own PC. You join it with your Mystic Paradox account, from
-            the official install. The official server is built in.
+            The launcher connects to the MNG DAUNTLESS server by itself. Here you choose where Dauntless 1.14.7 is installed
+            on this PC.
           </p>
         </header>
 
-        {/* [2026-10-16] Invites from realm hosts come first (shown only while one waits). */}
-        <RealmInvitations onChanged={(list) => { if (mountedRef.current) setServers(list); }} style={at(1)} />
+        {/* [MNG DAUNTLESS 2026-10-31] Announcements (the running event, server notices), on the page's art. */}
+        <NoticeBanner />
 
-        {/* [2026-10-14] The add form, then the list of servers. Hosting a realm is on the Host realm page. */}
-        <section className="glass card reveal" style={at(1)} aria-label="Add a realm">
-          <AddServerForm onAdded={realmAdded} />
-          {addAsk && (
-            <div className="section add-ask">
-              <p className={`feedback ${addAsk.tone}`} role={addAsk.tone === "bad" ? "alert" : "status"}>{addAsk.message}</p>
-            </div>
-          )}
-        </section>
+        {/* [MNG DAUNTLESS 2026-10-31] No invites and no add form while player-hosted MNG Servers are off (MNG_PLAYER_SERVERS). */}
+        {MNG_PLAYER_SERVERS && (<>
+          <RealmInvitations onChanged={(list) => { if (mountedRef.current) setServers(list); }} style={at(1)} />
+          <section className="glass card reveal" style={at(1)} aria-label="Add an MNG Server">
+            <AddServerForm onAdded={realmAdded} />
+            {addAsk && (
+              <div className="section add-ask">
+                <p className={`feedback ${addAsk.tone}`} role={addAsk.tone === "bad" ? "alert" : "status"}>{addAsk.message}</p>
+              </div>
+            )}
+          </section>
+        </>)}
 
-        <section className="glass card reveal" style={at(2)} aria-label="Your realms">
+        <section className="glass card reveal" style={at(MNG_PLAYER_SERVERS ? 2 : 1)} aria-label="Your MNG Server">
           {servers == null && !loadError && <div className="section"><div className="loader-bar" /></div>}
           {loadError && <div className="section"><p className="feedback bad" role="alert">{loadError}</p></div>}
-          {servers?.map((server) => {
+          {servers?.filter((server) => MNG_PLAYER_SERVERS || server.kind === "official").map((server) => {
             const error = rowError?.id === server.id ? rowError.message : null;
             const note = rowNote?.id === server.id ? rowNote.message : null;
             const realmStanding = server.kind === "paradox_realm" ? standing[server.id] : undefined;
@@ -257,7 +262,7 @@ export function ServersTab() {
                         {server.kind === "official" && <span className="chip accent">Official</span>}
                         {/* [2026-10-15] The official server's play switch is off: a red chip beside its Official one. */}
                         {serverUnavailable(server, officialPlay) && <span className="chip bad">Currently unavailable</span>}
-                        {server.kind === "paradox_realm" && <span className="chip live">Paradox realm</span>}
+                        {server.kind === "paradox_realm" && <span className="chip live">MNG Server</span>}
                         {realmStanding && (
                           <span className={`chip${STANDING_CHIP[realmStanding].tone ? ` ${STANDING_CHIP[realmStanding].tone}` : ""}`}>
                             {STANDING_CHIP[realmStanding].text}
@@ -280,7 +285,7 @@ export function ServersTab() {
                     {!server.selected && !unsupported && (
                       <Button variant="secondary" size="sm" disabled={working} onClick={() => void handleSelect(server)}>
                         {/* [2026-10-16] The page is "Realms": a realm row says realm, the built-in official row says server. */}
-                        {server.kind === "paradox_realm" ? "Use this realm" : "Use this server"}
+                        {server.kind === "paradox_realm" ? "Use this MNG Server" : "Use this server"}
                       </Button>
                     )}
                   </div>
@@ -300,8 +305,8 @@ export function ServersTab() {
                   <dt>Runtime files</dt>
                   <dd>
                     {server.usesOfficialFeed
-                      ? "Signed Mystic Paradox runtime, installed and checked by the launcher."
-                      : "The realm's own files. The launcher does not install, check or update them."}
+                      ? "Signed MNG DAUNTLESS runtime, installed and checked by the launcher."
+                      : "The MNG Server's own files. The launcher does not install, check or update them."}
                   </dd>
                   {server.folderProblem && (<><dt>Folder</dt><dd className="status-bad">{server.folderProblem}</dd></>)}
                 </dl>)}
@@ -317,7 +322,7 @@ export function ServersTab() {
                 {server.kind === "paradox_realm" && (
                   <p className="note with-icon">
                     <ShieldIcon />
-                    <span>Uses your Mystic Paradox account and signed runtime. Play joins this realm on its host's PC while the host is online; progress saves to your account.</span>
+                    <span>Uses your MNG DAUNTLESS account and signed runtime. Play joins this MNG Server on its host's PC while the host is online; progress saves to your account.</span>
                   </p>
                 )}
                 <div className="server-actions">

@@ -240,7 +240,9 @@ fn build_game_environment(
     // Re-validated here as well: whatever reaches the game's environment is exactly the canonical
     // `scheme://host[:port]` form, never free text.
     if let Some(url) = backend_url {
-        if crate::servers::normalize_backend_url(url).as_deref() != Ok(url) {
+        // [MNG DAUNTLESS] The launcher's own server (fixed at build time) may be plain http:// on another PC.
+        let own_server = crate::servers::store::official_backend_url() == Some(url);
+        if !own_server && crate::servers::normalize_backend_url(url).as_deref() != Ok(url) {
             return Err("Invalid server address.".to_string());
         }
     }

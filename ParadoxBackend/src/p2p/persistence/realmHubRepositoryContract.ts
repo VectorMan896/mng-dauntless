@@ -241,7 +241,7 @@ export function RunRealmHubRepositoryContract(label: string, harness: () => Prom
         assert.equal((await repo.findForAccount("a"))!.sessionId, "hub-new", "a lost row is not live");
     });
 
-    Case("kick or ban removes the account's live rows from the realm and from no other", async (repo) => {
+    Case("kick or ban removes the account's live rows from the MNG Server and from no other", async (repo) => {
         await repo.requestEntry(Entry("a", { sessionId: "hub-1" }));
         await repo.requestEntry(Entry("a", { sessionId: "hub-2" }));
         await repo.markAdmitted({ sessionId: "hub-2", generation: 1, accountId: "a", admissionId: "adm", admittedAt: at(1_000), now: at(1_000) });
@@ -253,13 +253,13 @@ export function RunRealmHubRepositoryContract(label: string, harness: () => Prom
         const removed = await repo.findPresence("hub-2", "a");
         assert.equal(removed!.state, "REMOVED");
         assert.equal(removed!.purgeAt, at(604_800_000));
-        assert.equal((await repo.findPresence("hub-3", "a"))!.state, "PENDING", "another realm's row is untouched");
+        assert.equal((await repo.findPresence("hub-3", "a"))!.state, "PENDING", "another MNG Server's row is untouched");
         assert.equal((await repo.findPresence("hub-1", "b"))!.state, "PENDING", "another account's row is untouched");
         assert.deepEqual(await repo.removeAccountFromRealm({ realmId: REALM, accountId: "a", at: at(3_000), purgeAt: at(604_800_000) }), []);
         assert.equal((await repo.findPresence("hub-2", "a"))!.purgeAt, at(604_800_000), "a second call changes nothing");
     });
 
-    Case("releasing a realm removes every live row of it", async (repo) => {
+    Case("releasing an MNG Server removes every live row of it", async (repo) => {
         await repo.requestEntry(Entry("a", { sessionId: "hub-1" }));
         await repo.requestEntry(Entry("b", { sessionId: "hub-2" }));
         await repo.markAdmitted({ sessionId: "hub-2", generation: 1, accountId: "b", admissionId: "adm", admittedAt: at(1_000), now: at(1_000) });

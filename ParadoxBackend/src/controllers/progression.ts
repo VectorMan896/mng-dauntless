@@ -18,6 +18,7 @@ import { ComputeNewlyUnlockedNodeIds } from "./slayersPath";
 import { GetP2PExtension } from "../extensions/p2p";
 import type { ExtensionHttpResponse, HostWriteAuthorizeOptions, HostWriteKind } from "../extensions/p2p";
 import crypto from "node:crypto";
+import { RotatingHuntPassId } from "../seasonWindow";
 import { ClientSession } from "mongodb";
 
 // [WP-1 stage 4 — security fix] Per-track rank curves, indexed once (on first use) from the
@@ -83,7 +84,7 @@ export const ACTIVE_HUNTPASS_PROGRESSION_ID = "season43";
 export const SELECTED_HUNTPASS_TRACK_ALIAS = "selected_huntpass";
 
 export function ResolveProgressionTrackId(progressionId: string): string | undefined {
-    if (progressionId === SELECTED_HUNTPASS_TRACK_ALIAS) return ACTIVE_HUNTPASS_PROGRESSION_ID;
+    if (progressionId === SELECTED_HUNTPASS_TRACK_ALIAS) return ServedHuntPassProgressionId();
     return TrackCurves().has(progressionId) ? progressionId : undefined;
 }
 
@@ -92,7 +93,9 @@ export function ResolveProgressionTrackId(progressionId: string): string | undef
 // grants hunt pass XP into whichever track that response named (UHuntPassComponent::AddProgressToSelectedTrack,
 // FUN_1419F22E0 -> GrantProgressionInTrack 0x140E61610).
 export function ServedHuntPassProgressionId(): string {
-    return (process.env.GAMESERVER_HUNTPASS_ID ?? ACTIVE_HUNTPASS_PROGRESSION_ID).trim();
+    // [MNG DAUNTLESS] An explicit GAMESERVER_HUNTPASS_ID wins; otherwise MYSTICPARADOX_HUNTPASS_ROTATION picks the pass
+    // of the current season window (seasonWindow.ts), else the constant above.
+    return (process.env.GAMESERVER_HUNTPASS_ID ?? RotatingHuntPassId(Date.now()) ?? ACTIVE_HUNTPASS_PROGRESSION_ID).trim();
 }
 
 export function IsHuntPassXpTrack(progressionId: string): boolean {
@@ -658,6 +661,11 @@ export interface ConfirmRankOptions {
      * the confirm goes through, logged as [MasteryMon] SYNC. A larger gap stays refused. Any other track is unchanged.
      */
     boundedMasterySync?: boolean;
+    /**
+     * [MNG DAUNTLESS 2026-10-30] Confirm the Hunt Pass Elite rank (POST .../confirm/premium) instead of the free one. Same range and
+     * XP checks; Elite is free for everyone on this server (MYSTICPARADOX_HUNTPASS_FREE_PREMIUM).
+     */
+    premium?: boolean;
 }
 
 export async function ConfirmPublicProgressionRank(userId: string, progressionId: string, rank: number, options: ConfirmRankOptions = {}): Promise<ConfirmRankResult> {
@@ -691,7 +699,8 @@ export async function ConfirmPublicProgressionRank(userId: string, progressionId
         }
     }
 
-    const Record = await GetRepositories().progressionTracks.setConfirmedFremiumRank(userId, progressionId, rank);
+    const Record = await GetRepositories().progressionTracks.setConfirmedFremiumRank(userId, progressionId, rank,
+        options.premium === true ? "confirmedPremiumRank" : "confirmedFremiumRank");
     return { ok: true, record: Record };
 }
 

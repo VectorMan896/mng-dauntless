@@ -11,10 +11,10 @@ import test from "node:test";
 import { OFFICIAL_PLAY_UNAVAILABLE_MESSAGE, ReadOfficialPlay } from "./officialPlay";
 
 const WITH_DEPLOYSERVER = { DEPLOYSERVER_URL: "deployserver.invalid:8080" };
-const UNAVAILABLE = { available: false, message: "The official server is currently unavailable. Join or host a realm." };
+const UNAVAILABLE = { available: false, message: "The official server is currently unavailable. Join or host an MNG Server." };
 
 test("the launcher's message when official play is off is exact (2026-10-15)", () => {
-    assert.equal(OFFICIAL_PLAY_UNAVAILABLE_MESSAGE, "The official server is currently unavailable. Join or host a realm.");
+    assert.equal(OFFICIAL_PLAY_UNAVAILABLE_MESSAGE, "The official server is currently unavailable. Join or host an MNG Server.");
 });
 
 test("the default is on with a DeployServer and off without one (2026-10-15)", () => {

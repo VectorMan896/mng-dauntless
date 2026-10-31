@@ -1,5 +1,11 @@
 import type { CSSProperties } from "react";
-import heroArt from "../assets/home-shattered-isles.webp";
+// [MNG DAUNTLESS 2026-10-31] The MNG launcher art (DautlessReforged\background.jpg) replaces the original's Shattered Isles.
+import defaultArt from "../assets/mng-frost-skraev.jpg";
+import { activeSeasonalEvent } from "../lib/seasonalEvent";
+
+// [MNG DAUNTLESS 2026-10-31] During a seasonal event (Dark Harvest, Ramsgiving, Frostfall, Saint's Bond, Springtide) the
+// event's art replaces it. Chosen when the launcher starts.
+const heroArt = activeSeasonalEvent()?.art ?? defaultArt;
 
 // Fixed (not random) so the motes don't jump on every render.
 const MOTES = [

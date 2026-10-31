@@ -13,9 +13,9 @@ import { ShieldIcon } from "./icons";
 // remove someone from a realm (kick and ban), and to the support address of the Terms (LEGAL.supportEmail in
 // src/legal/legalMeta.ts - keep the two in step; it is written out here so this note has no imports beyond its icon).
 export const REALM_TRUST_WARNING =
-  "Only join realms and invite players you trust. Mystic Paradox is open source, so anyone can study how it works, " +
+  "Only join MNG Servers and invite players you trust. MNG DAUNTLESS is open source, so anyone can study how it works, " +
   "and a player with bad intent may try to disrupt your game or exploit bugs in the game. Keep Windows and your " +
-  "antivirus up to date. If someone behaves badly, tell the realm's host and report it to support@mysticfox.dev.";
+  "antivirus up to date. If someone behaves badly, tell the MNG Server's host and report it to studioferrermoz@gmail.com.";
 
 export function RealmTrustNote() {
   return (

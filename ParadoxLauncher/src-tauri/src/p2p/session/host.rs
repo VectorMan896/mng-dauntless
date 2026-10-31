@@ -38,7 +38,7 @@ pub fn start_host_bundle(
     let hub_session = plan.kind == SessionKind::HubHost;
     let ice = bootstrap.common.coop_transport == "ICE";
     if hub_session && !ice {
-        return Err("A realm hub needs the ICE co-op transport.".to_string());
+        return Err("An MNG Server hub needs the ICE co-op transport.".to_string());
     }
     let local_client = plan.local_client;
     let realm = hub_session || bootstrap.common.realm_id.is_some();
@@ -75,7 +75,7 @@ pub fn start_host_bundle(
         &bridge_log,
         "launcher",
         &format!(
-            "HOST_KIND kind={} hubKind={} hubRoom={} localClient={} maxPeers={} realm={}",
+            "HOST_KIND kind={} hubKind={} hubRoom={} localClient={} maxPeers={} MNG Server={}",
             if hub_session { "HUB" } else { "HUNT" },
             plan.hub_kind.map_or("none", HubKind::wire),
             bootstrap.common.hub_room_id.as_deref().unwrap_or("none"),

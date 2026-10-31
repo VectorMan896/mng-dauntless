@@ -153,10 +153,11 @@ storeRouter.get("/product/skus/public", HasParadoxBackendAuth, async (req: any, 
         displayPriority: Sku.displayPriority,
         prices: Sku.prices.map((p) => ({ currencyId: p.currencyId, price: p.price, salesPrice: null, multiPrice: null })),
         maxAllowed: Sku.maxAllowed,
-        remaining: Sku.maxAllowed ?? 999,
+        remaining: Sku.owned ? 0 : Sku.maxAllowed ?? 999,
         duplicateInstancedItems: Sku.duplicateInstancedItems,
         images: Sku.images ?? {},
-        tags: Sku.tags,
+        // [MNG DAUNTLESS 2026-10-31] The requested tag too: the event merchant answers tags its SKUs do not carry yet.
+        tags: Sku.tags.includes(RequiredTags) ? Sku.tags : [...Sku.tags, RequiredTags],
         scheduledTags: null,
         items: Sku.items.map((i) => ({ catalogId: i.catalogId, quantity: i.quantity })),
         // [2026-07-30] Previously hardcoded empty/null. The client needs the real values: an

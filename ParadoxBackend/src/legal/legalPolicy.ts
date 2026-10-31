@@ -11,8 +11,8 @@
 // bump a version whenever the text changes in substance so signed-in players are asked to accept it again. legalPolicy.test.ts
 // reads the launcher file and fails when they drift apart.
 
-export const TERMS_VERSION = "2026-10-14";
-export const PRIVACY_VERSION = "2026-10-17";
+export const TERMS_VERSION = "2026-10-30";
+export const PRIVACY_VERSION = "2026-10-30";
 export const MINIMUM_AGE = 16;
 
 export interface LegalRequirements {
@@ -32,7 +32,8 @@ export interface LegalRequirements {
 // tester's PC runs for their realm, which name the other players there, connection logs and the game's settings files).
 // Launchers before it carry 2026-10-16 or older, so every earlier version stays accepted until the Guard minimum launcher
 // shows 2026-10-17; dropping only the older ones now would ask some players to accept twice.
-export const PRIVACY_VERSIONS_STILL_ACCEPTED: readonly string[] = ["2026-10-16", "2026-10-15", "2026-10-14.2"];
+// [2026-10-30] MNG DAUNTLESS: new privacy policy; earlier (Mystic Paradox) versions are no longer accepted.
+export const PRIVACY_VERSIONS_STILL_ACCEPTED: readonly string[] = [];
 
 /** Whether a privacy version counts as accepted: the current one, or one still accepted during its transition. */
 export function IsAcceptedPrivacyVersion(version: unknown, required: LegalRequirements = CurrentLegalRequirements()): boolean {

@@ -64,7 +64,7 @@ export function ConsentScreen() {
         )}
       >
         <p className="modal-lead">
-          Before you play, read and accept the current Terms of Use and Privacy Policy. They explain what Mystic Paradox
+          Before you play, read and accept the current Terms of Use and Privacy Policy. They explain what MNG DAUNTLESS
           is, the rules you agree to, and what data we keep.
         </p>
         <LegalConsentChecks

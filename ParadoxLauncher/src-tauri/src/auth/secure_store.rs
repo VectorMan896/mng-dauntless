@@ -14,7 +14,7 @@ use windows_sys::Win32::Security::Cryptography::{
 // [2026-10-13 realms S5] One saved session per scope (`auth/scope.rs`). The official scope keeps the entry and file
 // names used since the first launcher, so existing sign-ins survive; each local server has an entry and a file of its
 // own, named after its id. A scope only ever reads, writes and clears its own.
-const SERVICE: &str = "dev.mysticfox.launcher";
+const SERVICE: &str = "gg.mngdauntless.launcher";
 
 fn entry(scope: &AuthScope) -> Result<Entry, String> {
     Entry::new(SERVICE, &scope.store_names().credential_user).map_err(|e| e.to_string())

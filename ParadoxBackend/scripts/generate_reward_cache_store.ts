@@ -21,6 +21,11 @@ const CatalogPath = CatalogOverride
     ? path.resolve(CatalogOverride)
     : path.join(ProjectRoot, "Items_Analysis", "catalog_1_14_7.jsonl");
 const OutputPath = path.join(MetagameRoot, "game-data", "reward_cache_store.json");
+// [MNG DAUNTLESS 2026-10-30] Optional tile-art inputs. pak_textures_1_14_7.txt (scripts/list_pak_textures.cjs) lists the cooked
+// texture paths of your install; store_item_images_1_14_7.jsonl is the client's own StoreItemsTable. With both, a tile uses the
+// art the live store drew for that item (see TileImagePath). Without them, the catalog icon is used as before.
+const PakTexturesPath = path.join(ProjectRoot, "Items_Analysis", "pak_textures_1_14_7.txt");
+const StoreItemImagesPath = path.join(ProjectRoot, "Items_Analysis", "store_item_images_1_14_7.jsonl");
 
 // [1.14.7 2026-10-08] The Reward Cache is priced in the 1.14.7 seasonal coin (CURRENCY_SEASONAL_COIN, the blue-star
 // "Cache Coins" of the HUD; icon ui_icon_huntpass_elite_complete_currency). The live 1.14.7 hunt passes
@@ -377,6 +382,72 @@ for (const Line of fs.readFileSync(CatalogPath, "utf8").split(/\r?\n/)) {
     if (typeof Row.itemId === "string" && Row.itemId.length > 0) Catalog.set(Row.itemId, Row);
 }
 
+// Short texture name (lower case) -> cooked object path, from the pak listing.
+const PakTextures = new Map<string, string>();
+if (fs.existsSync(PakTexturesPath)) {
+    for (const Line of fs.readFileSync(PakTexturesPath, "utf8").split(/\r?\n/)) {
+        if (!Line.startsWith("/Game/")) continue;
+        PakTextures.set(Line.slice(Line.lastIndexOf(".") + 1).toLowerCase(), Line);
+    }
+}
+// StoreItemsTable row name (lower case) -> its two short image names.
+const StoreItemImages = new Map<string, { standardImage?: string; featureImage?: string }>();
+if (fs.existsSync(StoreItemImagesPath)) {
+    for (const Line of fs.readFileSync(StoreItemImagesPath, "utf8").split(/\r?\n/)) {
+        if (!Line.trim()) continue;
+        const Row = JSON.parse(Line) as { rowName?: string; standardImage?: string; featureImage?: string };
+        if (typeof Row.rowName === "string") StoreItemImages.set(Row.rowName.toLowerCase(), Row);
+    }
+}
+
+// StoreItemsTable rows named after the item instead of its catalog id, matched by display name and art name.
+const STORE_ROW_BY_CATALOG_ID: Record<string, string> = {
+    // Weavewitch Homunculance: its catalog icon is the placeholder ico_icon_default (Store_Alchemy_11A_..._homunculance_warpike).
+    WP_MS_HP11A_ALCHEMIST_01: "single_weapon_alchemancer_warpike",
+    // Harvest Pumpkin Sigil: Store_FlaresSigils_512x512_pumpkin_sigil.
+    BNC_SIGIL_EVENT_DARK17_000: "single_sigil_pumpkin",
+};
+
+function CookedTexture(ShortOrPath: string | undefined): string | undefined {
+    if (!ShortOrPath || ShortOrPath === "None") return undefined;
+    // A full path is kept when the pak listing has it (a full path is what a fixed exporter writes); a short name is resolved.
+    const Short = ShortOrPath.slice(ShortOrPath.lastIndexOf("/") + 1).split(".")[0].toLowerCase();
+    return PakTextures.get(Short);
+}
+
+// [MNG DAUNTLESS 2026-10-30] The tile art of a Reward Cache item. The catalog icon was wrong for whole families (in-game
+// screenshots, 30 Oct): gliders point at the HUD glider ring (ui_hud_glider_backing), sigils at a tiny SmallIcons
+// texture drawn at the tile's left edge, fabrics at an untinted white mask, and some armour at a hunt pass render that
+// draws nothing (armour_male_alchemist_chest_00_ultra; the store row uses armour_male_alchemist_ultra_chest_00). In order:
+//   1. the live store's own row for the item (sku_<id>, prestige_<id> - the Vault rows -, <id>, glider_<frame> for GD_,
+//      or a row named after the item rather than its id: STORE_ROW_BY_CATALOG_ID);
+//   2. a fabric's coloured ui_equip_fabric_* render in place of its ico_equip_fabric_* mask;
+//   3. the catalog icon (custom, large, then small), as before.
+// Without the pak listing only step 3 runs.
+// [2026-10-30, second screenshots] Not used: the full-size sigil textures (CharacterProps/banners/textures/playersigil_*). They
+// are white-on-black masks and drew a black square over the tile. A fabric without a coloured render stays a white shape:
+// the live store drew those the same way (its single_fabric_darkharvest_stitched row uses ico_equip_fabric_48).
+function TileImagePath(CatalogId: string, CatalogIcon: string): { path: string; source: string } {
+    if (PakTextures.size > 0) {
+        const Id = CatalogId.toLowerCase();
+        const Rows = [STORE_ROW_BY_CATALOG_ID[CatalogId], `sku_${Id}`, `prestige_${Id}`, Id].filter((Row): Row is string => Row !== undefined);
+        if (Id.startsWith("gd_")) Rows.push(`glider_${Id.slice(3)}`);
+        for (const RowName of Rows) {
+            const Row = StoreItemImages.get(RowName);
+            const Art = CookedTexture(Row?.standardImage) ?? CookedTexture(Row?.featureImage);
+            if (Art) return { path: Art, source: `store row ${RowName}` };
+        }
+        const IconShort = CatalogIcon.slice(CatalogIcon.lastIndexOf("/") + 1).split(".")[0].toLowerCase();
+        if (IconShort.startsWith("ico_equip_fabric_")) {
+            const Art = PakTextures.get(IconShort.replace(/^ico_equip_/, "ui_equip_"));
+            if (Art) return { path: Art, source: "coloured fabric render" };
+        }
+        if (!PakTextures.has(IconShort)) console.warn(`Warning: ${CatalogId}'s catalog icon is not in the pak listing: ${CatalogIcon}`);
+    }
+    return { path: CatalogIcon, source: "catalog icon" };
+}
+const ImageSourceCounts = new Map<string, number>();
+
 const OriginalSelectionOrder = new Map(SELECTIONS.map((Selection, Index) => [Selection.catalogId, Index]));
 const CategoryOrder: Record<Category, number> = {
     armour: 0,
@@ -531,8 +602,12 @@ const Store = OrderedSelections.map((Selection, Index) => {
     // Official captured SKU payloads use images.standard for server-authored tile art. Reconstructed
     // SKU ids do not have baked StoreItemsTable rows, so provide a cooked catalog texture reference
     // directly. Prefer full custom/large art, then fall back to the ordinary inventory icon.
-    const StandardImagePath = ItemData.customIcon || ItemData.largeIcon || ItemData.icon;
-    Assert(StandardImagePath.length > 0, `Missing catalog image path: ${Selection.catalogId}`);
+    const CatalogIconPath = ItemData.customIcon || ItemData.largeIcon || ItemData.icon;
+    Assert(CatalogIconPath.length > 0, `Missing catalog image path: ${Selection.catalogId}`);
+    const Tile = TileImagePath(Selection.catalogId, CatalogIconPath);
+    const StandardImagePath = Tile.path;
+    const SourceKind = Tile.source.startsWith("store row") ? "store row" : Tile.source;
+    ImageSourceCounts.set(SourceKind, (ImageSourceCounts.get(SourceKind) ?? 0) + 1);
 
     CategoryCounts[Selection.category] += 1;
     if (Selection.featured) FeaturedCount += 1;
@@ -581,4 +656,6 @@ for (const Entry of Store) {
 console.log(`Wrote ${OutputPath}`);
 console.log(`SKUs: ${Store.length}; featured: ${FeaturedCount}`);
 console.log(`Categories: ${Object.entries(CategoryCounts).map(([Key, Value]) => `${Key}=${Value}`).join(", ")}`);
+console.log(`Tile art: ${[...ImageSourceCounts.entries()].map(([Source, Count]) => `${Source}=${Count}`).join(", ")}`
+    + (PakTextures.size === 0 ? " (no Items_Analysis/pak_textures_1_14_7.txt: run scripts/list_pak_textures.cjs for store art)" : ""));
 console.log(`Prices: ${[...PriceCounts.entries()].sort(([A], [B]) => A - B).map(([Price, Count]) => `${Price}=${Count}`).join(", ")}`);

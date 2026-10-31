@@ -57,7 +57,7 @@ export async function AcceptConsent(userId: string, body: unknown, now: Date = n
     const Required = CurrentLegalRequirements();
 
     if (Fields.ageConfirmed !== true) {
-        throw new LauncherApiError("CONSENT_AGE_REQUIRED", `You must be at least ${Required.minimumAge} years old to play Mystic Paradox.`);
+        throw new LauncherApiError("CONSENT_AGE_REQUIRED", `You must be at least ${Required.minimumAge} years old to play MNG DAUNTLESS.`);
     }
     if (typeof Fields.termsVersion !== "string" || typeof Fields.privacyVersion !== "string") {
         throw new LauncherApiError("AUTH_VALIDATION_FAILED", "termsVersion and privacyVersion are required.");

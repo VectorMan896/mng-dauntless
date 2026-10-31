@@ -173,7 +173,7 @@ test("POST consent refuses an unconfirmed age, outdated versions and missing ver
     const Outdated = await Call("POST", "/launcher/v1/account/consent", Account.token,
         { ...CURRENT_CONSENT, termsVersion: "2026-01-01" });
     ExpectError(Outdated, 409, "LEGAL_VERSION_OUTDATED");
-    assert.equal(Outdated.json.error.termsVersion, "2026-10-14", "the refusal names the current versions");
+    assert.equal(Outdated.json.error.termsVersion, "2026-10-30", "the refusal names the current versions");
 
     ExpectError(await Call("POST", "/launcher/v1/account/consent", Account.token, { ageConfirmed: true }), 400, "AUTH_VALIDATION_FAILED");
 
@@ -187,7 +187,7 @@ test("POST consent with the current versions is recorded, and GET then reports i
     const Accepted = await Call("POST", "/launcher/v1/account/consent", Account.token, CURRENT_CONSENT);
     assert.equal(Accepted.status, 200);
     assert.equal(Accepted.json.upToDate, true);
-    assert.equal(Accepted.json.accepted.termsVersion, "2026-10-14");
+    assert.equal(Accepted.json.accepted.termsVersion, "2026-10-30");
     assert.equal(Accepted.json.accepted.ageConfirmed, true);
     assert.equal(typeof Accepted.json.accepted.acceptedAt, "string");
 
@@ -281,7 +281,7 @@ test("registration without a consent is refused with 400 CONSENT_REQUIRED, and a
         { displayName: Name, email: `${Name.toLowerCase()}@example.test`, password: "longenough1", consent: CURRENT_CONSENT });
     assert.equal(Accepted.status, 202, JSON.stringify(Accepted.json));
     const Stored = await Realm.repos.launcherAccounts.findByEmail(`${Name.toLowerCase()}@example.test`);
-    assert.equal(Stored?.consent?.termsVersion, "2026-10-14");
+    assert.equal(Stored?.consent?.termsVersion, "2026-10-30");
     assert.equal(Stored?.consent?.ageConfirmed, true);
 });
 
@@ -299,7 +299,7 @@ test("the erasure's list returns the accounts whose hold has ended, oldest first
 
 // [2026-10-15] Official play (MYSTICPARADOX_OFFICIAL_PLAY, config/officialPlay.ts) over HTTP: the status answer, and the refusal of a launch
 // with no realm. A realm launch is not refused by the switch; the checks after it decide that launch.
-const OFFICIAL_PLAY_MESSAGE = "The official server is currently unavailable. Join or host a realm.";
+const OFFICIAL_PLAY_MESSAGE = "The official server is currently unavailable. Join or host an MNG Server.";
 
 /** Sets the variables (undefined removes one) and returns the function that puts them back. */
 function SetEnvironment(values: Record<string, string | undefined>): () => void {

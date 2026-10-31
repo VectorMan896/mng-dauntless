@@ -103,7 +103,7 @@ function after(ms: number, next: () => void) {
 }
 
 function validate(options: RealmHostLimits | undefined): string | null {
-  if (!options) return "The realm limits are missing.";
+  if (!options) return "The MNG Server limits are missing.";
   if (!Number.isInteger(options.maxPlayers) || options.maxPlayers < 1 || options.maxPlayers > 64) return "The player limit must be from 1 to 64.";
   if (!Number.isInteger(options.maxServers) || options.maxServers < 1 || options.maxServers > 8) return "The server limit must be from 1 to 8.";
   if (options.afkSeconds != null && (!Number.isInteger(options.afkSeconds) || options.afkSeconds < 0 || options.afkSeconds > 7200)) return "The AFK limit must be from 0 to 7200 seconds.";
@@ -130,12 +130,12 @@ export default function realmHostPreview(cmd: string, args: unknown): Promise<un
     case "realm_host_deny_request": {
       if (!validAccountId(payload.accountId)) return say("That is not a player id.", 250, "error");
       if (!requests.some((request) => request.accountId === payload.accountId)) {
-        return say("That player has not asked to join your realm.", 250, "error");
+        return say("That player has not asked to join your MNG Server.", 250, "error");
       }
       const decided = requests.find((request) => request.accountId === payload.accountId)!;
       requests = requests.filter((request) => request.accountId !== payload.accountId);
       if (cmd === "realm_host_approve_request") members = [{ accountId: decided.accountId, displayName: decided.displayName, at: iso(0) }, ...members];
-      return say(cmd === "realm_host_approve_request" ? "The player can join your realm now." : "The request was denied.", 300);
+      return say(cmd === "realm_host_approve_request" ? "The player can join your MNG Server now." : "The request was denied.", 300);
     }
     case "realm_host_invite_player": {
       const typed = (payload.username ?? "").trim();
@@ -143,12 +143,12 @@ export default function realmHostPreview(cmd: string, args: unknown): Promise<un
       const name = KNOWN_USERNAMES.find((known) => known.toLowerCase() === typed.toLowerCase());
       if (!name) return say("No player has that username.", 300, "error");
       const accountId = `acc-${name.toLowerCase()}`;
-      if (members.some((member) => member.accountId === accountId)) return say(`${name} can join your realm.`, 300);
+      if (members.some((member) => member.accountId === accountId)) return say(`${name} can join your MNG Server.`, 300);
       // A player who asked to join is let in at once, as the backend does.
       if (requests.some((request) => request.accountId === accountId)) {
         requests = requests.filter((request) => request.accountId !== accountId);
         members = [{ accountId, displayName: name, at: iso(0) }, ...members];
-        return say(`${name} can join your realm.`, 300);
+        return say(`${name} can join your MNG Server.`, 300);
       }
       if (!invites.some((invite) => invite.accountId === accountId)) invites = [{ accountId, displayName: name, at: iso(0) }, ...invites];
       return say(`Invite sent to ${name}. They can join once they accept it in their launcher.`, 300);
@@ -166,30 +166,30 @@ export default function realmHostPreview(cmd: string, args: unknown): Promise<un
       }
       joinPolicy = payload.joinPolicy;
       return say(joinPolicy === "PUBLIC"
-        ? "Anyone can join your realm now."
+        ? "Anyone can join your MNG Server now."
         : joinPolicy === "SOLO"
-          ? "Your realm is in solo mode now: only you can enter. Players already inside stay until they leave."
-          : "Only players you approve can join your realm now.", 300);
+          ? "Your MNG Server is in solo mode now: only you can enter. Players already inside stay until they leave."
+          : "Only players you approve can join your MNG Server now.", 300);
     }
     case "realm_host_status":
       return delay(status(), 120);
     case "realm_host_create": {
-      if (realmName !== null) return say("You already host a realm. Release it before claiming another name.", 250, "error");
+      if (realmName !== null) return say("You already host an MNG Server. Release it before claiming another name.", 250, "error");
       if (payload.joinPolicy !== "SOLO" && payload.joinPolicy !== "INVITE_ONLY" && payload.joinPolicy !== "PUBLIC") {
-        return say("Choose who can join your realm.", 250, "error");
+        return say("Choose who can join your MNG Server.", 250, "error");
       }
       realmName = "mysticfox";
       joinPolicy = payload.joinPolicy;
-      return say("MysticFox's Realm is ready. Start it to let players in: they add it by entering your username on the Realms page.", 500);
+      return say("YourName's MNG Server is ready. Start it to let players in: they add it by entering your username on the MNG Servers page.", 500);
     }
     case "realm_host_start": {
-      if (realmName === null) return say("This account does not host a realm yet.", 150, "error");
-      if (state !== "stopped") return say("The realm host is already running.", 150, "error");
+      if (realmName === null) return say("This account does not host an MNG Server yet.", 150, "error");
+      if (state !== "stopped") return say("The MNG Server host is already running.", 150, "error");
       const problem = validate(payload.options);
       if (problem) return say(problem, 150, "error");
       if (params.has("realmfail")) {
         return new Promise((resolve) => setTimeout(() => {
-          notice = "Not enough free memory to start the realm (2.1 GB free, 3 GB needed).";
+          notice = "Not enough free memory to start the MNG Server (2.1 GB free, 3 GB needed).";
           noticeKind = "error";
           resolve(status());
         }, 600));
@@ -211,7 +211,7 @@ export default function realmHostPreview(cmd: string, args: unknown): Promise<un
       members = members.filter((member) => member.accountId !== payload.accountId);
       if (!validAccountId(payload.accountId)) return say("That is not a player id.", 250, "error");
       players = players.filter((player) => player.accountId !== payload.accountId);
-      return say("The player was removed from the realm.", 300);
+      return say("The player was removed from the MNG Server.", 300);
     }
     case "realm_host_ban": {
       if (!validAccountId(payload.accountId)) return say("That is not a player id.", 250, "error");
@@ -222,7 +222,7 @@ export default function realmHostPreview(cmd: string, args: unknown): Promise<un
       if (!bans.some((ban) => ban.accountId === payload.accountId)) {
         bans = [...bans, { accountId: payload.accountId!, displayName: target?.displayName ?? null, reason: reason || null, at: new Date().toISOString() }];
       }
-      return say("The player was banned from the realm.", 300);
+      return say("The player was banned from the MNG Server.", 300);
     }
     case "realm_host_unban":
       if (!validAccountId(payload.accountId)) return say("That is not a player id.", 250, "error");

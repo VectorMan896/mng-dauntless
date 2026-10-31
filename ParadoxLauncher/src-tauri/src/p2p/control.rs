@@ -697,7 +697,7 @@ fn handle_control(
                     return Ok(());
                 }
                 if !p2p_session::replace_running_join(&session_id) {
-                    return Err("The earlier realm hub connection did not end in time.".to_string());
+                    return Err("The earlier MNG Server hub connection did not end in time.".to_string());
                 }
             }
             *access_token = refresh_native_session(app)?.access_token;
@@ -713,7 +713,7 @@ fn handle_control(
                 .and_then(Value::as_str)
                 .unwrap_or("UNKNOWN");
             process::append_active_session_log(&format!(
-                "realm session left session={session_id} reason={reason}"
+                "MNG Server session left session={session_id} reason={reason}"
             ));
             // [2026-10-14 realms] The member is told why, when the reason is worth a banner (never a travel).
             super::realm::notify_session_leave(app, reason);

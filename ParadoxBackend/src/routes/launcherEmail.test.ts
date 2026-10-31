@@ -300,7 +300,7 @@ test("resend mails a verification code to an unverified account after the answer
     const Reply = await Call("POST", "/launcher/v1/auth/email/resend", { email: Unverified.email });
     assert.deepEqual(Reply, { status: 200, json: { sent: true } });
     await Recorder.waitForCount(Before + 1);
-    assert.match(Recorder.lastTo(Unverified.email)?.subject ?? "", /^Your Mystic Paradox code: \d{6}$/);
+    assert.match(Recorder.lastTo(Unverified.email)?.subject ?? "", /^Your MNG DAUNTLESS code: \d{6}$/);
 
     const Verified = await Seed({ verified: true });
     const Quiet = Recorder.sent.length;
@@ -316,7 +316,7 @@ test("forgot answers { sent: true } for any address, and mails a reset code to a
     const Before = Recorder.sent.length;
     assert.deepEqual((await Call("POST", "/launcher/v1/auth/password/forgot", { email: Account.email })).json, { sent: true });
     await Recorder.waitForCount(Before + 1);
-    assert.match(Recorder.lastTo(Account.email)?.subject ?? "", /^Your Mystic Paradox password reset code: \d{6}$/);
+    assert.match(Recorder.lastTo(Account.email)?.subject ?? "", /^Your MNG DAUNTLESS password reset code: \d{6}$/);
 });
 
 test("a malformed address is 400 (a shape error, not an account question); resend is limited to five an hour per address", async () => {

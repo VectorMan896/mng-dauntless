@@ -92,5 +92,9 @@ export const Collections = {
     Parties: "parties",
     PartyMemberships: "partyMemberships",
     PartyInvites: "partyInvites",
-    PartyOutbox: "partyOutbox"
+    PartyOutbox: "partyOutbox",
+
+    // [MNG DAUNTLESS 2026-10-31] Finished Trials runs reported by the game server (src/trialRuns.ts), for the Trials leaderboards.
+    // _id = the run's session id (or a generated one).
+    TrialRuns: "trialRuns"
 } as const;

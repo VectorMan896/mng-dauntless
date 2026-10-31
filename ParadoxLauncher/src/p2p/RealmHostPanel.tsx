@@ -69,7 +69,7 @@ const JOIN_MODES: { policy: RealmJoinPolicy; label: string; detail: string; Icon
   {
     policy: "SOLO",
     label: "Solo mode",
-    detail: "Only you can enter. Others can't join or ask to, and see your realm as unavailable; players already inside stay until they leave.",
+    detail: "Only you can enter. Others can't join or ask to, and see your MNG Server as unavailable; players already inside stay until they leave.",
     Icon: AccountIcon,
   },
   {
@@ -132,9 +132,9 @@ function stateText(state: RealmHostState | null, uptime: string | null): string 
     case "starting": return "Starting Ramsgate on this PC…";
     case "online": return uptime ? `Online for ${uptime}.` : "Online.";
     case "restarting": return "Restarting Ramsgate…";
-    case "stopping": return "Stopping the realm…";
-    case "stopped": return "Your realm is offline. Start it to let your friends in.";
-    default: return "Checking your realm…";
+    case "stopping": return "Stopping the MNG Server…";
+    case "stopped": return "Your MNG Server is offline. Start it to let your friends in.";
+    default: return "Checking your MNG Server…";
   }
 }
 
@@ -468,7 +468,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
   if (state === "stopped" || state == null) {
     headerButton = (
       <Button onClick={startRealm} disabled={state == null || !check.limits || working || noRealm} loading={busy === "start"} loadingLabel="Starting…">
-        Start realm
+        Start MNG Server
       </Button>
     );
   } else {
@@ -480,7 +480,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
         loading={state === "stopping"}
         loadingLabel="Stopping…"
       >
-        Stop realm
+        Stop MNG Server
       </Button>
     );
   }
@@ -492,14 +492,14 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
   const confirmName = confirm && confirm.kind !== "stop" ? playerName(confirm.player) : "";
 
   return (
-    <section className="glass card reveal rh" style={style} aria-label="Host my realm">
+    <section className="glass card reveal rh" style={style} aria-label="Host my MNG Server">
       <div className="section">
         <div className="section-row">
           <div className="section-head">
             <div className={`section-icon${iconTone}`}><ServersIcon /></div>
             <div className="min-w-0">
               <h2 className="section-title rh-title">
-                <span>Host my realm</span>
+                <span>Host my MNG Server</span>
                 {chip && (
                   <span className={`chip${chip.tone ? ` ${chip.tone}` : ""}`}>
                     {chip.busy ? <span className="spinner rh-chip-spinner" aria-hidden="true" /> : state === "online" ? <span className="dot pulse" aria-hidden="true" /> : null}
@@ -512,7 +512,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
               </h2>
               <p className="section-desc">
                 {realm && <><span>{realm.name === ownRealmName && ownLabel ? ownLabel : realm.name}</span> · </>}
-                {noRealm ? "You don't have a realm yet. Create it below." : stateText(state, uptime)}
+                {noRealm ? "You don't have an MNG Server yet. Create it below." : stateText(state, uptime)}
               </p>
             </div>
           </div>
@@ -539,7 +539,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
           </p>
         )}
         {actionError && <p className="feedback bad" role="alert">{actionError}</p>}
-        {statusError && <p className="feedback bad" role="alert">Couldn't read the realm status. {statusError}</p>}
+        {statusError && <p className="feedback bad" role="alert">Couldn't read the MNG Server status. {statusError}</p>}
         {!status && !statusError && <div className="loader-bar rh-loading" />}
       </div>
 
@@ -547,28 +547,28 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
       {noRealm && (
         <div className="section">
           <div className="rh-head">
-            <h3 className="rh-heading">Create your realm</h3>
+            <h3 className="rh-heading">Create your MNG Server</h3>
             <span className="rh-sub">Once, for this account.</span>
           </div>
           {ownRealmName ? (
             <p className="note with-icon">
               <InfoIcon />
               <span>
-                Your realm is named after your username: <strong>{ownLabel}</strong>. Players add it by entering{" "}
-                <strong>{username}</strong> under Realms, Add a realm.
+                Your MNG Server is named after your username: <strong>{ownLabel}</strong>. Players add it by entering{" "}
+                <strong>{username}</strong> under MNG Servers, Add an MNG Server.
               </span>
             </p>
           ) : (
             <p className="note with-icon">
               <AlertIcon />
-              <span>Set your username first: your realm is named after it.</span>
+              <span>Set your username first: your MNG Server is named after it.</span>
             </p>
           )}
           <JoinModes policy={createPolicy} disabled={working} onChoose={setCreatePolicy} />
           {createError && <p className="feedback bad" role="alert">{createError}</p>}
           <div className="rh-create-actions">
             <Button onClick={() => void createRealm()} disabled={working || !ownRealmName} loading={busy === "create"} loadingLabel="Creating…">
-              Create realm
+              Create MNG Server
             </Button>
           </div>
         </div>
@@ -713,7 +713,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
               <h3 className="rh-heading">Allowed players</h3>
               {members.length > 0 && <span className="chip">{members.length}<span className="sr-only"> allowed</span></span>}
             </div>
-            <span className="rh-sub">They can join whenever your realm is online.</span>
+            <span className="rh-sub">They can join whenever your MNG Server is online.</span>
           </div>
           {people === null && !peopleError ? (
             <div className="loader-bar rh-loading" />
@@ -746,7 +746,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
           <span className="rh-sub">
             {state === "online"
               ? "Max servers applies at once. Max players and AFK apply when Ramsgate next starts."
-              : "Used when you start the realm."}
+              : "Used when you start the MNG Server."}
           </span>
         </div>
         <div className="rh-limits">
@@ -755,7 +755,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
             value={draft.maxPlayers}
             onChange={(event) => editLimit("maxPlayers", event.target.value)}
             error={status ? check.errors.maxPlayers : undefined}
-            hint={`${LIMIT_RANGES.maxPlayers.min} to ${LIMIT_RANGES.maxPlayers.max} in the realm at once.`}
+            hint={`${LIMIT_RANGES.maxPlayers.min} to ${LIMIT_RANGES.maxPlayers.max} in the MNG Server at once.`}
             disabled={limitsLocked}
             inputMode="numeric"
             maxLength={3}
@@ -846,7 +846,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
             {checkedAt != null && <span className="rh-sub">Read at {formatClock(checkedAt)}</span>}
           </div>
           {players.length === 0 ? (
-            <p className="note">Nobody is in your realm right now.</p>
+            <p className="note">Nobody is in your MNG Server right now.</p>
           ) : (
             <ul className="rh-list">
               {players.map((player) => {
@@ -918,7 +918,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
       {confirm && (
         <Modal
           title={confirm.kind === "stop"
-            ? "Stop your realm?"
+            ? "Stop your MNG Server?"
             : confirm.kind === "kick" ? `Kick ${confirmName}?`
               : confirm.kind === "remove" ? `Remove ${confirmName}?`
                 : confirm.kind === "unban" ? `Unban ${confirmName}?` : `Ban ${confirmName}?`}
@@ -933,7 +933,7 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
                 loading={confirmBusy}
                 loadingLabel={confirm.kind === "stop" ? "Stopping…" : confirm.kind === "kick" ? "Kicking…" : confirm.kind === "remove" ? "Removing…" : confirm.kind === "unban" ? "Unbanning…" : "Banning…"}
               >
-                {confirm.kind === "stop" ? "Stop realm" : confirm.kind === "kick" ? "Kick" : confirm.kind === "remove" ? "Remove" : confirm.kind === "unban" ? "Unban" : "Ban"}
+                {confirm.kind === "stop" ? "Stop MNG Server" : confirm.kind === "kick" ? "Kick" : confirm.kind === "remove" ? "Remove" : confirm.kind === "unban" ? "Unban" : "Ban"}
               </Button>
             </div>
           )}
@@ -942,22 +942,22 @@ function RealmHostCard({ style }: { style?: CSSProperties }) {
             <p>
               Ramsgate, Training and every hunt on this PC close.{" "}
               {players.length > 0
-                ? `${plural(players.length, "player")} will be disconnected and the realm goes offline.`
-                : "Nobody is playing right now. The realm stays offline until you start it again."}
+                ? `${plural(players.length, "player")} will be disconnected and the MNG Server goes offline.`
+                : "Nobody is playing right now. The MNG Server stays offline until you start it again."}
             </p>
           )}
           {confirm.kind === "kick" && (
-            <p><strong>{confirmName}</strong> is removed from your realm now. They can join again.</p>
+            <p><strong>{confirmName}</strong> is removed from your MNG Server now. They can join again.</p>
           )}
           {confirm.kind === "unban" && (
-            <p><strong>{confirmName}</strong> can join your realm again.</p>
+            <p><strong>{confirmName}</strong> can join your MNG Server again.</p>
           )}
           {confirm.kind === "remove" && (
-            <p><strong>{confirmName}</strong> can no longer join your realm. To let them back in, invite them again.</p>
+            <p><strong>{confirmName}</strong> can no longer join your MNG Server. To let them back in, invite them again.</p>
           )}
           {confirm.kind === "ban" && (
             <>
-              <p><strong>{confirmName}</strong> is removed now and cannot join your realm until you unban them.</p>
+              <p><strong>{confirmName}</strong> is removed now and cannot join your MNG Server until you unban them.</p>
               <TextField
                 label="Reason (optional)"
                 value={banReason}

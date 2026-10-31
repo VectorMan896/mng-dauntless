@@ -17,8 +17,30 @@
  * the present and never spans more than 12 weeks.
  */
 
-export const ACTIVE_SEASON_ANCHOR_MS = Date.parse("2024-09-26T17:00:00+00:00");
-export const ACTIVE_SEASON_LENGTH_MS = 84 * 24 * 60 * 60 * 1000;
+// [MNG DAUNTLESS] MYSTICPARADOX_SEASON_ANCHOR (an ISO instant) and MYSTICPARADOX_SEASON_LENGTH_DAYS move the cycle; unset
+// keeps the values above. MYSTICPARADOX_HUNTPASS_ROTATION (comma-separated season ids) makes the served pass follow the
+// cycle: cycle N (counted from the anchor) serves id N mod the list length.
+const DEFAULT_SEASON_ANCHOR_MS = Date.parse("2024-09-26T17:00:00+00:00");
+const DEFAULT_SEASON_LENGTH_DAYS = 84;
+const ConfiguredAnchorMs = Date.parse(process.env.MYSTICPARADOX_SEASON_ANCHOR ?? "");
+const ConfiguredLengthDays = Number(process.env.MYSTICPARADOX_SEASON_LENGTH_DAYS);
+export const ACTIVE_SEASON_ANCHOR_MS = Number.isFinite(ConfiguredAnchorMs) ? ConfiguredAnchorMs : DEFAULT_SEASON_ANCHOR_MS;
+export const ACTIVE_SEASON_LENGTH_MS =
+    (Number.isFinite(ConfiguredLengthDays) && ConfiguredLengthDays >= 1 ? ConfiguredLengthDays : DEFAULT_SEASON_LENGTH_DAYS) * 24 * 60 * 60 * 1000;
+
+/** [MNG DAUNTLESS] The rotation list, or undefined when the served pass is fixed. */
+export function HuntPassRotation(): string[] | undefined {
+    const List = (process.env.MYSTICPARADOX_HUNTPASS_ROTATION ?? "").split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+    return List.length > 0 ? List : undefined;
+}
+
+/** [MNG DAUNTLESS] The season id the rotation serves at `NowMs`, or undefined when no rotation is configured. */
+export function RotatingHuntPassId(NowMs: number): string | undefined {
+    const List = HuntPassRotation();
+    if (!List) return undefined;
+    const Cycle = Math.floor((NowMs - ACTIVE_SEASON_ANCHOR_MS) / ACTIVE_SEASON_LENGTH_MS);
+    return List[((Cycle % List.length) + List.length) % List.length];
+}
 
 export function IsoUtc(Ms: number): string {
     return new Date(Ms).toISOString().replace(/\.\d{3}Z$/, "+00:00");

@@ -85,7 +85,7 @@ pub(crate) fn realm_host_gate(
 
 /// [2026-10-16] A realm in solo mode (join policy SOLO): only its host enters. Shown for Play and for a join request.
 pub(crate) const REALM_SOLO_MESSAGE: &str =
-    "This realm is in solo mode: its host is playing alone right now.";
+    "This MNG Server is in solo mode: its host is playing alone right now.";
 
 /// [2026-10-14 realms] The game-session refusal of a realm entry, as the realm's own sentence. Only the realm codes
 /// are read here; anything else is `None`, so the caller keeps its existing message.
@@ -96,16 +96,16 @@ fn realm_refusal_message(body: &[u8]) -> Option<String> {
         .as_str()
         .filter(|message| !message.is_empty());
     let message = match code {
-        "REALM_OFFLINE" => "The realm host is offline.",
+        "REALM_OFFLINE" => "The MNG Server host is offline.",
         "REALM_SOLO" => REALM_SOLO_MESSAGE,
-        "REALM_BANNED" => "You cannot join this realm.",
+        "REALM_BANNED" => "You cannot join this MNG Server.",
         REALM_OWNER_CHANGED => REALM_OWNER_CHANGED,
         REALM_JOIN_REQUESTED => REALM_JOIN_REQUESTED,
         // [2026-10-15] The backend asks for a request now; this sentence is the fallback for a server that still refuses outright.
         "REALM_INVITE_REQUIRED" => {
-            "This realm is invite-only. Ask its host to approve you, or use an invite code."
+            "This MNG Server is invite-only. Ask its host to approve you, or use an invite code."
         }
-        "REALMS_DISABLED" => "Realms are not available on this server.",
+        "REALMS_DISABLED" => "MNG Servers are not available on this server.",
         _ if code.starts_with("REALM") => return backend_message.map(str::to_string),
         _ => return None,
     };
@@ -471,7 +471,7 @@ fn secure_launch_after_runtime(
         .map_err(|_| {
             scope
                 .pick(
-                    "Couldn't reach the Mystic Paradox game server.",
+                    "Couldn't reach the MNG DAUNTLESS game server.",
                     "Couldn't reach this server.",
                 )
                 .to_string()
@@ -788,7 +788,7 @@ mod tests {
         };
         assert_eq!(
             realm_refusal_message(&refusal("REALM_OFFLINE", "x")).as_deref(),
-            Some("The realm host is offline.")
+            Some("The MNG Server host is offline.")
         );
         assert_eq!(
             realm_refusal_message(&refusal("REALM_SOLO", "x")).as_deref(),

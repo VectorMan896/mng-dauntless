@@ -34,7 +34,7 @@ test("a verification code is mailed with the subject, the expiry and the single-
     assert.equal(Recorder.sent.length, 1);
     const [Mail] = Recorder.sent;
     assert.equal(Mail!.to, "slayer@example.test");
-    assert.equal(Mail!.subject, "Your Mystic Paradox code: 482913");
+    assert.equal(Mail!.subject, "Your MNG DAUNTLESS code: 482913");
     assert.match(Mail!.text, /expires in 5 minutes and works only once/);
     assert.match(Mail!.html, /expires in 5 minutes and works only once/);
 });
@@ -43,7 +43,7 @@ test("a password reset code is mailed with its own subject", async () => {
     const Recorder = new RecordingMailTransport();
     SetMailTransportForTest(Recorder);
     await SendPasswordResetCode("slayer@example.test", "000017");
-    assert.equal(Recorder.sent[0]!.subject, "Your Mystic Paradox password reset code: 000017");
+    assert.equal(Recorder.sent[0]!.subject, "Your MNG DAUNTLESS password reset code: 000017");
     assert.equal(Recorder.codeFor("slayer@example.test"), "000017");
 });
 
@@ -77,7 +77,7 @@ test("the SMTP transport sends STARTTLS with a required upgrade on port 587 (the
     assert.equal(Calls.options.requireTLS, true, "the login never goes out before TLS is up");
     assert.deepEqual(Calls.options.auth, { user: "postmaster", pass: "fixture-password" });
     assert.deepEqual(Calls.mail, {
-        from: "Mystic Paradox <no-reply@mysticfox.dev>", to: "slayer@example.test", subject: "S", text: "T", html: "<p>H</p>"
+        from: "MNG DAUNTLESS <no-reply@example.invalid>", to: "slayer@example.test", subject: "S", text: "T", html: "<p>H</p>"
     });
 });
 

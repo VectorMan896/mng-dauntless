@@ -23,7 +23,7 @@ export function DeactivationBanner({ scheduledFor, restoring, error, onRestore }
     <section className="deactivation-banner" aria-label="Account deactivated">
       <div className="deactivation-copy" role="alert">
         <p className="deactivation-title"><AlertIcon />{deactivationMessage(scheduledFor)}</p>
-        <p className="deactivation-note">You cannot play, host or join realms until you restore the account.</p>
+        <p className="deactivation-note">You cannot play, host or join MNG Servers until you restore the account.</p>
         {error && <p className="feedback bad">{error}</p>}
       </div>
       <Button variant="secondary" onClick={onRestore} loading={restoring} loadingLabel="Restoring…">Restore account</Button>

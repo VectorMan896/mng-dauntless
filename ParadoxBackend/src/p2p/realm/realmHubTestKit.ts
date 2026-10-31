@@ -123,7 +123,7 @@ export class FakeRealms implements RealmsPort {
     async isMember(realmId: string, accountId: string): Promise<boolean> { return this.members.has(`${realmId}:${accountId}`); }
     async isBanned(realmId: string, accountId: string): Promise<boolean> { return this.bans.has(`${realmId}:${accountId}`); }
     async setHosting(realmId: string, patch: RealmHostingPatch): Promise<void> {
-        if (this.failSetHosting) throw new Error("realms unavailable");
+        if (this.failSetHosting) throw new Error("MNG Servers unavailable");
         this.hostingPatches.push({ realmId, patch: { ...patch } });
     }
     async markOffline(realmId: string): Promise<void> { this.offline.push(realmId); }

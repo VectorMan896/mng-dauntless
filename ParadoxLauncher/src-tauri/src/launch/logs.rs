@@ -10,14 +10,14 @@ use sha2::{Digest, Sha256};
 
 use super::log_upload;
 
-/// %LOCALAPPDATA%\MysticParadox\Logs\Sessions — a fixed, memorable path independent of the
+/// %LOCALAPPDATA%\MNGDauntless\Logs\Sessions — a fixed, memorable path independent of the
 /// Tauri bundle identifier, so testers/support can find it without asking the launcher.
 pub fn sessions_root(app: &AppHandle) -> Result<PathBuf, String> {
     let base = app
         .path()
         .local_data_dir()
         .map_err(|e| format!("Couldn't locate the log directory: {e}"))?;
-    Ok(base.join("MysticParadox").join("Logs").join("Sessions"))
+    Ok(base.join(crate::DATA_DIR_NAME).join("Logs").join("Sessions"))
 }
 
 pub fn session_dir(app: &AppHandle, launch_session_id: &str) -> Result<PathBuf, String> {
@@ -130,12 +130,12 @@ pub fn write_metadata(dir: &Path, metadata: &SessionMetadata) {
     }
 }
 
-/// `%LOCALAPPDATA%\MysticParadox\Logs`: the session folders, `realm-host.log`, `launcher-exit.log` and the hosted
+/// `%LOCALAPPDATA%\MNGDauntless\Logs`: the session folders, `realm-host.log`, `launcher-exit.log` and the hosted
 /// servers' log start records.
 pub fn logs_dir() -> Option<PathBuf> {
     std::env::var("LOCALAPPDATA")
         .ok()
-        .map(|local| PathBuf::from(local).join("MysticParadox").join("Logs"))
+        .map(|local| PathBuf::from(local).join(crate::DATA_DIR_NAME).join("Logs"))
 }
 
 /// [2026-10-17] At Play, before the game starts: where the client's runtime log (`mysticparadox_dll_port0.log` beside

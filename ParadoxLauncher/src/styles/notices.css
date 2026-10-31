@@ -40,7 +40,7 @@
 .notice-banner.notice-info {
   border-color: var(--aether-line);
   background: var(--aether-a10);
-  color: #d6e8ff;
+  color: #d6edf4;
 }
 
 .notice-banner.notice-info svg {
@@ -68,13 +68,15 @@
 }
 
 /* The dashboard's strip. Sticky at the top of .main, below the title bar (its drag strip covers the top 38 px), with a
-   background that fades out at the bottom so scrolled content does not show through the banner. */
+   background that fades out at the bottom so scrolled content does not show through the banner. [MNG DAUNTLESS 2026-10-31]
+   It sits below the top-right corner (tags, server state, avatar: shell.css .corner, about 48 px tall) across the full width;
+   beside it, the corner's tags and a long announcement overlapped. */
 .notice-dock {
   position: sticky;
   top: 0;
   z-index: 4;
-  padding: calc(var(--titlebar-h) + 6px) var(--gutter) 14px;
-  background: linear-gradient(180deg, #050a12 0%, #050a12 calc(100% - 14px), rgba(5, 10, 18, 0) 100%);
+  padding: calc(var(--titlebar-h) + 66px) var(--gutter) 14px var(--gutter);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg) calc(100% - 14px), rgba(var(--bg-rgb), 0) 100%);
 }
 
 /* [2026-10-16] Above a page other than Home, the banner is as wide as the page's content, not the whole window. */
@@ -114,10 +116,9 @@
   text-transform: uppercase;
 }
 
-/* Under the sidebar wordmark: a centred row of chips. */
+/* [2026-10-31] In the top-right corner, before the server state (was a centred row under the sidebar wordmark). */
 .notice-tags.brand-tags {
-  width: 100%;
-  margin-top: 12px;
+  flex-wrap: nowrap;
 }
 
 /* In the sign-in header, above the title. [2026-10-16] Centred with the header (it was left-aligned). */
@@ -131,10 +132,3 @@
   display: none;
 }
 
-/* [2026-10-15] A short window has no room under the wordmark either: below 720 px the sidebar's foot (account, services) would
-   be pushed out of view, so the sidebar tags step aside. The sign-in screen keeps its tags. */
-@media (max-height: 720px) {
-  .notice-tags.brand-tags {
-    display: none;
-  }
-}

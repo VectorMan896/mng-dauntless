@@ -24,7 +24,7 @@ export type RealmLiveState = "serving" | "starting" | "offline";
 export type RealmStanding = "own" | "member" | "open" | "invited" | "requested" | "none" | "solo";
 
 /** [2026-10-16] A realm in solo mode (join policy SOLO): only its host enters. The same sentence as a REALM_SOLO refusal. */
-export const REALM_SOLO_LINE = "This realm is in solo mode: its host is playing alone right now."
+export const REALM_SOLO_LINE = "This MNG Server is in solo mode: its host is playing alone right now."
 
 export interface RealmStatus {
   state: RealmLiveState;
@@ -118,7 +118,7 @@ export function realmJoinStep(status: RealmStatus | null, realmName: string, jus
         action: null,
       };
     case "invited":
-      return { line: `You have an invite to ${realmName}. Accept it on the Realms page.`, button: "Open Realms", action: "realms" };
+      return { line: `You have an invite to ${realmName}. Accept it on the MNG Servers page.`, button: "Open MNG Servers", action: "realms" };
     // [2026-10-16] Nobody but the host enters, and asking is refused too: Play waits, with no Ask to join.
     case "solo":
       return { line: REALM_SOLO_LINE, button: "Unavailable", action: null };
@@ -132,8 +132,8 @@ export function realmPlayBlock(status: RealmStatus | null): string | null {
   if (!status || status.state === "serving") return null;
   if (status.own) {
     return status.state === "starting"
-      ? "Your realm is starting. Play opens when it is online."
-      : "Your realm is not running. Start it on the Host realm page, then press Play.";
+      ? "Your MNG Server is starting. Play opens when it is online."
+      : "Your MNG Server is not running. Start it on the Host MNG Server page, then press Play.";
   }
-  return "The realm's host hasn't started it yet. Play opens when the realm is online.";
+  return "The MNG Server's host hasn't started it yet. Play opens when the MNG Server is online.";
 }

@@ -320,7 +320,7 @@ const localInstall = {
   runtimeManaged: false,
 };
 
-test('Play works on a local server: its runtime is the realm\'s own and no signed manifest is checked', async () => {
+test('Play works on a local server: its runtime is the MNG Server\'s own and no signed manifest is checked', async () => {
   let launches = 0, runtimeChecks = 0, channelSeen = null;
   await mount(home({
     getInstallStatus: async () => localInstall,
@@ -329,7 +329,7 @@ test('Play works on a local server: its runtime is the realm\'s own and no signe
   }));
   const text = document.body.textContent;
   assert.match(text, /LOCAL SERVER WARNING/);
-  assert.match(text, /Realm's own files/);
+  assert.match(text, /MNG Server's own files/);
   assert.match(text, /This server's own backend checks your files/);
   assert.equal(runtimeChecks, 0, 'no signed manifest is checked for a local server');
   assert.equal(button('Unavailable'), undefined);
@@ -363,7 +363,7 @@ test('the red LOCAL SERVER WARNING badge on Home opens that server\'s warning', 
   assert.deepEqual(serverCtx.opened, ['s-1']);
 });
 
-test('a Paradox realm plays like the official server and names itself on Home', async () => {
+test('an MNG Server plays like the official server and names itself on Home', async () => {
   let channelSeen = null;
   await mount(home({
     getInstallStatus: async () => ({ ...install, serverId: 's-2', serverKind: 'paradox_realm', serverName: 'Ember Hold', runtimeManaged: true }),
@@ -372,9 +372,9 @@ test('a Paradox realm plays like the official server and names itself on Home', 
   // [2026-10-14] The identity block above Play names the kind and the name, in text.
   const identity = document.querySelector('.play-server');
   assert.equal(identity.dataset.kind, 'paradox_realm');
-  assert.equal(identity.querySelector('.play-server-kind').textContent, 'Paradox realm');
+  assert.equal(identity.querySelector('.play-server-kind').textContent, 'MNG Server');
   assert.equal(identity.querySelector('.play-server-name').textContent, 'Ember Hold');
-  assert.equal(identity.querySelector('button'), null, 'no warning badge for a realm');
+  assert.equal(identity.querySelector('button'), null, 'no warning badge for an MNG Server');
   await act(async () => button('Play').click());
   assert.equal(channelSeen, 'beta');
   assert.ok(button('Check status'));
@@ -385,7 +385,7 @@ test('Home names the official server above Play, and a local server with its war
   const official = document.querySelector('.play-server');
   assert.equal(official.dataset.kind, 'official');
   assert.equal(official.querySelector('.play-server-kind').textContent, 'Official server');
-  assert.equal(official.querySelector('.play-server-name').textContent, 'Mystic Paradox');
+  assert.equal(official.querySelector('.play-server-name').textContent, 'MNG DAUNTLESS');
   await unmountNow();
   serverCtx.opened = [];
   await mount(home({ getInstallStatus: async () => localInstall }));
@@ -403,7 +403,7 @@ test('Library does not offer to repair a local server\'s own runtime files', asy
     '../../servers/ServerContext': { useServer: () => ({ selected: null }) },
     '../../servers/serverNames': serverNames,
     '../../api/tauri': {
-      getInstallStatus: async () => ({ ...localInstall, exePath: 'D:\\Games\\Realm\\Archon\\Binaries\\Win64\\Dauntless-Win64-Shipping.exe' }),
+      getInstallStatus: async () => ({ ...localInstall, exePath: 'D:\\Games\\MNG Server\\Archon\\Binaries\\Win64\\Dauntless-Win64-Shipping.exe' }),
       pickInstallPath: async () => localInstall,
       installRuntimeUpdate: async () => {},
       checkRuntimeUpdate: async () => { checks++; return { available: false, feedManaged: false }; },
@@ -489,7 +489,7 @@ function typeInto(input, value) {
 test('Servers lists every server with its kind and folder; a local server is not supported and can only be removed', async () => {
   await mount(serversTab({}));
   const text = document.body.textContent;
-  assert.match(text, /Mystic Paradox/);
+  assert.match(text, /MNG DAUNTLESS/);
   assert.match(text, /Official/);
   assert.match(text, /In use/);
   assert.match(text, /My server/);
@@ -503,9 +503,9 @@ test('Servers lists every server with its kind and folder; a local server is not
   assert.doesNotMatch(text, /LOCAL SERVER WARNING/);
 });
 
-test('the add form adds realms only: a refusal keeps what was typed, a success clears it', async () => {
+test('the add form adds MNG Servers only: a refusal keeps what was typed, a success clears it', async () => {
   const requests = [];
-  let outcome = 'There is no realm with that name.';
+  let outcome = 'There is no MNG Server with that name.';
   await mount(serversTab({
     addServer: async (request) => {
       requests.push(request);
@@ -517,13 +517,13 @@ test('the add form adds realms only: a refusal keeps what was typed, a success c
   assert.equal(field('Server address'), undefined);
   await act(async () => typeInto(field("Host's username"), 'friends'));
   await act(async () => typeInto(field('Name'), 'Friends'));
-  await act(async () => button('Add realm').click());
+  await act(async () => button('Add MNG Server').click());
   assert.deepEqual(requests, [{ kind: 'paradox_realm', name: 'Friends', realmName: 'friends' }]);
-  assert.match(document.body.textContent, /There is no realm with that name\./);
+  assert.match(document.body.textContent, /There is no MNG Server with that name\./);
   assert.equal(field("Host's username").value, 'friends', 'the form keeps what was typed');
 
   outcome = null;
-  await act(async () => button('Add realm').click());
+  await act(async () => button('Add MNG Server').click());
   assert.equal(requests.length, 2);
   assert.equal(field("Host's username").value, '');
   assert.equal(field('Name').value, '');
@@ -531,18 +531,18 @@ test('the add form adds realms only: a refusal keeps what was typed, a success c
 
 // [2026-10-16, owner] A realm is named after its host's username: the player types the username, the realm name is it in lower
 // case, and the realm is labelled "<username>'s Realm" unless the player names it.
-test("a realm is added by its host's username, in lower case, labelled after the host", async () => {
+test("an MNG Server is added by its host's username, in lower case, labelled after the host", async () => {
   const requests = [];
   await mount(serversTab({ addServer: async (request) => { requests.push(request); return [officialServer]; } }));
   await act(async () => typeInto(field("Host's username"), 'MysticFox'));
   assert.equal(field("Host's username").value, 'MysticFox', 'the username is shown as typed');
-  await act(async () => button('Add realm').click());
-  assert.deepEqual(requests, [{ kind: 'paradox_realm', name: "MysticFox's Realm", realmName: 'mysticfox' }]);
-  assert.doesNotMatch(document.body.textContent, /pick its folder/, 'a realm plays from the official install: no folder to pick');
+  await act(async () => button('Add MNG Server').click());
+  assert.deepEqual(requests, [{ kind: 'paradox_realm', name: "MysticFox's MNG Server", realmName: 'mysticfox' }]);
+  assert.doesNotMatch(document.body.textContent, /pick its folder/, 'an MNG Server plays from the official install: no folder to pick');
 
   await act(async () => typeInto(field("Host's username"), 'ab'));
-  await act(async () => button('Add realm').click());
-  assert.equal(requests.length, 1, 'a username too short for a realm name is not sent');
+  await act(async () => button('Add MNG Server').click());
+  assert.equal(requests.length, 1, 'a username too short for an MNG Server name is not sent');
   assert.match(document.body.textContent, /Enter the host's username/);
 });
 
@@ -557,12 +557,12 @@ test('selecting reports the native refusal on the row, and works when allowed', 
       return [{ ...officialServer, selected: false }, { ...realmServer, selected: true }];
     },
   }));
-  await act(async () => button('Use this realm').click());
+  await act(async () => button('Use this MNG Server').click());
   assert.deepEqual(calls, ['s-2']);
   assert.match(document.body.textContent, /Close Dauntless before changing servers/);
-  assert.ok(button('Use this realm'), 'the realm is not selected after a refusal');
+  assert.ok(button('Use this MNG Server'), 'the MNG Server is not selected after a refusal');
   refuse = false;
-  await act(async () => button('Use this realm').click());
+  await act(async () => button('Use this MNG Server').click());
   const rows = [...document.querySelectorAll('.server-row')];
   assert.doesNotMatch(rows[0].textContent, /In use/);
   assert.match(rows[1].textContent, /In use/);
@@ -589,7 +589,7 @@ test('removing needs a second click', async () => {
 const realmRow = () => [...document.querySelectorAll('.server-row')].find((item) => item.textContent.includes('Ember Hold'));
 const serverRowButton = (row, label) => [...row.querySelectorAll('button')].find((item) => item.textContent.trim() === label);
 
-test('a Paradox realm with no folder of its own plays from the official install and is not asked for one', async () => {
+test('an MNG Server with no folder of its own plays from the official install and is not asked for one', async () => {
   const picked = [];
   const list = [officialServer, localServer, realmServer];
   await mount(serversTab({
@@ -597,14 +597,14 @@ test('a Paradox realm with no folder of its own plays from the official install 
     pickInstallPath: async (id, ownFolder) => { picked.push([id, ownFolder]); return {}; },
   }));
   assert.match(realmRow().textContent, /Shared with the official install/);
-  assert.doesNotMatch(realmRow().textContent, /Choose folder|Change folder/, 'the default realm asks for no folder');
+  assert.doesNotMatch(realmRow().textContent, /Choose folder|Change folder/, 'the default MNG Server asks for no folder');
   assert.equal(serverRowButton(realmRow(), 'Use the official install'), undefined, 'there is nothing to switch from');
   // The optional separate folder still works, and asks for the realm's own folder.
   await act(async () => serverRowButton(realmRow(), 'Use a separate folder').click());
   assert.deepEqual(picked, [['s-2', true]]);
 });
 
-test('a realm with its own folder can go back to the official install', async () => {
+test('an MNG Server with its own folder can go back to the official install', async () => {
   const switched = [];
   const own = { ...realmServer, folderSource: 'own', folder: 'D:\\Games\\Ember Own\\Archon\\Binaries\\Win64\\Dauntless-Win64-Shipping.exe' };
   await mount(serversTab({
@@ -612,7 +612,7 @@ test('a realm with its own folder can go back to the official install', async ()
     useOfficialInstall: async (id) => { switched.push(id); return [officialServer, localServer, { ...realmServer }]; },
   }));
   assert.match(realmRow().textContent, /D:\\Games\\Ember Own(?!\\)/);
-  assert.ok(serverRowButton(realmRow(), 'Change folder'), 'a realm with its own folder can change it');
+  assert.ok(serverRowButton(realmRow(), 'Change folder'), 'an MNG Server with its own folder can change it');
   await act(async () => serverRowButton(realmRow(), 'Use the official install').click());
   assert.deepEqual(switched, ['s-2']);
   assert.match(realmRow().textContent, /Shared with the official install/);
@@ -737,7 +737,7 @@ test('the warning popup names the risks and is the only way to accept a local se
   assert.match(text, /Local server warning/);
   assert.match(text, /My server/);
   assert.match(text, /https:\/\/realm\.example\.com:8443/);
-  assert.match(text, /not run, hosted, listed, monitored or checked by Mystic Paradox/);
+  assert.match(text, /not run, hosted, listed, monitored or checked by MNG DAUNTLESS/);
   assert.match(text, /may contain\s+malware/);
   assert.match(text, /Only join if you trust the host/);
 
@@ -944,7 +944,7 @@ test('the sign-in card names a local server, offers no Discord there, and leads 
   assert.ok(button('Sign in'));
   assert.match(document.body.textContent, /New to this server\?/);
   assert.equal(document.querySelector('[role="combobox"]'), null, 'the card has no server choice');
-  await act(async () => button('Use your Mystic Paradox account instead').click());
+  await act(async () => button('Use your MNG DAUNTLESS account instead').click());
   assert.deepEqual(chosen, [officialEntry.id]);
 });
 
@@ -952,8 +952,8 @@ test('the official sign-in card is unchanged and keeps Discord', async () => {
   await mount(loginScreen({ selected: officialEntry, officialNetwork: true }), { onCreateAccount() {} });
   assert.match(document.querySelector('h1').textContent, /Welcome back, Slayer/);
   assert.ok(button('Sign in with Discord'));
-  assert.match(document.body.textContent, /New to Mystic Paradox\?/);
-  assert.equal(button('Use your Mystic Paradox account instead'), undefined, 'the way back is only on a local server\'s card');
+  assert.match(document.body.textContent, /New to MNG DAUNTLESS\?/);
+  assert.equal(button('Use your MNG DAUNTLESS account instead'), undefined, 'the way back is only on a local server\'s card');
 });
 
 test('the policy is read from the selected server and never reused by another server', async () => {
@@ -1019,9 +1019,9 @@ test('the Servers page shares every change with the selected-server state', asyn
   await mount(serversTab({ listServers: async () => [officialServer, realmServer], selectServer: async () => after }, context));
   assert.ok(shared.length >= 1, 'the list read on mount is shared');
   shared.length = 0;
-  await act(async () => button('Use this realm').click());
+  await act(async () => button('Use this MNG Server').click());
   assert.deepEqual(shared, [after], 'the new selection reaches sign-in and the status chip');
-  assert.match(document.body.textContent, /Your Mystic Paradox account\./);
+  assert.match(document.body.textContent, /Your MNG DAUNTLESS account\./);
 });
 
 // ---- [2026-10-14 realms hub 6.2] "Host my realm" panel ------------------------------------------------------------
@@ -1076,7 +1076,7 @@ function fakeNative(initial) {
           return patch({
             realm: { name: 'host', serving: false, joinPolicy: args.joinPolicy, joinRequestCount: 0 },
             noRealm: false,
-            notice: "Host's Realm is ready. Start it to let players in: they add it by entering your username on the Realms page.",
+            notice: "Host's MNG Server is ready. Start it to let players in: they add it by entering your username on the MNG Servers page.",
             noticeKind: 'info',
           });
         case 'realm_host_start': return patch({ state: 'starting', notice: null, capacity: { ...status.capacity, ...args.options } });
@@ -1084,13 +1084,13 @@ function fakeNative(initial) {
         // A member action answers its own notice, as realm.rs does (an earlier refusal does not linger).
         case 'realm_host_kick':
           native.members = native.members.filter((member) => member.accountId !== args.accountId);
-          return patch({ players: status.players.filter((player) => player.accountId !== args.accountId), notice: 'The player was removed from the realm.', noticeKind: 'info' });
+          return patch({ players: status.players.filter((player) => player.accountId !== args.accountId), notice: 'The player was removed from the MNG Server.', noticeKind: 'info' });
         case 'realm_host_ban': {
           const target = status.players.find((player) => player.accountId === args.accountId);
           return patch({
             players: status.players.filter((player) => player.accountId !== args.accountId),
             bans: [...status.bans, { accountId: args.accountId, displayName: target?.displayName ?? null, reason: args.reason, at: new Date().toISOString() }],
-            notice: 'The player was banned from the realm.',
+            notice: 'The player was banned from the MNG Server.',
             noticeKind: 'info',
           });
         }
@@ -1101,7 +1101,7 @@ function fakeNative(initial) {
         case 'realm_host_deny_request': {
           native.requests = native.requests.filter((request) => request.accountId !== args.accountId);
           return patch({
-            notice: command === 'realm_host_approve_request' ? 'The player can join your realm now.' : 'The request was denied.',
+            notice: command === 'realm_host_approve_request' ? 'The player can join your MNG Server now.' : 'The request was denied.',
             noticeKind: 'info',
             realm: { ...status.realm, joinRequestCount: native.requests.length },
           });
@@ -1120,10 +1120,10 @@ function fakeNative(initial) {
         case 'realm_host_set_join_policy': return patch({
           realm: { ...status.realm, joinPolicy: args.joinPolicy },
           notice: args.joinPolicy === 'PUBLIC'
-            ? 'Anyone can join your realm now.'
+            ? 'Anyone can join your MNG Server now.'
             : args.joinPolicy === 'SOLO'
-              ? 'Your realm is in solo mode now: only you can enter. Players already inside stay until they leave.'
-              : 'Only players you approve can join your realm now.',
+              ? 'Your MNG Server is in solo mode now: only you can enter. Players already inside stay until they leave.'
+              : 'Only players you approve can join your MNG Server now.',
           noticeKind: 'info',
         });
         default: throw `unknown command ${command}`;
@@ -1184,63 +1184,63 @@ async function unmountNow() {
 }
 
 // [2026-10-16, owner] A realm is named after its host's username: an account without one creates it, with no name to choose.
-test('an account with no realm creates it, named after its username, and only then can start it', async () => {
+test('an account with no MNG Server creates it, named after its username, and only then can start it', async () => {
   const native = fakeNative(realmStatus({ realm: null, noRealm: true }));
   await withMockTimers(async () => {
     await mount(realmPanel(native));
     let text = realmText();
-    assert.match(text, /You don't have a realm yet\. Create it below\./);
-    assert.match(text, /Create your realm/);
-    assert.match(text, /Your realm is named after your username: Host's Realm\. Players add it by entering Host under Realms, Add a realm\./);
-    assert.equal(button('Start realm').disabled, true, 'nothing to start yet');
+    assert.match(text, /You don't have an MNG Server yet\. Create it below\./);
+    assert.match(text, /Create your MNG Server/);
+    assert.match(text, /Your MNG Server is named after your username: Host's MNG Server\. Players add it by entering Host under MNG Servers, Add an MNG Server\./);
+    assert.equal(button('Start MNG Server').disabled, true, 'nothing to start yet');
     await act(async () => button('Public mode').click());
-    await act(async () => button('Create realm').click());
+    await act(async () => button('Create MNG Server').click());
     assert.deepEqual(native.sent('realm_host_create'), [['realm_host_create', { joinPolicy: 'PUBLIC' }]]);
     text = realmText();
-    assert.doesNotMatch(text, /Create your realm/);
-    assert.match(text, /Host's Realm · Your realm is offline/);
-    assert.match(text, /Host's Realm is ready\./);
-    assert.equal(button('Start realm').disabled, false);
+    assert.doesNotMatch(text, /Create your MNG Server/);
+    assert.match(text, /Host's MNG Server · Your MNG Server is offline/);
+    assert.match(text, /Host's MNG Server is ready\./);
+    assert.equal(button('Start MNG Server').disabled, false);
   });
 });
 
 test('a refused create is explained where the button is, and the form stays', async () => {
   const native = fakeNative(realmStatus({ realm: null, noRealm: true }));
-  native.refuse.realm_host_create = 'That realm name is taken.';
+  native.refuse.realm_host_create = 'That MNG Server name is taken.';
   await withMockTimers(async () => {
     await mount(realmPanel(native));
-    await act(async () => button('Create realm').click());
+    await act(async () => button('Create MNG Server').click());
     assert.deepEqual(native.sent('realm_host_create'), [['realm_host_create', { joinPolicy: 'INVITE_ONLY' }]], 'Allowlisted by default');
     const refusal = document.querySelector('.rh .feedback.bad');
-    assert.equal(refusal?.textContent, 'That realm name is taken.');
-    assert.equal(realmText().split('That realm name is taken.').length, 2, 'said once, not again at the top');
-    assert.ok(button('Create realm'));
+    assert.equal(refusal?.textContent, 'That MNG Server name is taken.');
+    assert.equal(realmText().split('That MNG Server name is taken.').length, 2, 'said once, not again at the top');
+    assert.ok(button('Create MNG Server'));
   });
 });
 
-test('Start realm sends the limits, shows Starting, then Online with servers and players', async () => {
+test('Start MNG Server sends the limits, shows Starting, then Online with servers and players', async () => {
   const native = fakeNative(realmStatus());
   await withMockTimers(async () => {
     await mount(realmPanel(native));
     assert.deepEqual(native.calls[0], ['realm_host_status', undefined]);
     let text = realmText();
-    assert.match(text, /Host my realm/);
+    assert.match(text, /Host my MNG Server/);
     assert.match(text, /Stopped/);
     assert.match(text, /ember-hold/);
     assert.match(text, /Hosting runs Ramsgate, Training and hunts on this PC\. Players on it use their official accounts\./);
-    assert.match(text, /Only join realms and invite players you trust/, 'the host panel carries the trust warning');
+    assert.match(text, /Only join MNG Servers and invite players you trust/, 'the host panel carries the trust warning');
     assert.equal(inputOf('Max players').value, '16');
     assert.equal(inputOf('Max servers').value, '3');
     assert.equal(inputOf('AFK kick').value, '1200');
-    assert.equal(button('Stop realm'), undefined);
-    assert.equal(document.querySelector('.rh-list'), null, 'no player list while the realm is stopped');
+    assert.equal(button('Stop MNG Server'), undefined);
+    assert.equal(document.querySelector('.rh-list'), null, 'no player list while the MNG Server is stopped');
 
     await act(async () => typeInto(inputOf('Max players'), '24'));
-    await act(async () => button('Start realm').click());
+    await act(async () => button('Start MNG Server').click());
     assert.deepEqual(native.sent('realm_host_start'), [['realm_host_start', { options: { maxPlayers: 24, maxServers: 3, afkSeconds: 1200 } }]]);
     assert.match(realmText(), /Starting…/);
-    assert.ok(button('Stop realm'), 'Start turns into Stop while the realm starts');
-    assert.equal(inputOf('Max players').disabled, true, 'the limits are fixed while the realm starts');
+    assert.ok(button('Stop MNG Server'), 'Start turns into Stop while the MNG Server starts');
+    assert.equal(inputOf('Max players').disabled, true, 'the limits are fixed while the MNG Server starts');
     assert.equal(inputOf('Max players').value, '24', 'the form shows the limits the launcher reports');
 
     native.status = onlineStatus({ capacity: { ...onlineStatus().capacity, maxPlayers: 24 } });
@@ -1257,23 +1257,23 @@ test('Start realm sends the limits, shows Starting, then Online with servers and
     assert.match(rowFor('AshWarden').textContent, /Hunt IslandA/);
     assert.match(rowFor('AshWarden').textContent, /Relay/);
     assert.match(text, /Running · 1 player/);
-    assert.equal(button('Start realm'), undefined);
-    assert.equal(inputOf('Max players').disabled, false, 'the limits can change while the realm is online');
+    assert.equal(button('Start MNG Server'), undefined);
+    assert.equal(inputOf('Max players').disabled, false, 'the limits can change while the MNG Server is online');
   });
 });
 
 test('a refused Start shows the launcher\'s message as written and can be retried', async () => {
   const native = fakeNative(realmStatus());
-  native.fail.realm_host_start = 'Not enough free memory to start the realm (2.1 GB free, 3 GB needed).';
+  native.fail.realm_host_start = 'Not enough free memory to start the MNG Server (2.1 GB free, 3 GB needed).';
   await withMockTimers(async () => {
     await mount(realmPanel(native));
-    await act(async () => button('Start realm').click());
-    assert.match(realmText(), /Not enough free memory to start the realm \(2\.1 GB free, 3 GB needed\)\./);
+    await act(async () => button('Start MNG Server').click());
+    assert.match(realmText(), /Not enough free memory to start the MNG Server \(2\.1 GB free, 3 GB needed\)\./);
     assert.ok(document.querySelector('.rh [role="alert"]'), 'announced as an alert');
     assert.match(realmText(), /Stopped/);
-    assert.equal(button('Start realm').disabled, false);
+    assert.equal(button('Start MNG Server').disabled, false);
     native.fail.realm_host_start = null;
-    await act(async () => button('Start realm').click());
+    await act(async () => button('Start MNG Server').click());
     assert.doesNotMatch(realmText(), /Not enough free memory/, 'the old refusal is cleared by the next attempt');
     assert.match(realmText(), /Starting…/);
   });
@@ -1281,19 +1281,19 @@ test('a refused Start shows the launcher\'s message as written and can be retrie
 
 test('a refusal the launcher answers as its notice is shown as written, and nothing starts', async () => {
   const native = fakeNative(realmStatus());
-  native.refuse.realm_host_start = 'Not enough free memory to start the realm (2.1 GB free, 3 GB needed).';
+  native.refuse.realm_host_start = 'Not enough free memory to start the MNG Server (2.1 GB free, 3 GB needed).';
   await withMockTimers(async () => {
     await mount(realmPanel(native));
-    await act(async () => button('Start realm').click());
-    assert.match(realmText(), /Not enough free memory to start the realm \(2\.1 GB free, 3 GB needed\)\./);
+    await act(async () => button('Start MNG Server').click());
+    assert.match(realmText(), /Not enough free memory to start the MNG Server \(2\.1 GB free, 3 GB needed\)\./);
     assert.equal(document.querySelector('.rh-notice').dataset.tone, 'bad');
     assert.equal(document.querySelector('.rh [role="alert"]'), null, 'a notice is not a failed call');
     assert.match(realmText(), /Stopped/);
-    assert.equal(button('Start realm').disabled, false);
+    assert.equal(button('Start MNG Server').disabled, false);
     await tick(5000);
     assert.match(realmText(), /Not enough free memory/, 'the launcher keeps the notice for the next read');
     native.refuse.realm_host_start = null;
-    await act(async () => button('Start realm').click());
+    await act(async () => button('Start MNG Server').click());
     assert.doesNotMatch(realmText(), /Not enough free memory/, 'a start that works clears the old notice');
     assert.match(realmText(), /Starting…/);
   });
@@ -1304,29 +1304,29 @@ test('a status that cannot be read is explained, keeps Start off, and the next p
   native.fail.realm_host_status = 'The launcher could not reach the Mystic Paradox backend.';
   await withMockTimers(async () => {
     await mount(realmPanel(native));
-    assert.match(realmText(), /Couldn't read the realm status\. The launcher could not reach the Mystic Paradox backend\./);
-    assert.equal(button('Start realm').disabled, true, 'nothing is started before the state is known');
+    assert.match(realmText(), /Couldn't read the MNG Server status\. The launcher could not reach the Mystic Paradox backend\./);
+    assert.equal(button('Start MNG Server').disabled, true, 'nothing is started before the state is known');
     native.fail.realm_host_status = null;
     await tick(5000);
-    assert.doesNotMatch(realmText(), /Couldn't read the realm status/);
-    assert.equal(button('Start realm').disabled, false);
+    assert.doesNotMatch(realmText(), /Couldn't read the MNG Server status/);
+    assert.equal(button('Start MNG Server').disabled, false);
   });
 });
 
-test('restarting and stopped realms show the launcher\'s notice', async () => {
+test('restarting and stopped MNG Servers show the launcher\'s notice', async () => {
   const native = fakeNative(onlineStatus({ state: 'restarting', notice: 'The Ramsgate server closed. Restarting it (attempt 2 of 5).' }));
   await withMockTimers(async () => {
     await mount(realmPanel(native));
     assert.match(realmText(), /Restarting…/);
     assert.match(realmText(), /The Ramsgate server closed\. Restarting it \(attempt 2 of 5\)\./);
     assert.equal(document.querySelector('.rh-notice').dataset.tone, 'warn');
-    assert.ok(button('Stop realm'), 'a restarting realm can still be stopped');
-    native.status = realmStatus({ notice: 'The realm stopped after 5 restarts in 10 minutes.', noticeKind: 'error' });
+    assert.ok(button('Stop MNG Server'), 'a restarting MNG Server can still be stopped');
+    native.status = realmStatus({ notice: 'The MNG Server stopped after 5 restarts in 10 minutes.', noticeKind: 'error' });
     await tick(5000);
     assert.match(realmText(), /Stopped/);
     assert.match(realmText(), /stopped after 5 restarts/);
     assert.equal(document.querySelector('.rh-notice').dataset.tone, 'bad');
-    assert.ok(button('Start realm'));
+    assert.ok(button('Start MNG Server'));
   });
 });
 
@@ -1337,25 +1337,25 @@ test('limits are validated before anything is sent', async () => {
     for (const bad of ['0', '65', 'abc', '', '1.5', '-3']) {
       await act(async () => typeInto(inputOf('Max players'), bad));
       assert.match(realmText(), /Enter a whole number from 1 to 64\./, `players "${bad}"`);
-      assert.equal(button('Start realm').disabled, true);
+      assert.equal(button('Start MNG Server').disabled, true);
     }
     await act(async () => typeInto(inputOf('Max players'), '64'));
     assert.doesNotMatch(realmText(), /Enter a whole number from 1 to 64/);
-    assert.equal(button('Start realm').disabled, false);
+    assert.equal(button('Start MNG Server').disabled, false);
 
     for (const bad of ['0', '9', 'x']) {
       await act(async () => typeInto(inputOf('Max servers'), bad));
       assert.match(realmText(), /Enter a whole number from 1 to 8\./, `servers "${bad}"`);
-      assert.equal(button('Start realm').disabled, true);
+      assert.equal(button('Start MNG Server').disabled, true);
     }
     await act(async () => typeInto(inputOf('Max servers'), '8'));
 
     for (const bad of ['7201', '-1', 'abc', '1e3']) {
       await act(async () => typeInto(inputOf('AFK kick'), bad));
       assert.match(realmText(), /Enter seconds from 0 to 7200, or leave it empty for the default\./, `afk "${bad}"`);
-      assert.equal(button('Start realm').disabled, true);
+      assert.equal(button('Start MNG Server').disabled, true);
     }
-    await act(async () => button('Start realm').click());
+    await act(async () => button('Start MNG Server').click());
     assert.equal(native.sent('realm_host_start').length, 0, 'an invalid form sends nothing');
 
     await act(async () => typeInto(inputOf('AFK kick'), '0'));
@@ -1366,7 +1366,7 @@ test('limits are validated before anything is sent', async () => {
     assert.match(realmText(), /Leave empty to use the default\./);
     await act(async () => typeInto(inputOf('Max players'), ' 8 '));
     await act(async () => typeInto(inputOf('Max servers'), '2'));
-    await act(async () => button('Start realm').click());
+    await act(async () => button('Start MNG Server').click());
     assert.deepEqual(native.sent('realm_host_start'), [['realm_host_start', { options: { maxPlayers: 8, maxServers: 2, afkSeconds: null } }]],
       'an empty AFK field is the launcher default (null)');
   });
@@ -1448,7 +1448,7 @@ test('Join requests: newest first, Approve and Deny send the request and drop th
     await flushAsync();
     assert.deepEqual(native.sent('realm_host_approve_request'), [['realm_host_approve_request', { accountId: 'acc-lyra' }]]);
     assert.equal(rowFor('LyraSpark'), undefined, 'the approved request leaves the list');
-    assert.match(realmText(), /The player can join your realm now\./);
+    assert.match(realmText(), /The player can join your MNG Server now\./);
 
     await act(async () => rowButton('acc-brann', 'Deny').click());
     await flushAsync();
@@ -1459,25 +1459,25 @@ test('Join requests: newest first, Approve and Deny send the request and drop th
 
 test('Join requests: a list that cannot be read says why, and a refused approval stays in the section', async () => {
   const native = fakeNative(onlineStatus());
-  native.requestsError = 'The server could not find your realm.';
+  native.requestsError = 'The server could not find your MNG Server.';
   await withMockTimers(async () => {
     await mount(realmPanel(native));
     await flushAsync();
-    assert.match(realmText(), /The server could not find your realm\./);
+    assert.match(realmText(), /The server could not find your MNG Server\./);
     delete native.requestsError;
     native.requests = [{ accountId: 'acc-lyra', displayName: 'LyraSpark', at: minutesAgo(2) }];
     await tick(5000);
     await flushAsync();
     assert.ok(rowFor('LyraSpark'));
-    assert.doesNotMatch(realmText(), /The server could not find your realm\./, 'a good read clears the read error');
-    native.fail.realm_host_approve_request = 'That player has not asked to join your realm.';
+    assert.doesNotMatch(realmText(), /The server could not find your MNG Server\./, 'a good read clears the read error');
+    native.fail.realm_host_approve_request = 'That player has not asked to join your MNG Server.';
     await act(async () => rowButton('LyraSpark', 'Approve').click());
     await flushAsync();
     assert.ok(rowFor('LyraSpark'), 'a failed approval keeps the request');
-    assert.match(realmText(), /That player has not asked to join your realm\./);
+    assert.match(realmText(), /That player has not asked to join your MNG Server\./);
     await tick(5000);
     await flushAsync();
-    assert.match(realmText(), /That player has not asked to join your realm\./, 'the next refresh keeps the refusal');
+    assert.match(realmText(), /That player has not asked to join your MNG Server\./, 'the next refresh keeps the refusal');
   });
 });
 
@@ -1539,7 +1539,7 @@ test('Invite a player: the username is sent as typed, the success line names the
   });
 });
 
-test('Invite a player on a stopped realm: the confirmation shows once, in its section, and a confirmation is never a warning', async () => {
+test('Invite a player on a stopped MNG Server: the confirmation shows once, in its section, and a confirmation is never a warning', async () => {
   const native = fakeNative(realmStatus());
   await withMockTimers(async () => {
     await mount(realmPanel(native));
@@ -1559,7 +1559,7 @@ test('Invite a player on a stopped realm: the confirmation shows once, in its se
     assert.equal(document.querySelector('.rh-notice').dataset.tone, 'info');
   });
   // The hub restarting by itself is the one notice that warns.
-  const restarting = fakeNative(realmStatus({ state: 'restarting', notice: 'The realm hub stopped. Starting it again.', noticeKind: 'info' }));
+  const restarting = fakeNative(realmStatus({ state: 'restarting', notice: 'The MNG Server hub stopped. Starting it again.', noticeKind: 'info' }));
   await withMockTimers(async () => {
     await mount(realmPanel(restarting));
     assert.equal(document.querySelector('.rh-notice').dataset.tone, 'warn');
@@ -1579,7 +1579,7 @@ test('the allowed players are listed with Remove (asked first), and the unanswer
 
     await act(async () => rowButton('NovaBlade', 'Remove').click());
     assert.ok(dialogEl(), 'Remove asks first');
-    assert.match(dialogEl().textContent, /NovaBlade can no longer join your realm\. To let them back in, invite them again\./);
+    assert.match(dialogEl().textContent, /NovaBlade can no longer join your MNG Server\. To let them back in, invite them again\./);
     await act(async () => dialogButton('Remove').click());
     await flushAsync();
     assert.deepEqual(native.sent('realm_host_kick'), [['realm_host_kick', { accountId: 'acc-nova' }]]);
@@ -1623,11 +1623,11 @@ test('Kick asks first, Cancel sends nothing, and confirming removes the player',
     assert.equal(rowFor('NovaBlade'), undefined, 'the player is gone from the list');
     assert.ok(rowFor('AshWarden'));
 
-    native.fail.realm_host_kick = 'That player is not in the realm any more.';
+    native.fail.realm_host_kick = 'That player is not in the MNG Server any more.';
     await act(async () => rowButton('AshWarden', 'Kick').click());
     await act(async () => dialogButton('Kick').click());
     assert.ok(dialogEl(), 'a refusal keeps the dialog open');
-    assert.match(dialogEl().textContent, /That player is not in the realm any more\./);
+    assert.match(dialogEl().textContent, /That player is not in the MNG Server any more\./);
     await act(async () => dialogButton('Cancel').click());
     assert.ok(!dialogEl());
   });
@@ -1641,7 +1641,7 @@ test('Ban takes an optional reason and lists the player as banned, and Unban lif
 
     await act(async () => rowButton('AshWarden', 'Ban').click());
     assert.match(dialogEl().textContent, /Ban AshWarden\?/);
-    assert.match(dialogEl().textContent, /cannot join your realm until you unban them/);
+    assert.match(dialogEl().textContent, /cannot join your MNG Server until you unban them/);
     assert.equal(native.sent('realm_host_ban').length, 0, 'the first click only asks');
     await act(async () => typeInto(dialogEl().querySelector('input'), '  Spamming chat  '));
     await act(async () => dialogButton('Ban').click());
@@ -1655,7 +1655,7 @@ test('Ban takes an optional reason and lists the player as banned, and Unban lif
     await act(async () => dialogButton('Ban').click());
     assert.deepEqual(native.sent('realm_host_ban')[1], ['realm_host_ban', { accountId: 'acc-nova', reason: null }], 'no reason is sent as null');
     assert.match(rowFor('NovaBlade').textContent, /No reason given/);
-    assert.match(realmText(), /Nobody is in your realm right now\./);
+    assert.match(realmText(), /Nobody is in your MNG Server right now\./);
 
     // [2026-10-14] Unban asks first, like kick and ban, so a refusal has a dialog to stay open in.
     await act(async () => rowButton('GrimTester', 'Unban').click());
@@ -1677,20 +1677,20 @@ test('Ban takes an optional reason and lists the player as banned, and Unban lif
   });
 });
 
-test('Stop realm asks first, says who will be disconnected, and stops on confirm', async () => {
+test('Stop MNG Server asks first, says who will be disconnected, and stops on confirm', async () => {
   const native = fakeNative(onlineStatus());
   await withMockTimers(async () => {
     await mount(realmPanel(native));
-    await act(async () => button('Stop realm').click());
-    assert.match(dialogEl().textContent, /Stop your realm\?/);
+    await act(async () => button('Stop MNG Server').click());
+    assert.match(dialogEl().textContent, /Stop your MNG Server\?/);
     assert.match(dialogEl().textContent, /2 players will be disconnected/);
     assert.equal(native.sent('realm_host_stop').length, 0, 'the first click only asks');
     await act(async () => dialogButton('Keep running').click());
     assert.ok(!dialogEl());
     assert.equal(native.sent('realm_host_stop').length, 0);
 
-    await act(async () => button('Stop realm').click());
-    await act(async () => dialogButton('Stop realm').click());
+    await act(async () => button('Stop MNG Server').click());
+    await act(async () => dialogButton('Stop MNG Server').click());
     assert.equal(native.sent('realm_host_stop').length, 1);
     assert.ok(!dialogEl());
     assert.match(realmText(), /Stopping…/);
@@ -1699,7 +1699,7 @@ test('Stop realm asks first, says who will be disconnected, and stops on confirm
     native.status = realmStatus();
     await tick(5000);
     assert.match(realmText(), /Stopped/);
-    assert.ok(button('Start realm'));
+    assert.ok(button('Start MNG Server'));
     assert.doesNotMatch(realmText(), /NovaBlade/);
   });
 });
@@ -1765,7 +1765,7 @@ test('a status read that began before an action finished cannot replace the acti
     await mount(realmPanel(native));
     holdNext = true;
     await tick(5000);
-    await act(async () => button('Start realm').click());
+    await act(async () => button('Start MNG Server').click());
     assert.match(realmText(), /Starting…/);
     await act(async () => late.resolve(realmStatus()));
     assert.match(realmText(), /Starting…/, 'the old "stopped" read arrived late and was dropped');
@@ -1784,7 +1784,7 @@ test('the panel is absent for a local server and reads nothing', async () => {
   });
 });
 
-test('the panel shows for the official server and for Paradox realms, once the server list is known', async () => {
+test('the panel shows for the official server and for MNG Servers, once the server list is known', async () => {
   const cases = [
     [{ ready: true, selected: officialEntry }, true],
     [{ ready: true, selected: { ...officialEntry, id: 's-2', kind: 'paradox_realm', name: 'Ember Hold', realmName: 'ember-hold' } }, true],
@@ -1805,25 +1805,25 @@ test('the panel shows for the official server and for Paradox realms, once the s
 
 // [2026-10-14] The Servers page: the add form first, the server list below it. The optional panels are not here; they
 // are on the Host realm page (below).
-test('the Realms page puts the add form above the server list and shows no optional panel', async () => {
+test('the MNG Servers page puts the add form above the server list and shows no optional panel', async () => {
   const Panel = ({ style }) => React.createElement('section', { id: 'optional-panel', 'data-i': String(style['--i']) }, 'Panel body');
   await mount(serversTab({}, serverCtx, [Panel]));
-  assert.equal(document.getElementById('optional-panel'), null, 'the optional panels belong to the Host realm page');
-  assert.equal(document.querySelector('h1').textContent, 'Realms');
-  const list = document.querySelector('[aria-label="Your realms"]');
-  const add = document.querySelector('[aria-label="Add a realm"]');
+  assert.equal(document.getElementById('optional-panel'), null, 'the optional panels belong to the Host MNG Server page');
+  assert.equal(document.querySelector('h1').textContent, 'MNG Servers');
+  const list = document.querySelector('[aria-label="Your MNG Servers"]');
+  const add = document.querySelector('[aria-label="Add an MNG Server"]');
   assert.ok(add.compareDocumentPosition(list) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING, 'the server list follows the add form');
   assert.ok(Number(add.style.getPropertyValue('--i')) < Number(list.style.getPropertyValue('--i')));
 });
 
 // [2026-10-14] The Host realm page: the header, then every optional panel, in order.
-test('the Host realm page shows the optional module panels under its header', async () => {
+test('the Host MNG Server page shows the optional module panels under its header', async () => {
   const { HostRealmTab } = load('src/screens/dashboard/HostRealmTab.tsx', {
     '../../components/ArtBackdrop': { ArtBackdrop: () => null },
     '../../lib/optionalPanels': { OPTIONAL_PANELS: [({ style }) => React.createElement('section', { id: 'panel-a', 'data-i': String(style['--i']) }, 'A'), ({ style }) => React.createElement('section', { id: 'panel-b', 'data-i': String(style['--i']) }, 'B')] },
   });
   await mount(HostRealmTab);
-  assert.equal(document.querySelector('h1').textContent, 'Host realm');
+  assert.equal(document.querySelector('h1').textContent, 'Host MNG Server');
   const a = document.getElementById('panel-a');
   const b = document.getElementById('panel-b');
   assert.ok(a && b);
@@ -1831,29 +1831,29 @@ test('the Host realm page shows the optional module panels under its header', as
   assert.ok(a.compareDocumentPosition(b) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
 });
 
-test('the Host realm page renders no panel when none is present (a public build)', async () => {
+test('the Host MNG Server page renders no panel when none is present (a public build)', async () => {
   const { HostRealmTab } = load('src/screens/dashboard/HostRealmTab.tsx', {
     '../../components/ArtBackdrop': { ArtBackdrop: () => null },
     '../../lib/optionalPanels': { OPTIONAL_PANELS: [] },
   });
   await mount(HostRealmTab);
   assert.equal(document.querySelectorAll('section.glass').length, 0);
-  assert.match(document.body.textContent, /Host realm/);
+  assert.match(document.body.textContent, /Host MNG Server/);
 });
 
 // [2026-10-14] The trust warning: the same words in the join popup, the host panel and the add form (for a realm).
-test('the realm trust warning is said wherever a realm is joined, hosted or added', async () => {
-  const warned = /Only join realms and invite players you trust/;
+test('the MNG Server trust warning is said wherever an MNG Server is joined, hosted or added', async () => {
+  const warned = /Only join MNG Servers and invite players you trust/;
   await mount(realmTrustNote.RealmTrustNote);
   assert.match(document.body.textContent, warned);
-  assert.match(document.body.textContent, /tell the realm's host/);
+  assert.match(document.body.textContent, /tell the MNG Server's host/);
   await unmountNow();
   const realmForm = addServerForm({ addServer: async () => [] }, serverCtx);
   await mount(realmForm, {});
-  assert.match(document.body.textContent, warned, 'the add form adds realms');
+  assert.match(document.body.textContent, warned, 'the add form adds MNG Servers');
 });
 
-test('realm host helpers name places, validate limits and read memory', () => {
+test('MNG Server host helpers name places, validate limits and read memory', () => {
   const model = realmModel;
   assert.equal(model.describeWhere({ kind: 'HUB', huntId: null }), 'Ramsgate');
   assert.equal(model.describeWhere({ kind: 'TRAINING', huntId: null }), 'Training');
@@ -1930,27 +1930,27 @@ function trustHarness(api = {}, selected = undefined) {
   return { log, App };
 }
 
-test('adding a realm asks to join its host, and Join stores the key the popup showed', async () => {
+test('adding an MNG Server asks to join its host, and Join stores the key the popup showed', async () => {
   const h = trustHarness();
   await mount(h.App);
   let decision;
   await act(async () => { decision = h.log.trust.ensureHost(emberRealm); });
-  assert.match(dialogEl().textContent, /Join realm ember-hold hosted by Tempest\?/);
+  assert.match(dialogEl().textContent, /Join MNG Server ember-hold hosted by Tempest\?/);
   assert.match(dialogEl().textContent, new RegExp(fingerprintOf(DIRECTORY_KEY)));
-  assert.match(dialogEl().textContent, /Only join realms and invite players you trust/, 'the join popup carries the trust warning');
-  await act(async () => dialogButton('Join realm').click());
+  assert.match(dialogEl().textContent, /Only join MNG Servers and invite players you trust/, 'the join popup carries the trust warning');
+  await act(async () => dialogButton('Join MNG Server').click());
   assert.deepEqual(h.log.stored, [['s-realm', DIRECTORY_KEY]]);
   assert.equal(await decision, true);
   assert.ok(!dialogEl());
   assert.equal(h.log.synced.length, 1, 'the refreshed list is handed to the shared server state');
 });
 
-test('a realm whose host has no display name is still asked about, by its name', async () => {
+test('an MNG Server whose host has no display name is still asked about, by its name', async () => {
   const h = trustHarness({ realmLookup: async () => ({ ...tempest, hostName: null }) });
   await mount(h.App);
   let decision;
   await act(async () => { decision = h.log.trust.ensureHost(emberRealm); });
-  assert.match(dialogEl().textContent, /Join realm ember-hold\? Its host has not given a name\./);
+  assert.match(dialogEl().textContent, /Join MNG Server ember-hold\? Its host has not given a name\./);
   await act(async () => dialogButton('Cancel').click());
   assert.equal(await decision, false);
 });
@@ -1966,7 +1966,7 @@ test('Cancel in the join popup stores nothing, and the Play or add that asked do
   assert.ok(!dialogEl());
 });
 
-test('a realm whose host is already agreed is not looked up or asked about again', async () => {
+test('an MNG Server whose host is already agreed is not looked up or asked about again', async () => {
   let looked = 0;
   const h = trustHarness({ realmLookup: async () => { looked++; return tempest; } });
   await mount(h.App);
@@ -1978,22 +1978,22 @@ test('a realm whose host is already agreed is not looked up or asked about again
 });
 
 test('without an official sign-in the directory cannot be asked, and the readable reason reaches the caller', async () => {
-  const h = trustHarness({ realmLookup: async () => { throw 'Sign in to Mystic Paradox to look up this realm.'; } });
+  const h = trustHarness({ realmLookup: async () => { throw 'Sign in to Mystic Paradox to look up this MNG Server.'; } });
   await mount(h.App);
   let failure;
   await act(async () => { failure = h.log.trust.ensureHost(emberRealm).catch((error) => error); });
-  assert.equal(await failure, 'Sign in to Mystic Paradox to look up this realm.');
-  assert.ok(!dialogEl(), 'no popup for a realm nobody could look up');
+  assert.equal(await failure, 'Sign in to Mystic Paradox to look up this MNG Server.');
+  assert.ok(!dialogEl(), 'no popup for an MNG Server nobody could look up');
   assert.deepEqual(h.log.stored, []);
 });
 
-test('a realm whose name now belongs to another host warns, and Trust the new host stores the new key', async () => {
+test('an MNG Server whose name now belongs to another host warns, and Trust the new host stores the new key', async () => {
   const h = trustHarness({ realmLookup: async () => ashen });
   await mount(h.App);
   let decision;
   await act(async () => { decision = h.log.trust.trustNewHost(agreedRealm); });
-  assert.match(dialogEl().textContent, /This realm has a new host/);
-  assert.match(dialogEl().textContent, /The realm ember-hold now belongs to a different host, Ashen Guild\./);
+  assert.match(dialogEl().textContent, /This MNG Server has a new host/);
+  assert.match(dialogEl().textContent, /The MNG Server ember-hold now belongs to a different host, Ashen Guild\./);
   await act(async () => dialogButton('Trust the new host').click());
   assert.deepEqual(h.log.stored, [['s-realm', NEW_KEY]]);
   assert.equal(await decision, true);
@@ -2018,35 +2018,35 @@ test('a warning the directory no longer confirms is explained, with no popup', a
   assert.ok(!dialogEl());
 });
 
-test('a realm notice reaches the app, is kept until dismissed, and keeps its reason', async () => {
+test('an MNG Server notice reaches the app, is kept until dismissed, and keeps its reason', async () => {
   const h = trustHarness();
   await mount(h.App);
-  await act(async () => h.log.handlers.forEach((handler) => handler({ reason: 'BANNED', message: 'You were banned from this realm.' })));
+  await act(async () => h.log.handlers.forEach((handler) => handler({ reason: 'BANNED', message: 'You were banned from this MNG Server.' })));
   assert.equal(h.log.trust.notice.reason, 'BANNED');
-  assert.equal(h.log.trust.notice.message, 'You were banned from this realm.');
+  assert.equal(h.log.trust.notice.message, 'You were banned from this MNG Server.');
   await act(async () => h.log.trust.dismissNotice());
   assert.equal(h.log.trust.notice, null);
 });
 
-test('Home shows a realm notice in a dismissible banner, muted when the host only went offline', async () => {
+test('Home shows an MNG Server notice in a dismissible banner, muted when the host only went offline', async () => {
   let dismissed = 0;
-  const trust = { ...noTrust(), notice: { reason: 'HOST_OFFLINE', message: 'The realm host went offline.' }, dismissNotice: () => { dismissed++; } };
+  const trust = { ...noTrust(), notice: { reason: 'HOST_OFFLINE', message: 'The MNG Server host went offline.' }, dismissNotice: () => { dismissed++; } };
   await mount(home({ secureLaunch: async () => {} }, undefined, undefined, { trust, selected: agreedRealm }));
   const banner = document.querySelector('.banner');
-  assert.match(banner.textContent, /The realm host went offline\./);
+  assert.match(banner.textContent, /The MNG Server host went offline\./);
   assert.equal(banner.dataset.tone, 'muted');
   await act(async () => button('Dismiss').click());
   assert.equal(dismissed, 1);
 });
 
 test('a removal or a ban on Home is a danger banner', async () => {
-  const trust = { ...noTrust(), notice: { reason: 'KICKED', message: 'You were removed from the realm.' } };
+  const trust = { ...noTrust(), notice: { reason: 'KICKED', message: 'You were removed from the MNG Server.' } };
   await mount(home({ secureLaunch: async () => {} }, undefined, undefined, { trust, selected: agreedRealm }));
   assert.equal(document.querySelector('.banner').dataset.tone, 'danger');
-  assert.match(document.querySelector('.banner').textContent, /You were removed from the realm\./);
+  assert.match(document.querySelector('.banner').textContent, /You were removed from the MNG Server\./);
 });
 
-test('Play into a realm with no agreed host asks first, and starts nothing when the player cancels', async () => {
+test('Play into an MNG Server with no agreed host asks first, and starts nothing when the player cancels', async () => {
   const asked = [];
   let launches = 0;
   const trust = { ...noTrust(), ensureHost: async (server) => { asked.push(server.id); return false; } };
@@ -2058,7 +2058,7 @@ test('Play into a realm with no agreed host asks first, and starts nothing when 
   assert.ok(!document.querySelector('.launch-error'), 'cancelling is not an error');
 });
 
-test('Play into a realm starts once its host is agreed', async () => {
+test('Play into an MNG Server starts once its host is agreed', async () => {
   let launches = 0;
   await mount(home({ secureLaunch: async () => { launches++; } }, undefined, undefined, { trust: noTrust(), selected: agreedRealm }));
   await act(async () => button('Play').click());
@@ -2066,7 +2066,7 @@ test('Play into a realm starts once its host is agreed', async () => {
   assert.ok(button('Check status'));
 });
 
-test('Play refused because the realm changed hands asks the player, and trusting the new host plays again', async () => {
+test('Play refused because the MNG Server changed hands asks the player, and trusting the new host plays again', async () => {
   const asked = [];
   let launches = 0;
   const trust = { ...noTrust(), trustNewHost: async (server) => { asked.push(server.id); return true; } };
@@ -2090,31 +2090,31 @@ test('cancelling the ownership warning starts nothing and shows no error', async
   assert.ok(!document.querySelector('.launch-error'));
 });
 
-test('a realm Play refused for want of an agreed host reads as a sentence, never as the token', async () => {
+test('an MNG Server Play refused for want of an agreed host reads as a sentence, never as the token', async () => {
   let launches = 0;
   await mount(home({ secureLaunch: async () => { launches++; throw 'REALM_HOST_KEY_REQUIRED'; } }, undefined, undefined, { trust: noTrust(), selected: agreedRealm }));
   await act(async () => button('Play').click());
   assert.equal(launches, 1);
-  assert.match(document.querySelector('.launch-error').textContent, /Confirm this realm's host before you play\./);
+  assert.match(document.querySelector('.launch-error').textContent, /Confirm this MNG Server's host before you play\./);
   assert.doesNotMatch(document.body.textContent, /REALM_HOST_KEY_REQUIRED/);
 });
 
-test('Servers: adding a realm asks for its host; without a sign-in the note says the host is confirmed at the first Play', async () => {
+test('Servers: adding an MNG Server asks for its host; without a sign-in the note says the host is confirmed at the first Play', async () => {
   const asked = [];
-  const trust = { ...noTrust(), ensureHost: async (server) => { asked.push(server.id); throw new Error('Sign in to Mystic Paradox to look up this realm.'); } };
+  const trust = { ...noTrust(), ensureHost: async (server) => { asked.push(server.id); throw new Error('Sign in to Mystic Paradox to look up this MNG Server.'); } };
   await mount(serversTab({ addServer: async () => [officialServer, emberRealm] }, serverCtx, [], trust));
   await act(async () => typeInto(field("Host's username"), 'ember-hold'));
-  await act(async () => button('Add realm').click());
+  await act(async () => button('Add MNG Server').click());
   assert.deepEqual(asked, ['s-realm']);
-  assert.ok(document.querySelector('.server-row[data-kind="paradox_realm"]'), 'the list shows the realm that was added');
+  assert.ok(document.querySelector('.server-row[data-kind="paradox_realm"]'), 'the list shows the MNG Server that was added');
   // [2026-10-14] A realm is named by its realm name in every message.
   assert.match(document.body.textContent, /Added Ember Hold\. You will be asked to confirm its host the first time you play\./);
 });
 
-test('Servers: a realm added and agreed to shows no host note', async () => {
+test('Servers: an MNG Server added and agreed to shows no host note', async () => {
   await mount(serversTab({ addServer: async () => [officialServer, emberRealm] }, serverCtx, [], noTrust()));
   await act(async () => typeInto(field("Host's username"), 'ember-hold'));
-  await act(async () => button('Add realm').click());
+  await act(async () => button('Add MNG Server').click());
   assert.doesNotMatch(document.body.textContent, /confirm its host/);
 });
 
@@ -2124,27 +2124,27 @@ test('Servers: a realm added and agreed to shows no host note', async () => {
 test('Servers: a join request refused after an add says so under the add form, in the server\'s words', async () => {
   await mount(serversTab({
     addServer: async () => [officialServer, emberRealm],
-    realmRequestJoin: async () => { throw 'That realm name is not valid.'; },
+    realmRequestJoin: async () => { throw 'That MNG Server name is not valid.'; },
   }, serverCtx, [], noTrust()));
   await act(async () => typeInto(field("Host's username"), 'ember-hold'));
-  await act(async () => button('Add realm').click());
+  await act(async () => button('Add MNG Server').click());
   await act(async () => {});
   const under = document.querySelector('.add-ask .feedback');
   assert.ok(under, 'the answer is under the add form');
-  assert.equal(under.textContent, 'The join request to Ember Hold was not sent: That realm name is not valid.');
+  assert.equal(under.textContent, 'The join request to Ember Hold was not sent: That MNG Server name is not valid.');
   assert.ok(under.classList.contains('bad'));
   const row = document.querySelector('.server-row[data-kind="paradox_realm"]');
-  assert.match(row.textContent, /That realm name is not valid\./, 'and on the realm\'s row');
+  assert.match(row.textContent, /That MNG Server name is not valid\./, 'and on the MNG Server\'s row');
 });
 
-test('Servers: adding a realm sends its host a join request, and the row says the request was sent', async () => {
+test('Servers: adding an MNG Server sends its host a join request, and the row says the request was sent', async () => {
   const asked = [];
   await mount(serversTab({
     addServer: async () => [officialServer, emberRealm],
     realmRequestJoin: async (id) => { asked.push(id); return 'REQUESTED'; },
   }, serverCtx, [], noTrust()));
   await act(async () => typeInto(field("Host's username"), 'ember-hold'));
-  await act(async () => button('Add realm').click());
+  await act(async () => button('Add MNG Server').click());
   await act(async () => {});
   assert.deepEqual(asked, ['s-realm']);
   const row = document.querySelector('.server-row[data-kind="paradox_realm"]');
@@ -2152,7 +2152,7 @@ test('Servers: adding a realm sends its host a join request, and the row says th
   assert.match(row.textContent, /Request sent to the host of Ember Hold\. You can play there once they approve it\./);
 });
 
-test('Servers: each realm shows where the player stands, and Ask to join sends a request', async () => {
+test('Servers: each MNG Server shows where the player stands, and Ask to join sends a request', async () => {
   const asked = [];
   const realmA = { ...realmServer, id: 's-a', name: 'A', realmName: 'realm-a' };
   const realmB = { ...realmServer, id: 's-b', name: 'B', realmName: 'realm-b' };
@@ -2187,7 +2187,7 @@ function realmInvitesModule(api, ctx, trust = noTrust()) {
   });
 }
 
-test('Realm invitations: Accept joins and adds the realm (its host is confirmed), Decline answers no', async () => {
+test('MNG Server invitations: Accept joins and adds the MNG Server (its host is confirmed), Decline answers no', async () => {
   const calls = [];
   const synced = [];
   const added = { ...realmServer, id: 's-frost', name: 'frost-keep', realmName: 'frost-keep' };
@@ -2203,7 +2203,7 @@ test('Realm invitations: Accept joins and adds the realm (its host is confirmed)
   }, { servers: [officialServer], officialNetwork: true, sync: (list) => synced.push(list) }, trust);
   await mount(() => React.createElement(RealmInvitesProvider, null, React.createElement(RealmInvitations)));
   await act(async () => {});
-  assert.match(document.body.textContent, /Realm invitations/);
+  assert.match(document.body.textContent, /MNG Server invitations/);
   assert.match(document.body.textContent, /frost-keep/);
   assert.match(document.body.textContent, /Invited by Brann/);
   assert.match(document.body.textContent, /Invited by its host/);
@@ -2224,7 +2224,7 @@ test('Realm invitations: Accept joins and adds the realm (its host is confirmed)
   assert.match(document.body.textContent, /Invite to quiet-vale declined\./);
 });
 
-test('Realm invitations: nothing is asked or shown off our network, and no card shows without an invite', async () => {
+test('MNG Server invitations: nothing is asked or shown off our network, and no card shows without an invite', async () => {
   let asked = 0;
   const { RealmInvitesProvider, RealmInvitations } = realmInvitesModule({
     realmInvites: async () => { asked++; return []; },
@@ -2263,7 +2263,7 @@ test('a refused ban keeps its dialog open with the reason, and the player is not
     await act(async () => rowButton('AshWarden', 'Ban').click());
     await act(async () => dialogButton('Ban').click());
     assert.match(dialogEl().textContent, /The ban reason is too long\./);
-    assert.ok(rowFor('AshWarden'), 'still in the realm');
+    assert.ok(rowFor('AshWarden'), 'still in the MNG Server');
     assert.ok(!rowButton('AshWarden', 'Unban'), 'not on the ban list');
   });
 });
@@ -2973,9 +2973,9 @@ test('the build check has a titled header with its button on the right, and a ve
 // ---- [2026-10-14] The launcher's dropdown, and a realm named by its realm name --------------------------------------
 
 // [2026-10-16, owner] Realms are named after their hosts' usernames: the label ("MysticFox's Realm") leads and the realm name follows.
-test('a realm is shown by its label with its realm name under it, and by its realm name alone when that is its label', () => {
+test('an MNG Server is shown by its label with its MNG Server name under it, and by its MNG Server name alone when that is its label', () => {
   const { serverNaming, statusNaming, realmNameForUsername, realmLabelForUsername } = serverNames;
-  assert.deepEqual(serverNaming({ kind: 'paradox_realm', name: "MysticFox's Realm", realmName: 'mysticfox' }), { primary: "MysticFox's Realm", secondary: 'mysticfox' });
+  assert.deepEqual(serverNaming({ kind: 'paradox_realm', name: "MysticFox's MNG Server", realmName: 'mysticfox' }), { primary: "MysticFox's MNG Server", secondary: 'mysticfox' });
   assert.deepEqual(serverNaming({ kind: 'paradox_realm', name: 'MysticFox', realmName: 'mysticfox' }), { primary: 'mysticfox', secondary: null }, 'the same name in other capitals is not a second line');
   assert.deepEqual(serverNaming({ kind: 'paradox_realm', name: '  ', realmName: 'ember-hold' }), { primary: 'ember-hold', secondary: null });
   assert.deepEqual(serverNaming({ kind: 'local', name: 'My server', realmName: null }), { primary: 'My server', secondary: null });
@@ -2986,7 +2986,7 @@ test('a realm is shown by its label with its realm name under it, and by its rea
   assert.equal(realmNameForUsername('MysticFox'), 'mysticfox');
   assert.equal(realmNameForUsername(' Old_Name.Two '), 'old-name-two');
   assert.equal(realmNameForUsername('ab'), '');
-  assert.equal(realmLabelForUsername('MysticFox'), "MysticFox's Realm");
+  assert.equal(realmLabelForUsername('MysticFox'), "MysticFox's MNG Server");
   assert.equal(realmLabelForUsername(' '), '');
   assert.deepEqual(statusNaming({ serverId: 's-9', serverName: 'Mystic' }, mystic), { primary: 'Mystic', secondary: null }, 'another server\'s status keeps its own name');
   assert.equal(statusNaming(null, mystic), null);
@@ -3000,7 +3000,7 @@ const ddActiveRow = () => document.getElementById(ddControl().getAttribute('aria
 const pressKey = (element, key) => act(async () => element.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })));
 const pickerOptions = [
   { value: 'official', label: 'Mystic Paradox', tag: { text: 'Official', tone: 'official' } },
-  { value: 's-realm', label: 'ember-hold', detail: 'Ember Hold', tag: { text: 'Realm', tone: 'realm' } },
+  { value: 's-realm', label: 'ember-hold', detail: 'Ember Hold', tag: { text: 'MNG Server', tone: 'realm' } },
   { value: 's-local', label: 'My server', tag: { text: 'Local', tone: 'local' } },
 ];
 const pickerActions = [{ value: 'add', label: 'Add a server...' }];
@@ -3048,7 +3048,7 @@ test('a click opens the list on the body: each option with its detail and tag, t
   assert.equal(rows[1].getAttribute('aria-selected'), 'false');
   assert.equal(rows[1].querySelector('.dropdown-main').textContent, 'ember-hold');
   assert.equal(rows[1].querySelector('.dropdown-detail').textContent, 'Ember Hold');
-  assert.equal(rows[1].querySelector('.dropdown-tag').textContent, 'Realm');
+  assert.equal(rows[1].querySelector('.dropdown-tag').textContent, 'MNG Server');
   assert.equal(rows[2].querySelector('.dropdown-tag').textContent, 'Local', 'a local server carries the red Local tag');
   assert.equal(rows[3].textContent, 'Add a server...');
   assert.equal(rows[3].getAttribute('aria-selected'), 'false', 'an action is not a choice');
@@ -3184,7 +3184,7 @@ test('a disabled dropdown does not open from the mouse or the keyboard', async (
   assert.deepEqual(log.changes, []);
 });
 
-test('Home names a realm by its label, with its realm name under it only when they differ', async () => {
+test('Home names an MNG Server by its label, with its MNG Server name under it only when they differ', async () => {
   const mystic = { ...realmServer, id: 's-2', name: 'Mystic', realmName: 'mysticfox', selected: true };
   const status = { ...install, serverId: 's-2', serverKind: 'paradox_realm', serverName: 'Mystic', runtimeManaged: true };
   await mount(home({ getInstallStatus: async () => status }, undefined, undefined, { selected: mystic }));
@@ -3200,25 +3200,25 @@ test('Home names a realm by its label, with its realm name under it only when th
   assert.equal(document.querySelector('.play-server-detail'), null, 'the same name in other capitals is not a second line');
 });
 
-test('a realm notice on Home names the realm by its realm name', async () => {
-  const trust = { ...noTrust(), notice: { reason: 'KICKED', message: 'You were removed from the realm.', realm: 'mysticfox' } };
+test('an MNG Server notice on Home names the MNG Server by its MNG Server name', async () => {
+  const trust = { ...noTrust(), notice: { reason: 'KICKED', message: 'You were removed from the MNG Server.', realm: 'mysticfox' } };
   await mount(home({ secureLaunch: async () => {} }, undefined, undefined, { trust, selected: agreedRealm }));
-  assert.match(document.querySelector('.banner').textContent, /^mysticfox: You were removed from the realm\./);
+  assert.match(document.querySelector('.banner').textContent, /^mysticfox: You were removed from the MNG Server\./);
 });
 
-test('a realm notice records the realm the player was in, by its label, and none outside a realm', async () => {
+test('an MNG Server notice records the MNG Server the player was in, by its label, and none outside an MNG Server', async () => {
   const inRealm = trustHarness({}, emberRealm);
   await mount(inRealm.App);
-  await act(async () => inRealm.log.handlers.forEach((handler) => handler({ reason: 'BANNED', message: 'You were banned from this realm.' })));
+  await act(async () => inRealm.log.handlers.forEach((handler) => handler({ reason: 'BANNED', message: 'You were banned from this MNG Server.' })));
   assert.equal(inRealm.log.trust.notice.realm, 'Ember Hold');
   assert.equal(inRealm.log.trust.notice.reason, 'BANNED');
   const outside = trustHarness({}, officialServer);
   await mount(outside.App);
-  await act(async () => outside.log.handlers.forEach((handler) => handler({ reason: 'KICKED', message: 'You were removed from the realm.' })));
+  await act(async () => outside.log.handlers.forEach((handler) => handler({ reason: 'KICKED', message: 'You were removed from the MNG Server.' })));
   assert.equal(outside.log.trust.notice.realm, null);
 });
 
-test('the Servers page names a realm by its label, with its realm name under it', async () => {
+test('the Servers page names an MNG Server by its label, with its MNG Server name under it', async () => {
   const mystic = { ...realmServer, name: 'Mystic', realmName: 'mysticfox' };
   await mount(serversTab({ listServers: async () => [officialServer, mystic] }));
   const row = document.querySelector('.server-row[data-kind="paradox_realm"]');
@@ -3226,7 +3226,7 @@ test('the Servers page names a realm by its label, with its realm name under it'
   assert.equal(row.querySelector('.server-alias').textContent, 'mysticfox');
 });
 
-test('Library names a realm by its label on the Installed line', async () => {
+test('Library names an MNG Server by its label on the Installed line', async () => {
   const mystic = { ...realmServer, id: 's-2', name: 'Mystic', realmName: 'mysticfox', selected: true };
   const { LibraryTab } = load('src/screens/dashboard/LibraryTab.tsx', {
     '../../servers/ServerContext': { useServer: () => ({ selected: mystic }) },
@@ -3256,8 +3256,8 @@ test('the official server is unavailable only when its own status says so, and t
   assert.equal(officialUnavailable({ available: false }), true);
   assert.equal(officialUnavailableNote({ available: false, message: '  Back at 18:00.  ' }), 'Back at 18:00.');
   assert.equal(officialUnavailableNote({ available: false }), OFFICIAL_UNAVAILABLE_NOTE);
-  assert.equal(OFFICIAL_UNAVAILABLE_NOTE, 'The official server is currently unavailable. Join or host a realm.');
-  assert.equal(serverUnavailable({ kind: 'paradox_realm' }, { available: false }), false, 'a realm is not the official server');
+  assert.equal(OFFICIAL_UNAVAILABLE_NOTE, 'The official server is currently unavailable. Join or host an MNG Server.');
+  assert.equal(serverUnavailable({ kind: 'paradox_realm' }, { available: false }), false, 'an MNG Server is not the official server');
   assert.equal(serverUnavailable({ kind: 'official' }, { available: false }), true);
   assert.deepEqual(serverStatusBadge({ kind: 'official', health: 'online', officialPlay: { available: false } }), { text: 'Unavailable', tone: 'bad' });
   assert.deepEqual(serverStatusBadge({ kind: 'official', health: 'degraded', officialPlay: null }), { text: 'Degraded', tone: 'warn' });
@@ -3279,7 +3279,7 @@ test('a refusal carries its code: the email screens read the code, other refusal
   assert.equal(passwordProblem('a long password', 'a long passwore'), "Passwords don't match.");
   assert.equal(passwordProblem('a long password', 'a long password'), null);
   assert.equal(AUTH_CODE_COPY.AUTH_CODE_INVALID, 'That code is wrong or has expired. Check the latest email or resend the code.');
-  assert.equal(discordLinkErrorText('AUTH_DISCORD_ALREADY_LINKED'), 'That Discord account is already linked to another Mystic Paradox account.');
+  assert.equal(discordLinkErrorText('AUTH_DISCORD_ALREADY_LINKED'), 'That Discord account is already linked to another MNG DAUNTLESS account.');
   assert.equal(discordLinkErrorText('AUTH_DISCORD_ACCOUNT_HAS_LINK'), 'This account already has a Discord account linked.');
   assert.equal(discordLinkErrorText('AUTH_DISCORD_CANCELLED'), "Discord linking didn't complete. Please try again.");
 });
@@ -3371,11 +3371,11 @@ test('a Discord link ends by deep link: link/done refreshes the account, link/er
 
   await act(async () => harness.listeners.get('discord-link-error')({ payload: 'AUTH_DISCORD_ALREADY_LINKED' }));
   assert.equal(harness.context.discordLinkNotice.tone, 'error');
-  assert.equal(harness.context.discordLinkNotice.text, 'That Discord account is already linked to another Mystic Paradox account.');
+  assert.equal(harness.context.discordLinkNotice.text, 'That Discord account is already linked to another MNG DAUNTLESS account.');
 
   await act(async () => harness.listeners.get('discord-auth-error')({ payload: 'AUTH_DISCORD_NOT_LINKED' }));
   assert.equal(harness.context.status, 'signedOut');
-  assert.equal(harness.context.authError, 'Your Discord isn\'t linked to a Mystic Paradox account. Register with your email, then link Discord on the Account page.');
+  assert.equal(harness.context.authError, 'Your Discord isn\'t linked to a MNG DAUNTLESS account. Register with your email, then link Discord on the Account page.');
 });
 
 // The code screens and the reset flow, loaded for real. describeAuthError is the real one from AuthContext.
@@ -3520,7 +3520,7 @@ test('Home: a healthy official server shows Online and Play, with no note', asyn
 // ---- [2026-10-16] A realm's state on Home: the realm itself, not only our backend's health (0.1.70 showed "Online" for a realm
 // whose host had not started it) ----------------------------------------------------------------------------------------
 
-test('a realm is enterable only while it serves; the player\'s own realm follows this PC\'s host; the badge names it', () => {
+test('an MNG Server is enterable only while it serves; the player\'s own MNG Server follows this PC\'s host; the badge names it', () => {
   const { realmStatus, realmPlayBlock } = realmStatusLib;
   const { serverStatusBadge } = officialPlayLib;
   // The directory: online alone (the host's launcher reports in) is not enough; serving is.
@@ -3532,14 +3532,14 @@ test('a realm is enterable only while it serves; the player\'s own realm follows
   assert.deepEqual(realmStatus('ember-hold', { online: true, serving: false, own: true }, { realmName: 'Ember-Hold', state: 'starting' }), { state: 'starting', own: true, standing: 'own' });
   assert.deepEqual(realmStatus('ember-hold', { online: true, serving: false, own: true }, { realmName: 'ember-hold', state: 'online' }), { state: 'serving', own: true, standing: 'own' });
   assert.deepEqual(realmStatus('ember-hold', { online: true, serving: false, own: true }, null), { state: 'offline', own: true, standing: 'own' }, 'without the hosting module: the directory');
-  assert.deepEqual(realmStatus('ember-hold', { online: true, serving: true, member: true }, { realmName: 'other-realm', state: 'stopped' }), { state: 'serving', own: false, standing: 'member' }, 'another realm hosted here does not count');
+  assert.deepEqual(realmStatus('ember-hold', { online: true, serving: true, member: true }, { realmName: 'other-realm', state: 'stopped' }), { state: 'serving', own: false, standing: 'member' }, 'another MNG Server hosted here does not count');
 
   // The lines under Play.
   assert.equal(realmPlayBlock({ state: 'serving', own: false }), null);
   assert.equal(realmPlayBlock(null), null, 'unknown: Play is not held');
-  assert.equal(realmPlayBlock({ state: 'offline', own: false }), "The realm's host hasn't started it yet. Play opens when the realm is online.");
-  assert.equal(realmPlayBlock({ state: 'offline', own: true }), 'Your realm is not running. Start it on the Host realm page, then press Play.');
-  assert.equal(realmPlayBlock({ state: 'starting', own: true }), 'Your realm is starting. Play opens when it is online.');
+  assert.equal(realmPlayBlock({ state: 'offline', own: false }), "The MNG Server's host hasn't started it yet. Play opens when the MNG Server is online.");
+  assert.equal(realmPlayBlock({ state: 'offline', own: true }), 'Your MNG Server is not running. Start it on the Host MNG Server page, then press Play.');
+  assert.equal(realmPlayBlock({ state: 'starting', own: true }), 'Your MNG Server is starting. Play opens when it is online.');
 
   // The badge: our backend's trouble first, then the realm.
   const badge = (realm, health = 'online') => serverStatusBadge({ kind: 'paradox_realm', health, officialPlay: null, realm });
@@ -3549,31 +3549,31 @@ test('a realm is enterable only while it serves; the player\'s own realm follows
   assert.equal(badge(null), null, 'not known yet: no badge rather than our backend\'s Online');
   assert.deepEqual(badge({ state: 'serving', own: false }, 'unreachable'), { text: 'Unavailable', tone: 'bad' });
   assert.deepEqual(badge({ state: 'serving', own: false }, 'degraded'), { text: 'Degraded', tone: 'warn' });
-  assert.deepEqual(serverStatusBadge({ kind: 'official', health: 'online', officialPlay: null, realm: { state: 'offline', own: false } }), { text: 'Online', tone: 'good' }, 'the official server ignores a realm state');
+  assert.deepEqual(serverStatusBadge({ kind: 'official', health: 'online', officialPlay: null, realm: { state: 'offline', own: false } }), { text: 'Online', tone: 'good' }, 'the official server ignores an MNG Server state');
 });
 
 const realmInstall = { ...install, serverId: 's-2', serverKind: 'paradox_realm', serverName: 'Ember Hold', runtimeManaged: true };
 const emberHold = { id: 's-2', kind: 'paradox_realm', name: 'Ember Hold', realmName: 'ember-hold' };
 
-test('Home: a realm whose host has not started it shows Offline and Play waits with the reason', async () => {
+test('Home: an MNG Server whose host has not started it shows Offline and Play waits with the reason', async () => {
   await mount(home({ getInstallStatus: async () => realmInstall }, undefined, undefined, { selected: emberHold, realm: { state: 'offline', own: false, standing: 'member' } }));
   await act(async () => {});
   const badge = document.querySelector('[data-testid="server-status"]');
   assert.equal(badge.textContent, 'Offline');
   assert.equal(badge.className, 'chip', 'a plain chip: offline is not an error');
-  assert.equal(button('Realm offline').disabled, true);
-  assert.ok(document.body.textContent.includes("The realm's host hasn't started it yet."));
+  assert.equal(button('MNG Server offline').disabled, true);
+  assert.ok(document.body.textContent.includes("The MNG Server's host hasn't started it yet."));
 });
 
-test('Home: the player\'s own stopped realm says to start it on the Host realm page', async () => {
+test('Home: the player\'s own stopped MNG Server says to start it on the Host MNG Server page', async () => {
   await mount(home({ getInstallStatus: async () => realmInstall }, undefined, undefined, { selected: emberHold, realm: { state: 'offline', own: true, standing: 'own' } }));
   await act(async () => {});
   assert.equal(document.querySelector('[data-testid="server-status"]').textContent, 'Offline');
-  assert.equal(button('Realm offline').disabled, true);
-  assert.ok(document.body.textContent.includes('Your realm is not running. Start it on the Host realm page, then press Play.'));
+  assert.equal(button('MNG Server offline').disabled, true);
+  assert.ok(document.body.textContent.includes('Your MNG Server is not running. Start it on the Host MNG Server page, then press Play.'));
 });
 
-test('Home: a realm that serves shows Online and Play', async () => {
+test('Home: an MNG Server that serves shows Online and Play', async () => {
   await mount(home({ getInstallStatus: async () => realmInstall }, undefined, undefined, { selected: emberHold, realm: { state: 'serving', own: false, standing: 'member' } }));
   await act(async () => {});
   const badge = document.querySelector('[data-testid="server-status"]');
@@ -3582,14 +3582,14 @@ test('Home: a realm that serves shows Online and Play', async () => {
   assert.equal(button('Play').disabled, false);
 });
 
-test('Home: a realm whose state is not known yet shows no badge and does not hold Play', async () => {
+test('Home: an MNG Server whose state is not known yet shows no badge and does not hold Play', async () => {
   await mount(home({ getInstallStatus: async () => realmInstall }, undefined, undefined, { selected: emberHold, realm: null }));
   await act(async () => {});
   assert.equal(document.querySelector('[data-testid="server-status"]'), null);
   assert.equal(button('Play').disabled, false);
 });
 
-test('the realm state is read at once and every 15 s; this PC\'s host is asked only for the player\'s own realm', async () => {
+test('the MNG Server state is read at once and every 15 s; this PC\'s host is asked only for the player\'s own MNG Server', async () => {
   const lookups = [];
   let localAsked = 0;
   let directory = { online: true, serving: false, own: false };
@@ -3613,18 +3613,18 @@ test('the realm state is read at once and every 15 s; this PC\'s host is asked o
   };
   root = createRoot(document.getElementById('root'));
   await act(async () => root.render(React.createElement(Probe, { server: { id: 'official', kind: 'official' } })));
-  assert.deepEqual(lookups, [], 'the official server is not a realm');
+  assert.deepEqual(lookups, [], 'the official server is not an MNG Server');
   assert.equal(seen[seen.length - 1], 'none');
 
   await act(async () => root.render(React.createElement(Probe, { server: emberHold })));
   assert.deepEqual(lookups, ['s-2'], 'read at once');
   assert.equal(seen[seen.length - 1], 'offline');
-  assert.equal(localAsked, 0, 'not this player\'s realm: this PC\'s host is not asked');
+  assert.equal(localAsked, 0, 'not this player\'s MNG Server: this PC\'s host is not asked');
   assert.equal(intervals[intervals.length - 1].ms, 15000);
 
   directory = { online: true, serving: false, own: true };
   await act(async () => intervals[intervals.length - 1].callback());
-  assert.equal(localAsked, 1, 'the player\'s own realm: this PC\'s host is asked');
+  assert.equal(localAsked, 1, 'the player\'s own MNG Server: this PC\'s host is asked');
   assert.equal(seen[seen.length - 1], 'starting own');
 
   directory = { online: true, serving: true, own: false };
@@ -3636,14 +3636,14 @@ test('the realm state is read at once and every 15 s; this PC\'s host is asked o
 // ---- [2026-10-16] The player's standing in the selected realm (0.1.71 showed a ready Play to a second account on the same PC,
 // which had never asked to join: the realm list is the PC's, not the account's) -----------------------------------------
 
-test('the standing comes from the same lookup: host, member, an invite, a request, a realm open to all, or none', () => {
+test('the standing comes from the same lookup: host, member, an invite, a request, an MNG Server open to all, or none', () => {
   const { realmStatus, realmStanding, realmJoinStep } = realmStatusLib;
   const directory = { online: true, serving: true };
   assert.equal(realmStanding({ ...directory, own: true, member: true }, true), 'own');
   assert.equal(realmStanding({ ...directory, member: true }, false), 'member');
   assert.equal(realmStanding({ ...directory, invited: true, requested: true }, false), 'invited', 'an invite to answer comes first');
   assert.equal(realmStanding({ ...directory, requested: true }, false), 'requested');
-  assert.equal(realmStanding({ ...directory, joinPolicy: 'PUBLIC' }, false), 'open', 'Play joins a realm open to all');
+  assert.equal(realmStanding({ ...directory, joinPolicy: 'PUBLIC' }, false), 'open', 'Play joins an MNG Server open to all');
   assert.equal(realmStanding({ ...directory, joinPolicy: 'INVITE_ONLY' }, false), 'none');
   // The standing travels with the realm's state, whatever that state is.
   assert.deepEqual(realmStatus('mysticfox', { online: true, serving: true, joinPolicy: 'INVITE_ONLY' }, null), { state: 'serving', own: false, standing: 'none' });
@@ -3656,16 +3656,16 @@ test('the standing comes from the same lookup: host, member, an invite, a reques
   });
   assert.deepEqual(realmJoinStep(at('requested'), 'mysticfox', true), { line: 'Request sent to mysticfox. You can play once the host approves it.', button: 'Request sent', action: null });
   assert.deepEqual(realmJoinStep(at('requested'), 'mysticfox'), { line: 'Waiting for the host of mysticfox to approve your request.', button: 'Request sent', action: null });
-  assert.deepEqual(realmJoinStep(at('invited'), 'mysticfox'), { line: 'You have an invite to mysticfox. Accept it on the Realms page.', button: 'Open Realms', action: 'realms' });
+  assert.deepEqual(realmJoinStep(at('invited'), 'mysticfox'), { line: 'You have an invite to mysticfox. Accept it on the MNG Servers page.', button: 'Open MNG Servers', action: 'realms' });
   for (const standing of ['own', 'member', 'open']) assert.equal(realmJoinStep(at(standing), 'mysticfox'), null, `${standing}: Play is theirs`);
   assert.equal(realmJoinStep(null, 'mysticfox'), null, 'not known: Play is not held');
 });
 
 // [2026-10-16] A realm in solo mode lets nobody but its host in: others see it as unavailable, with no Ask to join.
-test('a realm in solo mode is closed to everyone but its host, members included', () => {
+test('an MNG Server in solo mode is closed to everyone but its host, members included', () => {
   const { realmStanding, realmJoinStep, REALM_SOLO_LINE } = realmStatusLib;
   const { serverStatusBadge } = officialPlayLib;
-  assert.equal(REALM_SOLO_LINE, 'This realm is in solo mode: its host is playing alone right now.');
+  assert.equal(REALM_SOLO_LINE, 'This MNG Server is in solo mode: its host is playing alone right now.');
   assert.equal(realmStanding({ online: true, serving: false, joinPolicy: 'SOLO' }, false), 'solo');
   assert.equal(realmStanding({ online: true, serving: false, joinPolicy: 'SOLO', member: true }, false), 'solo', 'a member too');
   assert.equal(realmStanding({ online: true, serving: true, joinPolicy: 'SOLO', own: true }, true), 'own', 'the host enters');
@@ -3673,19 +3673,19 @@ test('a realm in solo mode is closed to everyone but its host, members included'
   assert.deepEqual(serverStatusBadge({ kind: 'paradox_realm', health: 'online', officialPlay: null, realm: { state: 'offline', own: false, standing: 'solo' } }), { text: 'Solo mode', tone: 'warn' });
 });
 
-test('Home: a realm in solo mode shows Solo mode, and Play waits with the line and no Ask to join', async () => {
+test('Home: an MNG Server in solo mode shows Solo mode, and Play waits with the line and no Ask to join', async () => {
   await mount(home({ getInstallStatus: async () => realmInstall }, undefined, undefined, { selected: emberHold, realm: { state: 'offline', own: false, standing: 'solo' } }));
   await act(async () => {});
   assert.equal(document.querySelector('[data-testid="server-status"]').textContent, 'Solo mode');
   const play = document.querySelector('button.play');
   assert.equal(play.textContent, 'Unavailable');
   assert.equal(play.disabled, true);
-  assert.ok(document.body.textContent.includes('This realm is in solo mode: its host is playing alone right now.'));
+  assert.ok(document.body.textContent.includes('This MNG Server is in solo mode: its host is playing alone right now.'));
   assert.ok(document.body.textContent.includes('Unavailable: solo mode'));
   assert.ok(!document.body.textContent.includes('Ask to join'));
 });
 
-test('Servers: a realm in solo mode says so and offers no Ask to join', async () => {
+test('Servers: an MNG Server in solo mode says so and offers no Ask to join', async () => {
   const realmSolo = { ...realmServer, id: 's-solo', name: 'S', realmName: 'realm-solo' };
   await mount(serversTab({
     listServers: async () => [officialServer, realmSolo],
@@ -3715,17 +3715,17 @@ function standingHook(initial) {
 }
 const playButton = () => document.querySelector('button.play');
 
-test('Home: an account the realm has not let in asks to join; the button then waits as Request sent', async () => {
+test('Home: an account the MNG Server has not let in asks to join; the button then waits as Request sent', async () => {
   const asked = [];
   const { hook, calls } = standingHook({ state: 'serving', own: false, standing: 'none' });
   await mount(home({ getInstallStatus: async () => realmInstall, realmRequestJoin: async (id) => { asked.push(id); return 'REQUESTED'; } }, undefined, undefined, { selected: emberHold, realmHook: hook }));
   await act(async () => {});
-  assert.equal(document.querySelector('[data-testid="server-status"]').textContent, 'Online', 'the badge is the realm\'s own state');
+  assert.equal(document.querySelector('[data-testid="server-status"]').textContent, 'Online', 'the badge is the MNG Server\'s own state');
   assert.equal(playButton().textContent, 'Ask to join');
   assert.equal(playButton().disabled, false);
-  assert.ok(document.body.textContent.includes('Not in this realm yet'));
+  assert.ok(document.body.textContent.includes('Not in this MNG Server yet'));
   await act(async () => playButton().click());
-  assert.deepEqual(asked, ['s-2'], 'the same request the Realms page sends');
+  assert.deepEqual(asked, ['s-2'], 'the same request the MNG Servers page sends');
   assert.equal(calls.marked, 1);
   assert.ok(calls.refresh >= 1, 'the standing is read again');
   assert.equal(playButton().textContent, 'Request sent');
@@ -3735,10 +3735,10 @@ test('Home: an account the realm has not let in asks to join; the button then wa
 
 test('Home: a refused Ask to join shows the server\'s sentence, and the button stays to try again', async () => {
   const { hook } = standingHook({ state: 'serving', own: false, standing: 'none' });
-  await mount(home({ getInstallStatus: async () => realmInstall, realmRequestJoin: async () => { throw 'That realm name is not valid.'; } }, undefined, undefined, { selected: emberHold, realmHook: hook }));
+  await mount(home({ getInstallStatus: async () => realmInstall, realmRequestJoin: async () => { throw 'That MNG Server name is not valid.'; } }, undefined, undefined, { selected: emberHold, realmHook: hook }));
   await act(async () => {});
   await act(async () => playButton().click());
-  assert.equal(document.querySelector('.launch-error').textContent, 'That realm name is not valid.');
+  assert.equal(document.querySelector('.launch-error').textContent, 'That MNG Server name is not valid.');
   assert.equal(playButton().textContent, 'Ask to join');
   assert.equal(playButton().disabled, false);
 });
@@ -3751,18 +3751,18 @@ test('Home: a request that waits shows a disabled Request sent and who it waits 
   assert.ok(document.body.textContent.includes('Waiting for the host of Ember Hold to approve your request.'));
 });
 
-test('Home: an invite is answered on the Realms page, which the button opens', async () => {
+test('Home: an invite is answered on the MNG Servers page, which the button opens', async () => {
   const opened = [];
   const Home = home({ getInstallStatus: async () => realmInstall }, undefined, undefined, { selected: emberHold, realm: { state: 'serving', own: false, standing: 'invited' } });
   await mount(Home, { onNavigate: (tab) => opened.push(tab) });
   await act(async () => {});
-  assert.ok(document.body.textContent.includes('You have an invite to Ember Hold. Accept it on the Realms page.'));
-  assert.equal(playButton().textContent, 'Open Realms');
+  assert.ok(document.body.textContent.includes('You have an invite to Ember Hold. Accept it on the MNG Servers page.'));
+  assert.equal(playButton().textContent, 'Open MNG Servers');
   await act(async () => playButton().click());
   assert.deepEqual(opened, ['servers']);
 });
 
-test('Home: a member, the host, and a realm open to all get the normal Play', async () => {
+test('Home: a member, the host, and an MNG Server open to all get the normal Play', async () => {
   for (const standing of ['member', 'own', 'open']) {
     await mount(home({ getInstallStatus: async () => realmInstall }, undefined, undefined, { selected: emberHold, realm: { state: 'serving', own: standing === 'own', standing } }));
     await act(async () => {});
@@ -3772,7 +3772,7 @@ test('Home: a member, the host, and a realm open to all get the normal Play', as
   }
 });
 
-test('the realm standing is read again for another account on the same PC, never taken from the last one', async () => {
+test('the MNG Server standing is read again for another account on the same PC, never taken from the last one', async () => {
   const lookups = [];
   const answers = { 'acc-1': { online: true, serving: true, member: true }, 'acc-2': { online: true, serving: true, joinPolicy: 'INVITE_ONLY' } };
   let account = 'acc-1';
@@ -3804,7 +3804,7 @@ test('the realm standing is read again for another account on the same PC, never
   assert.deepEqual(lookups, [['s-2', 'acc-1'], ['s-2', 'acc-2']], 'read again for the new account');
 });
 
-test('Servers: a realm open to all and the host\'s own realm have their own chips', async () => {
+test('Servers: an MNG Server open to all and the host\'s own MNG Server have their own chips', async () => {
   const realmOpen = { ...realmServer, id: 's-o', name: 'O', realmName: 'realm-open' };
   const realmMine = { ...realmServer, id: 's-m', name: 'M', realmName: 'realm-mine' };
   const standings = { 's-o': { joinPolicy: 'PUBLIC' }, 's-m': { own: true, member: true } };
@@ -3816,7 +3816,7 @@ test('Servers: a realm open to all and the host\'s own realm have their own chip
   const rowOf = (name) => [...document.querySelectorAll('.server-row')].find((row) => row.querySelector('.server-name')?.textContent === name);
   assert.match(rowOf('O').textContent, /Open to all/);
   assert.equal(serverRowButton(rowOf('O'), 'Ask to join'), undefined, 'Play joins it');
-  assert.match(rowOf('M').textContent, /Your realm/);
+  assert.match(rowOf('M').textContent, /Your MNG Server/);
 });
 
 test('Servers: the official server shows a red "Currently unavailable" chip beside its Official one', async () => {
@@ -4016,7 +4016,7 @@ const noticeFixture = {
   announcements: [
     { id: 'restart', text: 'The backend service will restart at {time}.', tone: 'warning', eventAt: NOTICE_EVENT },
     { id: 'patch', text: 'Patch notes are in About.', tone: 'info' },
-    { id: 'realms', text: 'Realms are paused for maintenance.', tone: 'critical' },
+    { id: 'realms', text: 'MNG Servers are paused for maintenance.', tone: 'critical' },
   ],
   tags: [
     { id: 'exp', text: 'EXPERIMENTAL BUILD', tone: 'warning' },
