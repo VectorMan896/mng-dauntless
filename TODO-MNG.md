@@ -101,7 +101,10 @@ Updated 2026-10-31. Launcher version 0.2.0; server data changes are listed under
       Force one to test: .env MNG_SEASONAL_EVENT=frostfall (server) + node scripts/mng-seasonal-events.mjs --event frostfall.
 - [ ] Event hunts in 1.14.7 tables: Unseen Summons (MatchmakerHunt_Event_Dark_Harvest_01 / _Hard_01), King Gruk
       (MatchmakerHunt_Event_Ramsgiving_01/02), Anniversary 01/02, Pufflehop Rescue (CR19_MatchmakerHunt_Event_Spring_2020,
-      Spring_Event_Island_01), a Charrogg entry. The client does not offer them: likely gated by the seasonal event schedule.
+      Spring_Event_Island_01), a Charrogg entry. The client does not offer them.
+      Tried 1 Nov: the client fetched the served schedule (Dark Harvest, ID EVENT_DARKHARVEST) and accepted it, but the hunt
+      map showed nothing new. So the schedule alone is not the gate: next look at island_content_config / the matchmaker
+      hunt list, or have the runtime log what the map reads (a probe like [SeasonalProbe]).
       Runtime 0.1.7 [SeasonalProbe] (31 Oct, client log): seasonal_event_ui_table has 6 rows (row -> eventId, hunt tag,
       currency): SpringEvent -> EVENT_SPRINGTIDE, Hunt.Event.Spring, rounds egghunt/bunnies/sharkcats; DarkHarvest ->
       EVENT_DARKHARVEST, Hunt.Event.DarkHarvest; Anniversary -> Event_Anniversary_Evergreen, Hunt.Event.Anniversary
