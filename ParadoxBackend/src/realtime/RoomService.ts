@@ -10,6 +10,7 @@
  */
 
 import { GetPartyForPlayer } from "../controllers/party";
+import { GetGuildStore, IsGuildMember } from "../guilds";
 import { logger } from "../logger";
 import { RegisteredConnection } from "./SessionRegistry";
 import { escapeXml, sanitizeName } from "./xml";
@@ -226,6 +227,16 @@ export class RoomService {
             const party = await GetPartyForPlayer(accountId);
             if (party && party.partyId === partyId) return { ok: true, reason: "" };
             return { ok: false, reason: "not a party member" };
+        }
+        if (roomLocal.startsWith("Guild-")) {
+            // [MNG DAUNTLESS 2026-11-01] Guild chat: the guild's members only (src/guilds.ts).
+            try {
+                if (await IsGuildMember(GetGuildStore(), accountId, roomLocal.slice("Guild-".length))) return { ok: true, reason: "" };
+            } catch (error) {
+                logger.warn(`[XMPP] guild lookup for a Guild room failed; refusing the join: ${error}`);
+                return { ok: false, reason: "guild lookup failed" };
+            }
+            return { ok: false, reason: "not a guild member" };
         }
         if (roomLocal.startsWith("City-")) {
             // A realm's hub room: its members only, and not the banned (the realm's own rules; the dev rule does not apply).

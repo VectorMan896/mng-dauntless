@@ -161,7 +161,7 @@
     <ResourceCompile Include="MysticParadox.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\mp_login_background.png" />
+    <None Include="assets\mng_login_background.png" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />

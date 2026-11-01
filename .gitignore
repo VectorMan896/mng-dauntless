@@ -87,3 +87,4 @@ docs/LOCAL_RELEASE_READINESS.md
 # [MNG DAUNTLESS] Local realm database (player data) and HTTPS certificates: never published.
 realm-data/
 certs/
+DauntlessEndpointDocumentation/

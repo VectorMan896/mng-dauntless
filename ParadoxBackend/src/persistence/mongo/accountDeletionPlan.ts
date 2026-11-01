@@ -184,6 +184,15 @@ export function CoreAccountDeletionSteps(): AccountDeletionStep[] {
         { kind: "delete", collection: Collections.EconomyDaily, description: "daily economy totals", match: (c) => ({ userId: c.userId }) },
         // [MNG DAUNTLESS 2026-10-31] The Trials leaderboard runs (src/trialRuns.ts) the account played in; a team run goes with it.
         { kind: "delete", collection: Collections.TrialRuns, description: "Trials runs the account played in", match: (c) => ({ "players.userId": c.userId }) },
+        // [MNG DAUNTLESS 2026-11-01] Guilds (src/guilds.ts): the membership and the invites to or from the account. A guild it led
+        // gets a new leader (or is removed when empty) the next time a member opens it.
+        { kind: "delete", collection: Collections.GuildMembers, description: "guild membership", match: (c) => ({ _id: c.userId }) },
+        {
+            kind: "update", collection: Collections.Guilds, description: "guilds the account led (the leader id is cleared)",
+            match: (c) => ({ leaderId: c.userId }),
+            update: () => ({ $set: { leaderId: "" } })
+        },
+        { kind: "delete", collection: Collections.GuildInvites, description: "guild invites to or from the account", match: (c) => ({ $or: [{ inviteeId: c.userId }, { inviterId: c.userId }] }) },
         // [2026-10-14] The activity monitor (src/activity): daily counters, hunt rows (the host row too), unlock history and flags.
         { kind: "delete", collection: Collections.PlayerActivityDaily, description: "daily activity counters", match: (c) => ({ userId: c.userId }) },
         { kind: "delete", collection: Collections.ActivityHunts, description: "hunt participation rows", match: (c) => ({ userId: c.userId }) },

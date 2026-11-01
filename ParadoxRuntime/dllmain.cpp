@@ -3305,7 +3305,7 @@ static void AutoPressStartFromEvent(SDK::UObject* Object, const std::string& Fun
 //     is decoded by KismetRenderingLibrary.ImportBufferAsTexture2D and set with Image.SetBrushFromTexture, which
 //     also cancels the season texture's pending async load. Applied from Construct onward.
 //   - The DAUNTLESS logo (ArchonLogoMat, /Game/UI/Textures/Logo/ArchonLogo_Mat) is collapsed; the background
-//     carries the Mystic Paradox logo.
+//     carries the MNG DAUNTLESS logo ([MNG 2026-11-01] was the Mystic Paradox logo; see ADDITIONAL_TERMS.md 4).
 //   - The patch-notes "Update <release_version>" line (preview and popup) is collapsed; the Metagame serves the
 //     title and text (routes/system.ts /patchnotes).
 // Re-asserted after every LoginScreen event because the screen's own animations and native refreshes may

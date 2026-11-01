@@ -47,7 +47,7 @@
     <ResourceCompile Include="MysticParadox.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-    <None Include="assets\mp_login_background.png">
+    <None Include="assets\mng_login_background.png">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

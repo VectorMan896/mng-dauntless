@@ -2,6 +2,19 @@
 
 Newest first. Launcher versions; the server, runtime and data change with them.
 
+## Unreleased - 2026-11-01 (server, client runtime 0.1.9)
+
+- Guilds: create, invite, accept or decline, ranks (member, officer, leader, hand-over), kick, leave, disband, guild chat.
+  Up to 100 members (`MNG_GUILD_MAX_MEMBERS`). Stored in `guilds`, `guildMembers`, `guildInvites`; account deletion covers them.
+- Aetherheart limit back on: each weapon reforge pays one Heart and the server only pays Hearts for reforges actually done
+  (the game data built from the export had dropped the reward line that turns the limit on).
+- Guild creation goes through the game server (server key, the player in `leader_account_id`); that request is now
+  accepted instead of refused.
+- Trials shop (Lady Luck, "The Lucky Break"): the upstream placeholder item replaced by the live 1.14.7 stock, 38 offers
+  (30 gilded marks, 8 steel marks) from scripts/enrich_ladyluck_store.ts; the five gold cell cores are not in this build.
+- Runtime 0.1.9: the login screen shows the MNG DAUNTLESS logo on the Shrowd art instead of the Mystic Paradox logo
+  (their terms ask modified versions not to use their logo; the credit line stays).
+
 ## 0.3.0 - 2026-10-31
 
 - Self-update, event calendar, ping tile, antivirus warning, no unofficial tag

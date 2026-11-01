@@ -147,8 +147,20 @@ Updated 2026-11-01. Launcher version 0.3.0 (released, self-updating; live server
       multiplier on the hunt's inventory grant. Announce it with a launcher notice (like the event notices).
 - [ ] **Credits** (owner's request): the people who contributed or tested, on the launcher's About page and in the README,
       next to the Mystic Paradox / Undaunted credit. Needs the list of names from the owner.
-- [ ] Guilds: not implemented (server always answers "no guild"). Needs create/join/leave, members and ranks,
-      invites, guild chat and the guild hall.
+- [ ] **Discord sign-in** (code is done, not configured): create a Discord application (owner's Discord account), OAuth2
+      redirect `https://dauntless.maning-gaming.com/launcher/v1/auth/discord/callback`; put DISCORD_CLIENT_ID,
+      DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI in the live server's ParadoxBackend/.env. Also: the launcher's deep-link
+      scheme is still `mysticparadox`, the same as the official Mystic launcher, so the browser may hand the sign-in back
+      to the wrong launcher on a PC with both; move to `mngdauntless` (tauri.conf.json + LAUNCHER_DEEPLINK_SCHEME) in the
+      next launcher release.
+- [ ] **Trials shop marks**: the shop now sells the live stock for steel/gilded marks; check that Trials pay marks.
+- [ ] **Guilds** (1 Nov, src/guilds.ts + routes/guild.ts, 10 tests): create (name/nameplate checks), invites (send,
+      received, sent, accept, decline/withdraw), ranks member/officer/leader (hand-over), kick, leave, disband, 100
+      members, guild chat rooms (Guild-<id>, members only). API from the client's DefaultGame.ini [OnlineGuildsPhoenix] +
+      the exe's verbs; shapes and error codes from EisigesEis/DauntlessEndpointDocumentation Guild/*.md. To check in game:
+      create one on this PC ([Guild] lines in backend-run.log; first try was refused because creation comes from
+      the game server, fixed), then invites with a second player (live). Unknown calls
+      are logged as `[Guild] unhandled`. Not done: Gauntlet guild leaderboard/rewards, the guild hall, profanity filter.
 - [ ] Friends: blocklist and "recent players" are placeholders.
 - [ ] Legacy Hunt Pass: reset pass progress when the rotation wraps (after season50, around 2027-06-10), and
       move to the next 8 old passes (`node scripts/add_legacy_huntpass.cjs --first 8`, then

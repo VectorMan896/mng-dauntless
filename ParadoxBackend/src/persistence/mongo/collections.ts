@@ -96,5 +96,11 @@ export const Collections = {
 
     // [MNG DAUNTLESS 2026-10-31] Finished Trials runs reported by the game server (src/trialRuns.ts), for the Trials leaderboards.
     // _id = the run's session id (or a generated one).
-    TrialRuns: "trialRuns"
+    TrialRuns: "trialRuns",
+
+    // [MNG DAUNTLESS 2026-11-01] Guilds (src/guilds.ts): the guild (_id = its id), memberships (_id = the account: one guild per
+    // account) and invites (_id = the invite id; one per guild and invitee).
+    Guilds: "guilds",
+    GuildMembers: "guildMembers",
+    GuildInvites: "guildInvites"
 } as const;
