@@ -82,7 +82,10 @@ for (const id of Prestige) {
         requirements: [{ rank_id: 0, xp_required: 0 }],
         free_rewards: [],
         premium_rewards: [],
-        prestige: { xp_per_level: 1 },
+        // [MNG 2026-11-01] Each reforge pays one Aetherheart, as the live service did. This line is also what turns on
+        // the server's limit (controllers/wallet.ts): Hearts only for reforges actually banked, so a repeated request
+        // can't duplicate them.
+        prestige: { xp_per_level: 1, free_rewards: { stacked_items: [{ catalog_id: "CURRENCY_PJM_PRESTIGE_FILLED", quantity: 1 }] } },
     });
 }
 

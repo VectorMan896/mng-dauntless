@@ -36,7 +36,7 @@ Updated 2026-11-01. Launcher version 0.3.0 (released, self-updating; live server
 - [x] Run Install-Server.bat on a second PC for real (the full run needs administrator rights and was not run here,
       because this PC already has the server).
 - [x] Game downloader for any PC (31 Oct): `MNG-Game-Downloader\Download-Game.bat`. Tested on the first 1.7 GB.
-- [ ] Optional cleanup: `C:\Games\_chunk_cache` (~15 GB, left from the first download) and the old `dl\` folder.
+- [x] Cleanup: `C:\Games\_chunk_cache` (15 GB) deleted 1 Nov. `dl\` kept (1 MB, the first downloader's scripts).
 - [x] Public launcher (31 Oct, released as launcher 0.2.0 on GitHub): DNS done (dauntless.maning-gaming.com -> the server PC). Friend: forward TCP 443
       (and 80) on the router, apply the update pack, run Set-Up-HTTPS.bat, Start-Server. Then Build-Launcher.bat here, the
       GitHub repository (owner/name) and a release with the installer. Later: a launcher updater key (self-update).
@@ -161,8 +161,16 @@ Updated 2026-11-01. Launcher version 0.3.0 (released, self-updating; live server
       the matchmaker tables have no Expedition hunt at all: leftovers of the removed Expeditions mode, not selectable in
       game. The warning on every Director start can be ignored.
 - [ ] Optional data: mastery_objectives.json and escalation_tuning.json (read from the paks).
-- [ ] Adapt the *.gamedata.test.ts tests that expect the original project's private captures (24 failures; 7 of them
-      in `npm run test:store`, unchanged by the Reward Cache art change).
+- [ ] Adapt the *.gamedata.test.ts tests that expect the original project's private captures. 1 Nov: 12 left (was 19),
+      all MNG data differing on purpose: Lady Luck sample shop (3), no Hunt Pass level skips / captured entitlements in
+      the Platinum store (4), 50-rank pass instead of 100 (2), Vault Coins not a pass prestige reward (1), 161 hunt rows
+      without the Expedition leftovers (1), the realm-host pass test (1). Rewrite them for MNG data or skip them.
+- [ ] **Aetherheart limit back on** (1 Nov): the game data built from the export had no reforge reward on the weapon
+      prestige tracks, so the server's Aetherheart limit (controllers/wallet.ts, Hearts only for banked reforges, closes
+      a duplication) was off. Added `CURRENCY_PJM_PRESTIGE_FILLED x1` per reforge (build_progression_source_from_export.cjs
+      and game-data, backup `progression_config.json.2026-11-01-before-aetherheart.bak`); the 7 prestige tests pass.
+      Check in game on this PC: reforge a weapon, the Heart arrives (backend-run.log [PrestigeMon], no 409). Then ship
+      in the next update pack.
 - [ ] Re-export the store images with the fixed CatalogExporter (full paths), then drop the pak listing step if wanted.
 
 ## Launcher
