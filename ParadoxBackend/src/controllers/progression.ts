@@ -18,7 +18,7 @@ import { ComputeNewlyUnlockedNodeIds } from "./slayersPath";
 import { GetP2PExtension } from "../extensions/p2p";
 import type { ExtensionHttpResponse, HostWriteAuthorizeOptions, HostWriteKind } from "../extensions/p2p";
 import crypto from "node:crypto";
-import { RotatingHuntPassId } from "../seasonWindow";
+import { OpenHuntPassIds, RotatingHuntPassId } from "../seasonWindow";
 import { ClientSession } from "mongodb";
 
 // [WP-1 stage 4 — security fix] Per-track rank curves, indexed once (on first use) from the
@@ -99,7 +99,8 @@ export function ServedHuntPassProgressionId(): string {
 }
 
 export function IsHuntPassXpTrack(progressionId: string): boolean {
-    return progressionId === ACTIVE_HUNTPASS_PROGRESSION_ID || progressionId === ServedHuntPassProgressionId();
+    return progressionId === ACTIVE_HUNTPASS_PROGRESSION_ID || progressionId === ServedHuntPassProgressionId()
+        || OpenHuntPassIds().includes(progressionId); // [MNG 2026-11-02] every open pass when all are open
 }
 
 // Rank reached with `progress` cumulative XP on the served curve (the highest rank whose cumulative requirement is
@@ -155,7 +156,9 @@ export function IsApprovedXpProgressionTrack(progressionId: string): boolean {
     // (a typo'd GAMESERVER_HUNTPASS_ID must not open grants on an ExperienceTrack_/PrestigeTrack_/test track).
     const ServedPass = ServedHuntPassProgressionId();
     const Approved = ApprovedXpTracks.has(progressionId)
-        || (progressionId === ServedPass && HUNT_PASS_ID_PATTERN.test(ServedPass));
+        || (progressionId === ServedPass && HUNT_PASS_ID_PATTERN.test(ServedPass))
+        // [MNG 2026-11-02] With MYSTICPARADOX_HUNTPASS_ALL_OPEN each open pass earns XP (the one the player selected).
+        || (OpenHuntPassIds().includes(progressionId) && HUNT_PASS_ID_PATTERN.test(progressionId));
     return Approved && TrackCurves().has(progressionId);
 }
 

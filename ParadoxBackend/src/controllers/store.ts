@@ -103,14 +103,15 @@ function PlatinumSection(sectionTag: string): StoreSku[] {
 // entitlements exchange_slot_2 / exchange_slot_3 (a live account carries exchange_slot_2 in
 // Auth/GetEntitlements.md), sold under the store tags the Middleman requests (exchange_vendor_slot_2/3). The SKU
 // ids are the client's own StoreItemsTable rows (single_exchange_slot_2/3, art Store_Art_512x512_cell_slot_middleman).
-// No live SKU capture exists: price set by the operator, 1,000 Platinum each, permanent (duration 0).
+// No live SKU capture exists: price set by the operator, permanent (duration 0).
+// [MNG 2026-11-01] Free (0 Platinum, was 1,000): paying for fusion slots was pay-to-win. Players still press Unlock once.
 function ExchangeSlotSku(Slot: 2 | 3): StoreSku {
     return {
         id: `single_exchange_slot_${Slot}`,
         displayName: `Cell Fusion Slot ${Slot}`,
         displayDescription: `Unlocks cell fusion slot ${Slot} at the Middleman permanently.`,
         displayPriority: Slot,
-        prices: [{ currencyId: "id_currency_platinum", price: 1000 }],
+        prices: [{ currencyId: "id_currency_platinum", price: 0 }],
         maxAllowed: 1,
         tags: [`exchange_vendor_slot_${Slot}`],
         items: [],

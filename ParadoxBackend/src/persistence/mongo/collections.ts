@@ -102,5 +102,7 @@ export const Collections = {
     // account) and invites (_id = the invite id; one per guild and invitee).
     Guilds: "guilds",
     GuildMembers: "guildMembers",
-    GuildInvites: "guildInvites"
+    GuildInvites: "guildInvites",
+    // [MNG DAUNTLESS 2026-11-02] The hunt pass each account picked (src/huntPassSelection.ts), _id = the account.
+    HuntPassSelections: "huntPassSelections"
 } as const;

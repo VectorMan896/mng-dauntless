@@ -195,15 +195,16 @@ test("a zero price never reaches the wallet; paid offers still debit", { skip: N
     // Defence in depth: even a 0 platinum removal that got through is a no-op in the wallet layer, before any read.
     assert.deepEqual(await ApplyCurrencyDeltas("user-a", [], [{ catalogId: "CURRENCY_PLATINUM", quantity: 0 }]), {});
 
-    // A paid one-time SKU keeps its debit and its window-less transaction id.
+    // A one-time SKU keeps its window-less transaction id. [MNG 2026-11-02] The fusion slot used here is free now
+    // (was 1,000 Platinum), so it charges nothing; paid debits are covered by storePlatinumSpend.gamedata.test.ts.
     const Paid = FakeEconomy();
     await PurchaseStoreSku("user-a", "user-a-character", "exchange_vendor_slot_2", "single_exchange_slot_2", true,
         { nowMs: BEFORE_RESET, runTransaction: Paid.RunTransaction });
     await PurchaseStoreSku("user-a", "user-a-character", "exchange_vendor_slot_2", "single_exchange_slot_2", true,
         { nowMs: AFTER_RESET + 7 * 24 * 60 * 60 * 1000, runTransaction: Paid.RunTransaction });
-    assert.deepEqual(Paid.Calls[0].stackedRemoves, [{ catalogId: "CURRENCY_PLATINUM", quantity: 1000 }]);
+    assert.deepEqual(Paid.Calls[0].stackedRemoves, []);
     assert.equal(Paid.Calls[1].transactionId, Paid.Calls[0].transactionId);
-    assert.deepEqual(Paid.Wallet, { CURRENCY_PLATINUM: -1000 }, "charged once (the fake wallet has no balance check)");
+    assert.equal("CURRENCY_PLATINUM" in Paid.Wallet, false, "the free slot never touches the wallet");
 });
 
 test("the listing fails closed", { skip: NO_OFFER }, async () => {

@@ -14,6 +14,7 @@ import { GetRepositories, GetUnitOfWork } from "../persistence";
 import { GetUsernameForUserId } from "./login";
 import { logger } from "../logger";
 import { SeedNewAccountAtomically } from "./starterManifest";
+import { GuardQuestSeries } from "../questGuard";
 
 const TARGET_CHANGELIST = process.env.TARGET_CHANGELIST;
 
@@ -535,6 +536,12 @@ export async function UpdateCharacterForUid(CharacterId: string, UserId: string,
             const clampedStr = PROGRESS_FROM_ORDINAL[clampedOrdinal];
             logger.warn(`[progression-guard] Rejecting skip ${existingRaw.PlayerAccountProgressStep} → ${incomingRaw.PlayerAccountProgressStep}; clamped to ${clampedStr}`);
             incomingRaw.PlayerAccountProgressStep = clampedStr;
+        }
+
+        // [MNG 2026-11-02] Quests only move forward: no second turn-in, no series reset by a save that leaves it out.
+        const QuestGuard = GuardQuestSeries(incomingRaw, existingRaw);
+        if (QuestGuard.kept.length > 0) {
+            logger.warn(`[quest-guard] ${IsGameserver ? "gameserver" : "client"} save for characterId ${CharacterId} kept ${QuestGuard.kept.length} from the saved quests: ${QuestGuard.kept.slice(0, 10).join("; ")}${QuestGuard.kept.length > 10 ? "; ..." : ""}`);
         }
 
         CharacterDataToUpdateWith = JSON.stringify(incomingRaw);

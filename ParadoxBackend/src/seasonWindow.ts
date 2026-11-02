@@ -34,6 +34,19 @@ export function HuntPassRotation(): string[] | undefined {
     return List.length > 0 ? List : undefined;
 }
 
+/**
+ * [MNG 2026-11-02] MYSTICPARADOX_HUNTPASS_ALL_OPEN=on: every pass of the rotation list is open at once (each keeps its
+ * own rank), and the player picks the one hunts progress in the game's own pass selection screen.
+ */
+export function HuntPassAllOpen(): boolean {
+    return /^(1|true|yes|on)$/i.test(process.env.MYSTICPARADOX_HUNTPASS_ALL_OPEN ?? "");
+}
+
+/** [MNG 2026-11-02] The passes open besides the served one: the rotation list when all are open, else none. */
+export function OpenHuntPassIds(): string[] {
+    return HuntPassAllOpen() ? (HuntPassRotation() ?? []) : [];
+}
+
 /** [MNG DAUNTLESS] The season id the rotation serves at `NowMs`, or undefined when no rotation is configured. */
 export function RotatingHuntPassId(NowMs: number): string | undefined {
     const List = HuntPassRotation();

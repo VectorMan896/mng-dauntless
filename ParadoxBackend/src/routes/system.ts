@@ -27,7 +27,8 @@ import { GetBountyState, SaveBountyState } from "../controllers/bounty";
 import { EscalationSeasonProgressUpdate, EscalationTuning, GetEscalationTuning, IsAuthorizedEscalationReader, IsAuthorizedEscalationWriter, IsHostEscalationSeasonAllowed, IsHostEscalationWriter, MergeHostEscalationProgress, RecordToEscalationPayload } from "../escalationProgress";
 import { GetRepositories } from "../persistence";
 import { GetP2PExtension } from "../extensions/p2p";
-import { ActiveSeasonWindow, RotatingHuntPassId } from "../seasonWindow";
+import { ActiveSeasonWindow, HuntPassAllOpen, OpenHuntPassIds, RotatingHuntPassId } from "../seasonWindow";
+import { LoadHuntPassSelection, PickHuntPassId, SaveHuntPassSelection, ServedSelection } from "../huntPassSelection";
 import { PerAccountQueue } from "../controllers/perAccountQueue";
 import { BuildTrialsLeaderboard, BuildTrialsPersonalBest, LoadTrialRuns, ParseTrialRunSubmission, SaveTrialRun, type TrialRun } from "../trialRuns";
 
@@ -485,12 +486,14 @@ export function WidenHuntPassWindows(Config: any): any {
     const Paths = Config?.payload?.paths;
     if (!Array.isArray(Paths)) return Config;
     const ActiveId = GetServedHuntPassId();
+    // [MNG 2026-11-02] With MYSTICPARADOX_HUNTPASS_ALL_OPEN every rotation pass gets the current window too.
+    const OpenIds = new Set([ActiveId, ...OpenHuntPassIds()]);
     const Now = Date.now();
     let Opened = 0;
     let Ended = 0;
     for (const Path of Paths) {
         if (!Path || !IsHuntPassProgressionId(Path.progression_id)) continue;
-        if (Path.progression_id === ActiveId) {
+        if (OpenIds.has(Path.progression_id)) {
             const Window = ActiveSeasonWindow(Now);
             Path.start_date = Window.start;
             Path.end_date = Window.end;
@@ -506,7 +509,7 @@ export function WidenHuntPassWindows(Config: any): any {
         }
     }
     const Window = ActiveSeasonWindow(Now);
-    logger.info(`Hunt pass windows: '${ActiveId}' ${Window.start}..${Window.end} (${Opened} path), ${Ended} other pass windows clamped to have ended`);
+    logger.info(`Hunt pass windows: '${ActiveId}' ${Window.start}..${Window.end} (${Opened} open path(s)), ${Ended} other pass windows clamped to have ended`);
     if (Opened === 0) logger.warn(`Hunt pass windows: the active pass '${ActiveId}' is not in the progression config`);
 
     // Add the newest seasons the game's table exposes (see the block comment) so the window lookup for an
@@ -636,7 +639,42 @@ systemRouter.get(/^\/leaderboard\/get_leaderboard\//i, HasParadoxBackendAuth, (r
     res.status(200).json(GauntletEnvelope(GauntletLeaderboardPayload()));
 });
 
-systemRouter.get("/huntpass/:userId", HasParadoxBackendAuth, (req: any, res) => {
+// [MNG 2026-11-02] Passes a player may pick (the served one first), when MYSTICPARADOX_HUNTPASS_ALL_OPEN is on.
+function PickableHuntPassIds(): string[] {
+    return [...new Set([GetServedHuntPassId(), ...OpenHuntPassIds()])];
+}
+
+function MayUseHuntPassSelection(authData: any, userId: string): boolean {
+    return authData?.IsGameserver === true || (typeof authData?.userId === "string" && authData.userId === userId);
+}
+
+// [MNG 2026-11-02] The game's pass selection screen saves the pick here (HuntPassComponent.ServerSetSelectedHuntPass). The
+// request was never captured, so every method is accepted and the body is logged; see src/huntPassSelection.ts.
+systemRouter.all("/huntpass/:userId", HasParadoxBackendAuth, async (req: any, res, next) => {
+    if (req.method === "GET" || req.method === "HEAD") { next(); return; }
+    const UserId = String(req.params.userId ?? "");
+    const Body = JSON.stringify(req.body ?? null).slice(0, 500);
+    logger.info(`[HuntPassSelect] ${req.method} /huntpass/${UserId} from ${req.AuthData?.IsGameserver ? "gameserver" : "client"} body=${Body}`);
+    if (!MayUseHuntPassSelection(req.AuthData, UserId)) { res.status(403).json({ code: "Forbidden", message: "Not your hunt pass", payload: null }); return; }
+    if (!HuntPassAllOpen()) { res.status(200).json({ code: null, message: "OK", payload: { huntpass_id: GetServedHuntPassId() } }); return; }
+    const Picked = PickHuntPassId(req.body, PickableHuntPassIds());
+    if (!Picked) {
+        logger.warn(`[HuntPassSelect] no open pass named in the body; open: ${PickableHuntPassIds().join(", ")}`);
+        res.status(400).json({ code: "BadRequest", message: "Unknown hunt pass", payload: null });
+        return;
+    }
+    try {
+        await SaveHuntPassSelection(UserId, Picked);
+    } catch (err) {
+        logger.error(`[HuntPassSelect] save failed for ${UserId}: ${String(err)}`);
+        res.status(500).json({ code: "InternalError", message: "Could not save", payload: null });
+        return;
+    }
+    logger.info(`[HuntPassSelect] ${UserId} now progresses ${Picked}`);
+    res.status(200).json({ code: null, message: "OK", payload: { huntpass_id: Picked, season: Picked } });
+});
+
+systemRouter.get("/huntpass/:userId", HasParadoxBackendAuth, async (req: any, res) => {
 	// [1.14.7 2026-10-03] This was the ONLY route in the backend returning a scalar payload
 	// ("payload": "season19") while every other Phoenix response carries an object - exactly the
 	// shape that makes a client log "[LogJson][Error] Json Value of type 'String' used as a
@@ -657,7 +695,15 @@ systemRouter.get("/huntpass/:userId", HasParadoxBackendAuth, (req: any, res) => 
 	// enabled). The row name in the warning is the oracle for whether this id is accepted.
 	// [1.14.7 2026-10-08] Defaults to the active pass (season43) so the client, the XP grants and the
 	// prestige earn gate all name the same track; GAMESERVER_HUNTPASS_ID still overrides.
-	const HuntPassId = GetServedHuntPassId();
+	let HuntPassId = GetServedHuntPassId();
+	// [MNG 2026-11-02] With all passes open, the pass this player picked (src/huntPassSelection.ts).
+	if (HuntPassAllOpen() && MayUseHuntPassSelection(req.AuthData, String(req.params.userId ?? ""))) {
+		try {
+			HuntPassId = ServedSelection(await LoadHuntPassSelection(String(req.params.userId)), PickableHuntPassIds(), HuntPassId);
+		} catch (err) {
+			logger.warn(`[HuntPassSelect] could not read the pick of ${req.params.userId}, serving ${HuntPassId}: ${String(err)}`);
+		}
+	}
 
 	logger.info(`Huntpass (stubbed) -> huntpass_id=${HuntPassId}`);
 

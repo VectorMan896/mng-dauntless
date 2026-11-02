@@ -464,13 +464,13 @@ test("a SKU reachable from two sections resolves to one offer, not an ambiguous 
     assert.equal(ByCatalogId.sku.id, Dye.id);
 });
 
-test("Middleman fusion slots 2 and 3 are sold for 1,000 Platinum as permanent entitlements", () => {
+test("Middleman fusion slots 2 and 3 are free (0 Platinum) permanent entitlements", () => {
     for (const Slot of [2, 3]) {
         const Skus = GetStoreSkus(`exchange_vendor_slot_${Slot}`);
         assert.equal(Skus.length, 1);
         const Sku = Skus[0];
         assert.equal(Sku.id, `single_exchange_slot_${Slot}`);
-        assert.deepEqual(Sku.prices, [{ currencyId: "id_currency_platinum", price: 1000 }]);
+        assert.deepEqual(Sku.prices, [{ currencyId: "id_currency_platinum", price: 0 }]);
         assert.deepEqual(Sku.entitlements, [{ name: `exchange_slot_${Slot}`, duration: 0 }]);
         assert.equal(Sku.maxAllowed, 1);
         assert.deepEqual(Sku.items, []);

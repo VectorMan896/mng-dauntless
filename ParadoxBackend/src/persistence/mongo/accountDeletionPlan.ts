@@ -193,6 +193,8 @@ export function CoreAccountDeletionSteps(): AccountDeletionStep[] {
             update: () => ({ $set: { leaderId: "" } })
         },
         { kind: "delete", collection: Collections.GuildInvites, description: "guild invites to or from the account", match: (c) => ({ $or: [{ inviteeId: c.userId }, { inviterId: c.userId }] }) },
+        // [MNG DAUNTLESS 2026-11-02] The hunt pass the account picked (src/huntPassSelection.ts).
+        { kind: "delete", collection: Collections.HuntPassSelections, description: "selected hunt pass", match: (c) => ({ _id: c.userId }) },
         // [2026-10-14] The activity monitor (src/activity): daily counters, hunt rows (the host row too), unlock history and flags.
         { kind: "delete", collection: Collections.PlayerActivityDaily, description: "daily activity counters", match: (c) => ({ userId: c.userId }) },
         { kind: "delete", collection: Collections.ActivityHunts, description: "hunt participation rows", match: (c) => ({ userId: c.userId }) },

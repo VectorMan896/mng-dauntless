@@ -133,7 +133,7 @@ Updated 2026-11-01. Launcher version 0.3.0 (released, self-updating; live server
 - [x] Leaderboards save runs (31 Oct, src/trialRuns.ts). The game server's run report is undocumented: after the first
       Trial, read `[TrialsMon] submission` in backend-run.log and check `[TrialsMon] run saved` (else adjust
       ParseTrialRunSubmission to the logged body).
-- [ ] Lady Luck store (the Trials shop): still the sample file.
+- [x] Lady Luck store (the Trials shop): the live 1.14.7 stock, 38 offers (1 Nov).
 
 ## Next
 - [x] **Event calendar on the map** (owner's request, 31 Oct; launcher calendar on the MNG Server page, 0.3.0; the in-game
@@ -153,6 +153,20 @@ Updated 2026-11-01. Launcher version 0.3.0 (released, self-updating; live server
       scheme is still `mysticparadox`, the same as the official Mystic launcher, so the browser may hand the sign-in back
       to the wrong launcher on a PC with both; move to `mngdauntless` (tauri.conf.json + LAUNCHER_DEEPLINK_SCHEME) in the
       next launcher release.
+- [x] **No Axe tab in the Dauntless Store** (1 Nov): kept on purpose. The rebuilt stores never sell one item twice and
+      every axe skin (about 22) is in the Reward Cache, so the platinum store has none and the client hides the tab.
+- [ ] **Hunt Pass premium lost on live** (1 Nov 19:50): port0.log shows premium=1 all day, then premium=0 on the
+      19:50 Ramsgate arrival, and the pass asks to upgrade; back to premium=1 by 20:05. Live .env has
+      MYSTICPARADOX_HUNTPASS_FREE_PREMIUM=on (checked). One-off so far; if it repeats, get the live backend log for
+      that minute (entitlementsv2 errors or slow replies).
+- [ ] **Hunt Pass switch** (2 Nov, server done, on in the local .env only): test locally first. Open the Hunt Pass
+      screen: are 8 passes listed and can one be picked? Read `[HuntPassSelect]` in backend-run.log (the save request
+      was never captured; if nothing is logged, the pick does not reach the backend and needs the runtime). Then hunt
+      and check XP lands in the picked pass, switch back and check the first kept its rank. Live: add
+      MYSTICPARADOX_HUNTPASS_ALL_OPEN=on to the friend's ParadoxBackend\.env after it works here.
+- [ ] **Middleman fusion slots free** (1 Nov): slots 2/3 cost 0 Platinum; check Unlock works in game.
+- [ ] **Quest guard** (2 Nov, src/questGuard.ts, 5 tests): Redeemed quests stay Redeemed, left-out series/quests are
+      kept. After it is live, watch the backend log for `[quest-guard]` lines (they show the stale saves it stopped).
 - [ ] **Trials shop marks**: the shop now sells the live stock for steel/gilded marks; check that Trials pay marks.
 - [ ] **Guilds** (1 Nov, src/guilds.ts + routes/guild.ts, 10 tests): create (name/nameplate checks), invites (send,
       received, sent, accept, decline/withdraw), ranks member/officer/leader (hand-over), kick, leave, disband, 100
@@ -173,7 +187,7 @@ Updated 2026-11-01. Launcher version 0.3.0 (released, self-updating; live server
       the matchmaker tables have no Expedition hunt at all: leftovers of the removed Expeditions mode, not selectable in
       game. The warning on every Director start can be ignored.
 - [ ] Optional data: mastery_objectives.json and escalation_tuning.json (read from the paks).
-- [ ] Adapt the *.gamedata.test.ts tests that expect the original project's private captures. 1 Nov: 12 left (was 19),
+- [ ] Adapt the *.gamedata.test.ts tests that expect the original project's private captures. 2 Nov: 9 left (was 19; the Lady Luck ones pass with the live stock),
       all MNG data differing on purpose: Lady Luck sample shop (3), no Hunt Pass level skips / captured entitlements in
       the Platinum store (4), 50-rank pass instead of 100 (2), Vault Coins not a pass prestige reward (1), 161 hunt rows
       without the Expedition leftovers (1), the realm-host pass test (1). Rewrite them for MNG data or skip them.

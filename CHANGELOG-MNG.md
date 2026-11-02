@@ -14,6 +14,14 @@ Newest first. Launcher versions; the server, runtime and data change with them.
   (30 gilded marks, 8 steel marks) from scripts/enrich_ladyluck_store.ts; the five gold cell cores are not in this build.
 - Runtime 0.1.9: the login screen shows the MNG DAUNTLESS logo on the Shrowd art instead of the Mystic Paradox logo
   (their terms ask modified versions not to use their logo; the credit line stays).
+- Middleman cell fusion slots 2 and 3 are free (0 Platinum, was 1,000); players press Unlock once and keep them.
+- Quests only move forward (src/questGuard.ts): a character save can no longer turn a Redeemed quest back into one that
+  can be turned in (and paid) again, and a save that leaves a quest series or quest out keeps the saved one instead of
+  starting the series over at its first quest. Each kept entry is logged as `[quest-guard]`.
+- Hunt Pass switch (`MYSTICPARADOX_HUNTPASS_ALL_OPEN=on`, off by default): every pass of the rotation list (season43-50)
+  is open at once; players pick one in the game's pass selection screen, hunts progress the picked pass and each keeps
+  its own rank (switching pauses one, switching back resumes it). The pick is saved per account
+  (`huntPassSelections`, src/huntPassSelection.ts) and served by GET /huntpass; saves are logged as `[HuntPassSelect]`.
 
 ## 0.3.0 - 2026-10-31
 
