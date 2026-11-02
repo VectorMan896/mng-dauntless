@@ -12,7 +12,8 @@
 import { GetMongoDb } from "./persistence/mongo/client";
 import { Collections } from "./persistence/mongo/collections";
 
-const LIKELY_FIELDS = ["huntpass_id", "huntPassId", "selected_huntpass", "selectedHuntPassId", "huntpass", "season", "id"];
+// [2026-11-02 measured] The game server sends POST /huntpass/<account> {"progression_id":"season45"} on "Set Active Hunt Pass".
+const LIKELY_FIELDS = ["progression_id", "huntpass_id", "huntPassId", "selected_huntpass", "selectedHuntPassId", "huntpass", "season", "id"];
 
 /** The open pass a save body names, or undefined. `open` is the list of passes the player may pick. */
 export function PickHuntPassId(body: unknown, open: readonly string[]): string | undefined {

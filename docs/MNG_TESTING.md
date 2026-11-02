@@ -22,6 +22,10 @@ each launcher puts its server's runtime next to the game when you press Play, so
 2. **Build what changed**: the backend rebuilds itself on start; the runtime with MSBuild and
    `publish-runtime-update.mjs --version <next>` (to this PC's feed); the launcher rebuilds in `Start-Test.bat`.
 3. **Test here**: `Stop-Server.bat`, `Start-Test.bat` (starts the server again), then the checklist below.
+   **A new runtime**: close the game, run `Test-Runtime-Update.bat` and press Play in the test launcher when it says so.
+   It stops the Director and its Ramsgate/Dojo servers (the launcher will not update while they run, and the Director
+   restarts any that are killed), keeps the backend up for the download, and starts the Director again once the new
+   runtime is in the game folder.
 4. **Commit** (`git commit`), then `Make-Update-Pack.bat`.
 5. **Ship to the live server**: on the friend's PC `Stop-Server.bat`, unzip the update over `C:\MNG-Server`,
    `Install-Server.bat` (database: **No**), `Start-Server.bat`. Pick a quiet time: the stop disconnects everyone.
@@ -40,7 +44,7 @@ each launcher puts its server's runtime next to the game when you press Play, so
 - [ ] **A returning player**: sign in with an existing test account; the character and inventory are there.
 - [ ] A hunt from the Ramsgate map: it starts, ends, the rewards arrive, back to Ramsgate.
 - [ ] What the change touched (for example: the event shop lists and sells; the currency moves; the notice shows).
-- [ ] The server windows show no new errors (`backend-run.log`, `director-run.log` beside the .bat files).
+- [ ] The server windows show no new errors (`logs\backend-run.log`, `logs\director-run.log` beside the .bat files).
 
 ## Testing as a new player on another PC
 

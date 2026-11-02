@@ -23316,6 +23316,334 @@ static void MpDumpHuntPassSeasonRows(SDK::UDataTable* Table, uint64_t ActiveRaw)
     }
 }
 
+// [MNG 2026-11-02] Hunt pass art and names. The 1.14.7 table gives season43..50 the same title ("Slayer Commission") and
+// art, but each of those passes pays the rewards of an early pass (season43 = HP03 Overgrowth items, ... season50 = HP08A
+// Myth & Legend items; see the progression config). With every pass open at once (backend
+// MYSTICPARADOX_HUNTPASS_ALL_OPEN) the selection screen showed eight identical cards, so each one gets the title and
+// description of the pass whose rewards it carries, and the character image of that pass's vault re-release. Client only, once per process; NO_HUNTPASS_RESKIN.flag next
+// to the exe turns it off.
+//   FText (0x18) = TSharedRef<ITextData, ThreadSafe> { object, reference controller } + flags; the controller keeps its
+//   shared count at +0x08. A copy adds one reference to the source text; the overwritten text is left alive (leaked on
+//   purpose, a few bytes once), so no count ever drops below what its owners expect.
+//   CharactersImage (TSoftObjectPtr, 0x28): weak pointer, tag, FSoftObjectPath { FName, FString SubPath }. Copied only
+//   when both sub-path strings are empty (no heap memory to share).
+static bool MpCopyRowText(SDK::FText* To, const SDK::FText* From) {
+    if (!To || !From || !IsReadablePointer(From, sizeof(SDK::FText)) || !IsReadablePointer(To, sizeof(SDK::FText))) return false;
+    const uintptr_t Object = *reinterpret_cast<const uintptr_t*>(From);
+    const uintptr_t Controller = *reinterpret_cast<const uintptr_t*>(reinterpret_cast<uintptr_t>(From) + 8);
+    if (!Object || !Controller || !IsReadablePointer(reinterpret_cast<void*>(Controller), 0x10)) return false;
+    InterlockedIncrement(reinterpret_cast<volatile LONG*>(Controller + 8));
+    std::memcpy(To, From, sizeof(SDK::FText));
+    return true;
+}
+
+// A new text from a string through the reflected KismetTextLibrary.Conv_StringToText (game thread, like MpProbeText). The
+// returned FText's reference goes to the row and is never released (the row lives as long as the game).
+static bool MpStringToTextGuarded(const wchar_t* Str, SDK::FText* Out) {
+    __try {
+        *Out = SDK::UKismetTextLibrary::Conv_StringToText(SDK::FString(Str));
+        return true;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return false;
+    }
+}
+
+// [MNG 2026-11-02] Our descriptions for the passes whose original row has none (the 2019 rows are empty; the vault
+// re-release text names a different pass). Written for MNG DAUNTLESS.
+static const wchar_t* MpLegacyPassDescription(const char* Pass) {
+    const std::string P(Pass);
+    if (P == "HuntPass_Season43") return L"The wilds are taking Ramsgate back. Moss creeps over the old stones and vines curl around every lantern post. Slayers who hunt in the deep green earn gear grown, not forged.\n\nA legacy pass from Season 3: mossy armour, weapons and lanterns.";
+    if (P == "HuntPass_Season44") return L"Out on the sun-cracked islands nothing grows, and only the stubborn survive. The scorched wastes test every Slayer's endurance, and reward it with gear built to take the heat.\n\nA legacy pass from Season 4: armour, weapons and lanterns of the arid islands.";
+    if (P == "HuntPass_Season45") return L"Some hunters are never seen until the Behemoth falls. Masters of the silent strike, the Hidden Blades move between shadows and leave only the hunt behind them.\n\nA legacy pass from Season 5: ninja armour, weapons and lanterns.";
+    if (P == "HuntPass_Season46") return L"Sky pirates chase Behemoths for gold, and gold for glory. Raise the flag, sharpen your cutlass and claim the plunder of the open skies.\n\nA legacy pass from Season 6: pirate armour, weapons and lanterns.";
+    if (P == "HuntPass_Season48") return L"Discipline sharpens the body; the body becomes the weapon. The monks of the mountain temples hunt with patience, balance and a single perfect strike.\n\nA legacy pass from Season 7: monk armour, weapons and lanterns.";
+    if (P == "HuntPass_Season49") return L"When the lanterns burn low, the shadows of the Shattered Isles start to whisper. The witches of the hollow woods brew their charms for Slayers brave enough to hunt by moonlight.\n\nA legacy pass from Season 7: witch armour, weapons and lanterns.";
+    if (P == "HuntPass_Season50") return L"Every Slayer dreams of becoming a legend. The heroes of old fought the first Behemoths, and their armour still carries the stories of those hunts.\n\nA legacy pass from Season 8: heroic armour, weapons and lanterns.";
+    return nullptr;
+}
+
+// An FString the engine owns (FMemory through EngineRealloc), so the engine may free or grow it later. The old buffer is
+// left alone (a few bytes, once).
+static bool MpSetEngineFString(SDK::FString* Str, const wchar_t* Value) {
+    if (!Str || !Value || !IsReadablePointer(Str, 0x10)) return false;
+    const size_t Len = wcslen(Value) + 1;
+    auto* Data = static_cast<wchar_t*>(EngineRealloc(nullptr, Len * sizeof(wchar_t)));
+    if (!Data) return false;
+    std::memcpy(Data, Value, Len * sizeof(wchar_t));
+    const uintptr_t S = reinterpret_cast<uintptr_t>(Str);
+    *reinterpret_cast<wchar_t**>(S) = Data;
+    *reinterpret_cast<int32_t*>(S + 8) = static_cast<int32_t>(Len);
+    *reinterpret_cast<int32_t*>(S + 12) = static_cast<int32_t>(Len);
+    return true;
+}
+
+// [MNG 2026-11-02] The selection card's art. The card shows the StoreItemsTable art of the pass's Elite SKU
+// (seasonNN_premium; all eight show Store_HP_Currency_512x512). Renaming the SKU (0.1.14) lost the Hunt Pass screen's
+// button to the selection, so the SKU stays and its StoreItemsTable rows get the vault pass's FeatureImage instead
+// (seasonNN, seasonNN_premium and seasonNN_premium_plus: only these passes use them, and their Elite is not sold).
+// FStoreItemTable (0x58): FeatureImage +0x08, StandardImage +0x30 (TSoftObjectPtr, 0x28). Copied only when both
+// sub-path strings are empty, as for CharactersImage.
+static SDK::UDataTable* MpFindStoreItemsTable() {
+    if (!SDK::UObject::GObjects) return nullptr;
+    const int Count = SDK::UObject::GObjects->Num();
+    for (int i = 0; i < Count; i++) {
+        SDK::UObject* Obj = SDK::UObject::GObjects->GetByIndex(i);
+        if (!Obj || Obj->IsDefaultObject() || !Obj->IsA(SDK::UDataTable::StaticClass())) continue;
+        if (Obj->GetName() != "StoreItemsTable") continue;
+        auto* T = reinterpret_cast<SDK::UDataTable*>(Obj);
+        SDK::UScriptStruct* RowStruct = T->RowStruct;
+        if (!RowStruct || !IsReadablePointer(RowStruct, 0x60) || RowStruct->GetName() != "StoreItemTable") continue;
+        return T;
+    }
+    return nullptr;
+}
+
+static int MpReskinHuntPassCards(const char* const Seasons[8], const wchar_t* const Sources[8]) {
+    SDK::UDataTable* Store = MpFindStoreItemsTable();
+    if (!Store) { MpLog("[HuntPassReskin] cards: no StoreItemsTable"); return 0; }
+    auto Row = [Store](const std::string& Name) -> uint8_t* {
+        for (auto& Pair : Store->RowMap) {
+            if (MpProbeFName(Pair.Key()) != Name) continue;
+            uint8_t* R = Pair.Value();
+            return (R && IsReadablePointer(R, 0x58)) ? R : nullptr;
+        }
+        return nullptr;
+    };
+    constexpr size_t kFeature = 0x08, kSubPath = 0x18;
+    int Done = 0;
+    for (int i = 0; i < 8; i++) {
+        std::string Source;
+        for (const wchar_t* c = Sources[i]; *c; ++c) Source += static_cast<char>(*c);
+        const uint8_t* From = Row(Source);
+        if (!From || *reinterpret_cast<const uintptr_t*>(From + kFeature + kSubPath) != 0) {
+            MpLog(std::string("[HuntPassReskin] card ") + Seasons[i] + " <- " + Source + " skipped (" + (From ? "sub-path" : "row missing") + ")");
+            continue;
+        }
+        int Rows = 0;
+        for (const char* Suffix : { "", "_premium", "_premium_plus" }) {
+            uint8_t* To = Row(std::string(Seasons[i]) + Suffix);
+            if (!To || *reinterpret_cast<const uintptr_t*>(To + kFeature + kSubPath) != 0) continue;
+            std::memcpy(To + kFeature, From + kFeature, 0x28);
+            ++Rows;
+        }
+        if (Rows) ++Done;
+        MpLog(std::string("[HuntPassReskin] card ") + Seasons[i] + " <- " + Source + " rows=" + std::to_string(Rows));
+    }
+    return Done;
+}
+
+static void MpReskinHuntPassRows(SDK::UDataTable* Table) {
+    static bool s_done = false;
+    if (s_done || !Table) return;
+    s_done = true;
+    if (MpExeRelativeFlagPresent(L"NO_HUNTPASS_RESKIN.flag")) {
+        MpLog("[HuntPassReskin] off (NO_HUNTPASS_RESKIN.flag)");
+        return;
+    }
+    // { pass, row for the title and description (the original pass), row for the character image (its vault re-release:
+    // only the vault rows carry CharactersImage), StoreItemsTable row for the selection card }
+    // The card (UHuntPassItemViewModel.BackgroundImage) is the feature image of the StoreItemsTable row named by the
+    // pass's BuyPremiumSKU; season43..50_premium all show Store_HP_Currency_512x512. The vault passes' Elite rows carry
+    // their own art (store_item_images_1_14_7.jsonl); 07b has no vault Elite row, so its card is the witch armour bundle
+    // art. BuyPremiumSKU only names the Elite purchase, which this server neither sells nor needs (Elite is free).
+    static const wchar_t* const kCards[] = {
+        L"season03_vault_premium", L"season04_vault_premium", L"season05_vault_premium", L"season06a_vault_premium",
+        L"season06b_vault_premium", L"season07a_vault_premium", L"bundle_armour_witch", L"season08a_vault_premium",
+    };
+    static const char* const kPairs[][3] = {
+        {"HuntPass_Season43", "HuntPass_Season03", "HuntPass_Season03_vault"},          // Overgrowth (HP03)
+        {"HuntPass_Season44", "HuntPass_Season04", "HuntPass_Season04_vault"},          // Burndown (HP04)
+        {"HuntPass_Season45", "HuntPass_Season05", "HuntPass_Season05_vault"},          // Hidden Blades (HP05)
+        {"HuntPass_Season46", "HuntPass_Season06_1", "HuntPass_Season06a_vault"},       // Fortune & Glory (HP06)
+        {"HuntPass_Season47", "HuntPass_Season06b_vault", "HuntPass_Season06b_vault"},  // Battle Academy (HP06B)
+        {"HuntPass_Season48", "HuntPass_Season07_1", "HuntPass_Season07a_vault"},       // Way of the Fist (HP07A)
+        {"HuntPass_Season49", "HuntPass_Season07b", "HuntPass_Season07b_vault"},        // Haunted Shadows (HP07B)
+        {"HuntPass_Season50", "HuntPass_Season08a", "HuntPass_Season08a_vault"},        // Myth & Legend (HP08A)
+    };
+    auto FindRow = [Table](const char* Name) -> SDK::FHuntPassSeasonDataTable* {
+        for (auto& Pair : Table->RowMap) {
+            if (MpProbeFName(Pair.Key()) != Name) continue;
+            uint8_t* Row = Pair.Value();
+            if (!Row || !IsReadablePointer(Row, sizeof(SDK::FHuntPassSeasonDataTable))) return nullptr;
+            return reinterpret_cast<SDK::FHuntPassSeasonDataTable*>(Row);
+        }
+        return nullptr;
+    };
+    int Done = 0;
+    size_t PairIndex = 0;
+    for (const auto& P : kPairs) {
+        const wchar_t* Card = kCards[PairIndex++];
+        SDK::FHuntPassSeasonDataTable* To = FindRow(P[0]);
+        const SDK::FHuntPassSeasonDataTable* From = FindRow(P[1]);
+        const SDK::FHuntPassSeasonDataTable* Vault = FindRow(P[2]);
+        if (!Vault) Vault = From;
+        // The image comes from the first of vault row / original row that has one (07b_vault has none, 0.1.11).
+        auto HasImage = [](const SDK::FHuntPassSeasonDataTable* R) {
+            uint64_t Name = 0;
+            std::memcpy(&Name, reinterpret_cast<const uint8_t*>(&R->CharactersImage) + 0x10, sizeof(Name));
+            return Name != 0;
+        };
+        const SDK::FHuntPassSeasonDataTable* ImageFrom = HasImage(Vault) ? Vault : From;
+        if (!To || !From) {
+            MpLog(std::string("[HuntPassReskin] ") + P[0] + " <- " + P[1] + " skipped (row missing)");
+            continue;
+        }
+        const bool Title = MpCopyRowText(&To->SeasonTitle, &From->SeasonTitle);
+        // The original 2019 rows have empty descriptions (0.1.11): those passes get our own text instead.
+        bool Desc = false;
+        bool OwnText = false;
+        const wchar_t* Own = MpProbeText(&From->SeasonDescription).empty() ? MpLegacyPassDescription(P[0]) : nullptr;
+        if (Own) {
+            SDK::FText Made;
+            if (MpStringToTextGuarded(Own, &Made) && *reinterpret_cast<const uintptr_t*>(&Made) != 0) {
+                std::memcpy(&To->SeasonDescription, &Made, sizeof(SDK::FText));
+                Desc = OwnText = true;
+            }
+        }
+        if (!Desc) Desc = MpCopyRowText(&To->SeasonDescription, &From->SeasonDescription);
+        // Assets (UHuntPassAssetReferences) is left alone: it also drives the city sprouts, sub-level and atmosphere, and
+        // copying it did not change the selection cards (first test, runtime 0.1.10).
+        bool Image = false;
+        constexpr size_t kSubPath = 0x18;   // FSoftObjectPath.SubPathString inside TSoftObjectPtr
+        const uintptr_t FromImg = reinterpret_cast<uintptr_t>(&ImageFrom->CharactersImage);
+        const uintptr_t ToImg = reinterpret_cast<uintptr_t>(&To->CharactersImage);
+        if (*reinterpret_cast<const uintptr_t*>(FromImg + kSubPath) == 0 && *reinterpret_cast<const uintptr_t*>(ToImg + kSubPath) == 0) {
+            std::memcpy(reinterpret_cast<void*>(ToImg), reinterpret_cast<const void*>(FromImg), 0x28);
+            Image = true;
+        }
+        const std::string OldSku = MpProbeFString(&To->BuyPremiumSKU, 64);
+        // [0.1.15] Off: with BuyPremiumSKU renamed (0.1.14) the Hunt Pass screen lost its button to the pass selection
+        // (the game checks Elite ownership or the offer through that SKU). The card art needs another way in.
+        (void)Card;
+        const bool CardSet = false;
+        if (Title) ++Done;
+        uint64_t ImageName = 0;
+        std::memcpy(&ImageName, reinterpret_cast<const void*>(FromImg + 0x10), sizeof(ImageName));
+        // [0.1.18] A pass with no CharactersImage on either row (Haunted Shadows) takes the splash texture of its own
+        // pass (row Assets -> UHuntPassAssetReferences.ScreenDetails.SplashTexture, +0x2E0 + 0x50): the other passes'
+        // CharactersImage is that same kind of art (ui_hp_splash_image_arid, _ninja3, _hereos). 0.1.17's store outfit
+        // render (HP_7B_outfit_elite) was square store art with a yellow background.
+        for (const SDK::FHuntPassSeasonDataTable* Owner : { From, Vault }) {
+            if (ImageName != 0 || std::string(P[0]) == "HuntPass_Season49" || !Owner->Assets
+                || !IsRegisteredLiveObject(reinterpret_cast<SDK::UObject*>(Owner->Assets))) continue;
+            const uintptr_t Splash = reinterpret_cast<uintptr_t>(Owner->Assets) + 0x2E0 + 0x50;
+            if (!IsReadablePointer(reinterpret_cast<void*>(Splash), 0x28)) continue;
+            uint64_t SplashName = 0;
+            std::memcpy(&SplashName, reinterpret_cast<const void*>(Splash + 0x10), sizeof(SplashName));
+            if (SplashName == 0 || *reinterpret_cast<const uintptr_t*>(Splash + kSubPath) != 0) continue;
+            std::memcpy(reinterpret_cast<void*>(ToImg), reinterpret_cast<const void*>(Splash), 0x28);
+            ImageName = SplashName;
+            Image = true;
+        }
+        // [0.1.22] Haunted Shadows: its splash is only the forest background (exported and looked at, 2 Nov). Its cut-out
+        // character render is ui_hp_outfit_witch, the FeatureImage of StoreItemsTable row prestige_ar_hp07b_set_00.
+        if (ImageName == 0 && std::string(P[0]) == "HuntPass_Season49") {
+            if (SDK::UDataTable* Store = MpFindStoreItemsTable()) {
+                for (auto& Pair : Store->RowMap) {
+                    if (MpProbeFName(Pair.Key()) != "prestige_ar_hp07b_set_00") continue;
+                    const uint8_t* R = Pair.Value();
+                    constexpr size_t kStandard = 0x08;   // FeatureImage
+                    if (R && IsReadablePointer(R, 0x58) && *reinterpret_cast<const uintptr_t*>(R + kStandard + kSubPath) == 0) {
+                        std::memcpy(reinterpret_cast<void*>(ToImg), R + kStandard, 0x28);
+                        std::memcpy(&ImageName, R + kStandard + 0x10, sizeof(ImageName));
+                        Image = true;
+                    }
+                    break;
+                }
+            }
+        }
+        SDK::FName ImageFName{};
+        std::memcpy(&ImageFName, reinterpret_cast<const void*>(ToImg + 0x10), sizeof(ImageFName));
+        MpLog(std::string("[HuntPassReskin] ") + P[0] + " <- " + P[1] + " / image " + P[2] + " title=" + (Title ? "1" : "0")
+            + " desc=" + (Desc ? "1" : "0") + (OwnText ? " (MNG text)" : "") + " image=" + (Image ? "1" : "0")
+            + (ImageFrom == Vault ? "" : " (original row image)") + (ImageName ? " image=" + MpProbeFName(ImageFName) : " (no image anywhere)")
+            // where the selection card's art may come from (diagnostic)
+            + " card=" + (CardSet ? "1" : "0") + " premiumSku " + OldSku + " -> " + MpProbeFString(&To->BuyPremiumSKU, 64));
+    }
+    MpLog("[HuntPassReskin] " + std::to_string(Done) + " of 8 passes renamed");
+    static const char* const kSeasons[8] = { "season43", "season44", "season45", "season46", "season47", "season48", "season49", "season50" };
+    MpLog("[HuntPassReskin] " + std::to_string(MpReskinHuntPassCards(kSeasons, kCards)) + " of 8 cards got their pass art");
+}
+
+// [MNG 2026-11-02] Developer texture export, to look at game art before using it. Client only, once per process, and only
+// when %LOCALAPPDATA%\MNGDauntless\texture-export\textures.txt exists (one /Game/... object path per line, # comments):
+// each texture is loaded (KismetSystemLibrary.LoadAsset_Blocking), drawn into a render target of its size
+// (KismetRenderingLibrary canvas drawing) and saved there as <name>.png (ExportRenderTarget). Reflected calls only, on the
+// game thread at the outermost ProcessEvent (the arrival probe). Players never have the list file, so nothing runs.
+struct MpTextureExportResult { int Width = 0; int Height = 0; int Step = 0; };
+
+static bool MpExportOneTextureGuarded(SDK::UWorld* World, const wchar_t* ObjectPath, const wchar_t* Dir, const wchar_t* FileName,
+                                      MpTextureExportResult* Out) {
+    __try {
+        Out->Step = 1;
+        SDK::FSoftObjectPath Path = SDK::UKismetSystemLibrary::MakeSoftObjectPath(SDK::FString(ObjectPath));
+        Out->Step = 2;
+        SDK::UObject* Obj = SDK::UKismetSystemLibrary::LoadAsset_Blocking(SDK::UKismetSystemLibrary::Conv_SoftObjPathToSoftObjRef(Path));
+        if (!Obj || !Obj->IsA(SDK::UTexture2D::StaticClass())) return false;
+        auto* Tex = reinterpret_cast<SDK::UTexture2D*>(Obj);
+        Out->Step = 3;
+        Out->Width = Tex->Blueprint_GetSizeX();
+        Out->Height = Tex->Blueprint_GetSizeY();
+        if (Out->Width <= 0 || Out->Height <= 0 || Out->Width > 8192 || Out->Height > 8192) return false;
+        Out->Step = 4;
+        SDK::UTextureRenderTarget2D* Rt = SDK::UKismetRenderingLibrary::CreateRenderTarget2D(World, Out->Width, Out->Height,
+            SDK::ETextureRenderTargetFormat::RTF_RGBA8, SDK::FLinearColor{ 0.f, 0.f, 0.f, 0.f }, false);
+        if (!Rt) return false;
+        Out->Step = 5;
+        SDK::UCanvas* Canvas = nullptr;
+        SDK::FVector2D Size{};
+        SDK::FDrawToRenderTargetContext Context{};
+        SDK::UKismetRenderingLibrary::BeginDrawCanvasToRenderTarget(World, Rt, &Canvas, &Size, &Context);
+        if (!Canvas) return false;
+        Out->Step = 6;
+        Canvas->K2_DrawTexture(Tex, SDK::FVector2D{ 0.f, 0.f }, Size, SDK::FVector2D{ 0.f, 0.f }, SDK::FVector2D{ 1.f, 1.f },
+            SDK::FLinearColor{ 1.f, 1.f, 1.f, 1.f }, SDK::EBlendMode::BLEND_Translucent, 0.f, SDK::FVector2D{ 0.f, 0.f });
+        SDK::UKismetRenderingLibrary::EndDrawCanvasToRenderTarget(World, Context);
+        Out->Step = 7;
+        SDK::UKismetRenderingLibrary::ExportRenderTarget(World, Rt, SDK::FString(Dir), SDK::FString(FileName));
+        Out->Step = 8;
+        return true;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return false;
+    }
+}
+
+static void MpExportTexturesOnce() {
+    static int s_tries = 0;
+    if (Globals::AmServer || s_tries < 0 || ++s_tries > 8) return;   // s_tries < 0: done
+    wchar_t Base[MAX_PATH] = {};
+    const DWORD Len = GetEnvironmentVariableW(L"LOCALAPPDATA", Base, MAX_PATH);
+    if (Len == 0 || Len >= MAX_PATH) { MpLog("[TextureExport] no LOCALAPPDATA"); s_tries = -1; return; }
+    const std::wstring Dir = std::wstring(Base) + L"\\MNGDauntless\\texture-export";
+    FILE* F = nullptr;
+    if (_wfopen_s(&F, (Dir + L"\\textures.txt").c_str(), L"r") != 0) F = nullptr;
+    if (!F) { s_tries = -1; return; }   // no list file: the normal case for players, silent
+    SDK::UWorld* World = SDK::UWorld::GetWorld();
+    if (!World) { fclose(F); MpLog("[TextureExport] no world yet, retrying at the next arrival"); return; }
+    s_tries = -1;
+    MpLog("[TextureExport] list found, exporting");
+    char Line[1024];
+    int Ok = 0, Failed = 0;
+    while (fgets(Line, sizeof(Line), F)) {
+        std::string Path(Line);
+        while (!Path.empty() && (Path.back() == '\n' || Path.back() == '\r' || Path.back() == ' ')) Path.pop_back();
+        if (Path.empty() || Path[0] == '#') continue;
+        const size_t Dot = Path.find_last_of('.');
+        const size_t Slash = Path.find_last_of('/');
+        std::string Name = Path.substr(Slash == std::string::npos ? 0 : Slash + 1);
+        if (Dot != std::string::npos && Dot > (Slash == std::string::npos ? 0 : Slash)) Name = Path.substr(Dot + 1);
+        const std::wstring WPath(Path.begin(), Path.end());
+        const std::wstring WName = std::wstring(Name.begin(), Name.end()) + L".png";
+        MpTextureExportResult R;
+        const bool Done = MpExportOneTextureGuarded(World, WPath.c_str(), Dir.c_str(), WName.c_str(), &R);
+        Done ? ++Ok : ++Failed;
+        MpLog(std::string("[TextureExport] ") + (Done ? "ok " : "FAILED ") + Path + " " + std::to_string(R.Width) + "x"
+            + std::to_string(R.Height) + (Done ? "" : " (step " + std::to_string(R.Step) + ")"));
+    }
+    fclose(F);
+    MpLog("[TextureExport] " + std::to_string(Ok) + " exported, " + std::to_string(Failed) + " failed, to %LOCALAPPDATA%\\MNGDauntless\\texture-export");
+}
+
 // Client, once per arrival (bounded): the game instance's active season, the local hunt pass component, and once per
 // process every row of the season table.
 static void MpHuntPassClientProbe(UObject* PC) {
@@ -23371,6 +23699,9 @@ static void MpHuntPassClientProbe(UObject* PC) {
             + " autoClaimed=" + std::to_string(V.AutoClaimed) + " active=" + std::to_string(V.ActiveCount)
             + " passes=[" + V.Passes + "]");
     }
+
+    MpReskinHuntPassRows(Table);   // [MNG 2026-11-02] before the dump, so it shows the new titles
+    MpExportTexturesOnce();        // [MNG 2026-11-02] developer texture export (list file only)
 
     static bool s_rowsDumped = false;
     if (!s_rowsDumped && Table) {

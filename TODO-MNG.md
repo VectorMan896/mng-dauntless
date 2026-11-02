@@ -164,6 +164,21 @@ Updated 2026-11-01. Launcher version 0.3.0 (released, self-updating; live server
       was never captured; if nothing is logged, the pick does not reach the backend and needs the runtime). Then hunt
       and check XP lands in the picked pass, switch back and check the first kept its rank. Live: add
       MYSTICPARADOX_HUNTPASS_ALL_OPEN=on to the friend's ParadoxBackend\.env after it works here.
+- [x] **Hunt Pass cards** (2 Nov, done in 0.1.22: names, text, images and card art all checked in game, runtime 0.1.10/0.1.11, [HuntPassReskin]): each of season43-50 gets the title and
+      description of the early pass whose rewards it carries (Overgrowth ... Myth & Legend) and the character image of its
+      vault re-release. Names and text work (0.1.10); the small cards on the left keep the shared art (not from the row's
+      Assets, which also drives the city sprouts, so that copy was dropped). The card is UHuntPassItemViewModel.BackgroundImage
+      = the StoreItemsTable art of the row's BuyPremiumSKU (all season43-50_premium: Store_HP_Currency_512x512). 0.1.14
+      renamed BuyPremiumSKU to the vault Elite rows and the Hunt Pass screen lost its button to the pass selection;
+      0.1.15 is back to 0.1.13. Next try: set BackgroundImage on the view model itself when the selection screen builds.
+- [ ] **Wiki Hunt Pass rewards** (2 Nov, local only): check in game (claim a few levels on two passes). Players who
+      already claimed levels on the live season43 keep what the old layout gave for those levels; decide before shipping
+      whether to reset claimed levels (rewards stay owned) so the wiki rewards of those levels can be claimed.
+- [ ] **Better local testing** (2 Nov): `Test-Runtime-Update.bat` (mng-server.ps1 runtime-update) stops only the
+      Director and its game servers, keeps the backend up, waits for the new runtime in the game folder, restarts the
+      Director. Try it with the next runtime.
+- [x] **Folder clean-up** (2 Nov): logs in `logs\` (the server scripts write there now), source images in `images\`,
+      Dumper-7 / downloader probe / sample data in `dev-tools\`, the 30 Oct one-off build and test logs deleted.
 - [ ] **Middleman fusion slots free** (1 Nov): slots 2/3 cost 0 Platinum; check Unlock works in game.
 - [ ] **Quest guard** (2 Nov, src/questGuard.ts, 5 tests): Redeemed quests stay Redeemed, left-out series/quests are
       kept. After it is live, watch the backend log for `[quest-guard]` lines (they show the stale saves it stopped).

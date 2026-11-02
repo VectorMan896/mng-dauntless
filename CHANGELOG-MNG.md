@@ -2,7 +2,7 @@
 
 Newest first. Launcher versions; the server, runtime and data change with them.
 
-## Unreleased - 2026-11-01 (server, client runtime 0.1.9)
+## Unreleased - 2026-11-01 / 02 (server, client runtime 0.1.22)
 
 - Guilds: create, invite, accept or decline, ranks (member, officer, leader, hand-over), kick, leave, disband, guild chat.
   Up to 100 members (`MNG_GUILD_MAX_MEMBERS`). Stored in `guilds`, `guildMembers`, `guildInvites`; account deletion covers them.
@@ -22,6 +22,21 @@ Newest first. Launcher versions; the server, runtime and data change with them.
   is open at once; players pick one in the game's pass selection screen, hunts progress the picked pass and each keeps
   its own rank (switching pauses one, switching back resumes it). The pick is saved per account
   (`huntPassSelections`, src/huntPassSelection.ts) and served by GET /huntpass; saves are logged as `[HuntPassSelect]`.
+- Hunt Pass switch fixed: GET /huntpass answers with the bare pass id (`"payload": "season45"`); with an object the game
+  reset the selected pass to its main pass on every map load. The pick is saved from `{"progression_id"}`.
+- Legacy Hunt Pass rewards rebuilt from the original passes' wiki tables, level by level on both tracks
+  (scripts/wiki_huntpass_extract.cjs + build_wiki_huntpass.cjs, the local wiki copy): season43-50 = Overgrowth,
+  Burndown, Hidden Blades, Fortune & Glory, Zephyr Strike, Way of the Fist, Haunted Shadows, Myth & Legend. Slayer Cores
+  become the Cell Cores of the same tier; rewards 1.14.7 does not have (Aetherdust, old dyes, face paints, hair tints,
+  unnamed Patrol Chests and Premium Bounty Tokens; Items_Analysis/wiki_huntpass/left_out.txt) are left out; empty
+  levels get Platinum x25 / Bounty Tokens x3 / Patrol Keys x5 in turn. 725-900 Platinum per pass.
+- Fixed a game crash when opening the Elite "Bonus Cache Coins!" tile at the end of a pass: the bonus levels had no
+  Elite reward. They pay 5 coins free + 20 Elite again (the live amounts); the wallet counts paid bonus rewards in coins
+  (prestigeClaimed), so the two lines of one level are both funded (huntPassBonusLevels.gamedata.test.ts).
+- Runtime 0.1.22: the pass selection cards show each pass's own name, description (ours where the original had none),
+  character image and card art (`[HuntPassReskin]`, NO_HUNTPASS_RESKIN.flag turns it off). The card art comes from the
+  passes' own StoreItemsTable rows, filled with the vault passes' art; Haunted Shadows uses its witch outfit render.
+  Developer texture export to PNG (`%LOCALAPPDATA%\MNGDauntless	exture-export	extures.txt`, `[TextureExport]`).
 
 ## 0.3.0 - 2026-10-31
 

@@ -707,13 +707,22 @@ systemRouter.get("/huntpass/:userId", HasParadoxBackendAuth, async (req: any, re
 
 	logger.info(`Huntpass (stubbed) -> huntpass_id=${HuntPassId}`);
 
+	// [MNG 2026-11-02 measured] The game reads the selected pass from a bare id ("payload": "season45"), the original
+	// Undaunted shape: with the object below it reset the selected pass to its main pass (season43) on every map load,
+	// and with the bare id the pick holds (local test, all passes open). The "verified" huntpass_id read noted above is a
+	// JSON writer (0x141dbd328), not a reader. MYSTICPARADOX_HUNTPASS_SCALAR_REPLY=off restores the object.
 	res.status(200);
+	if (!/^(0|false|no|off)$/i.test(process.env.MYSTICPARADOX_HUNTPASS_SCALAR_REPLY ?? "")) {
+		res.json({ code: null, message: "OK", payload: HuntPassId });
+		return;
+	}
 	res.json({
         code: null,
         message: "OK",
         payload: {
             huntpass_id: HuntPassId,
-            season: HuntPassId
+            season: HuntPassId,
+            progression_id: HuntPassId
         }
     });
 });

@@ -154,7 +154,16 @@ function BuildPrestigeRewardSources(): Map<string, PrestigeRewardSource[]> {
     for (const Path of Paths) {
         const ProgressionId = Path?.progression_id;
         const XpPerLevel = Number(Path?.prestige?.xp_per_level);
-        const RewardItems: any[] = Path?.prestige?.free_rewards?.stacked_items ?? [];
+        // [MNG 2026-11-02] A level's payout is its free reward plus, when Elite is free for everyone
+        // (MYSTICPARADOX_HUNTPASS_FREE_PREMIUM), its Elite reward of the same item: the live passes paid 5 free + 20 Elite
+        // Bonus Cache Coins, and the game claims the two as separate lines. With Elite not free only the free side counts.
+        const ElitePaid = /^(1|true|yes|on)$/i.test(process.env.MYSTICPARADOX_HUNTPASS_FREE_PREMIUM ?? "");
+        const PerItem = new Map<string, number>();
+        for (const Reward of [...(Path?.prestige?.free_rewards?.stacked_items ?? []), ...(ElitePaid ? (Path?.prestige?.premium_rewards?.stacked_items ?? []) : [])]) {
+            const Q = Number(Reward?.quantity);
+            if (typeof Reward?.catalog_id === "string" && Number.isFinite(Q) && Q > 0) PerItem.set(Reward.catalog_id, (PerItem.get(Reward.catalog_id) ?? 0) + Q);
+        }
+        const RewardItems = [...PerItem.entries()].map(([catalog_id, quantity]) => ({ catalog_id, quantity }));
         if (typeof ProgressionId !== "string" || !Number.isFinite(XpPerLevel) || XpPerLevel <= 0) continue;
         const CapXp = (Array.isArray(Path?.requirements) ? Path.requirements : [])
             .reduce((Sum: number, Requirement: any) => Sum + (Number(Requirement?.xp_required) || 0), 0);
@@ -228,31 +237,27 @@ async function SpendBankedPrestigeForReward(userId: string, catalogId: string, q
         });
         // [1.14.7 2026-10-11] Paying a prestige reward never spends progress any more: progress is what the game reads
         // back as the track's rank (a weapon's reforge count, the Hunt Pass bar), and spending it lowered both. Paid
-        // levels are counted instead (prestigeClaimed), each level paying once, and only levels past the top regular
-        // rank count (capXp) - the old rule counted season43 coins from XP 0, 5 coins per 100 XP, and then took the XP.
+        // rewards are counted instead (prestigeClaimed), and only levels past the top regular rank count (capXp) - the
+        // old rule counted season43 coins from XP 0, 5 coins per 100 XP, and then took the XP.
+        // [MNG 2026-11-02] prestigeClaimed counts reward UNITS, not levels: a Hunt Pass bonus level pays 25 coins in two
+        // lines (5 free + 20 Elite), so a line need not be a whole level. For the weapon tracks (1 Heart per level) units
+        // and levels are the same number, so their stored counts mean what they did.
         const ClaimedBefore = Track?.prestigeClaimed ?? 0;
         const PrestigeLevels = Math.floor(Math.max(0, (Track?.progress ?? 0) - Source.capXp) / Source.xpPerLevel);
-        const BankedLevels = Math.max(0, PrestigeLevels - ClaimedBefore);
-        const AvailableFromSource = BankedLevels * Source.rewardQuantityPerLevel;
+        const AvailableFromSource = Math.max(0, PrestigeLevels * Source.rewardQuantityPerLevel - ClaimedBefore);
         TotalAvailable += AvailableFromSource;
 
         if (Remaining <= 0 || AvailableFromSource <= 0) continue;
 
-        // Only ever spend in whole multiples of this source's payout rate, so its granularity is
-        // respected exactly (every known PrestigeTrack_Weapon_* pays 1:1, so this is a plain
-        // per-unit spend in practice; a hypothetical future source with a different rate that
-        // can't cleanly cover the remainder is simply skipped rather than mis-accounted).
         const UnitsToTake = Math.min(Remaining, AvailableFromSource);
-        const LevelsToSpend = UnitsToTake / Source.rewardQuantityPerLevel;
-        if (!Number.isInteger(LevelsToSpend)) continue;
-
         Claims.push({
             progressionId: Source.progressionId,
             claimedBefore: ClaimedBefore,
-            levels: LevelsToSpend,
-            minProgress: Source.capXp + (ClaimedBefore + LevelsToSpend) * Source.xpPerLevel,
+            levels: UnitsToTake,
+            // the progress that covers every unit paid so far (a part-paid level counts as reached)
+            minProgress: Source.capXp + Math.ceil((ClaimedBefore + UnitsToTake) / Source.rewardQuantityPerLevel) * Source.xpPerLevel,
         });
-        Remaining -= LevelsToSpend * Source.rewardQuantityPerLevel;
+        Remaining -= UnitsToTake;
     }
 
     if (Remaining > 0) {
@@ -272,7 +277,7 @@ async function SpendBankedPrestigeForReward(userId: string, catalogId: string, q
             logger.error(`[Prestige] ${userId} claim of ${Claim.levels} level(s) on ${Claim.progressionId} lost a race - rejecting rather than paying twice`);
             throw new InsufficientPrestigeProgressError(userId, catalogId, quantity, TotalAvailable);
         }
-        logger.info(`[Prestige] ${userId} claimed ${Claim.levels} prestige level(s) on ${Claim.progressionId} to fund ${catalogId} reward (progress kept)`);
+        logger.info(`[Prestige] ${userId} claimed ${Claim.levels} prestige reward unit(s) on ${Claim.progressionId} to fund ${catalogId} reward (progress kept)`);
     }
 }
 

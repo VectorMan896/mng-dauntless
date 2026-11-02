@@ -10,6 +10,7 @@ import { HuntPassAllOpen, OpenHuntPassIds } from "./seasonWindow";
 const OPEN = ["season43", "season44", "season45"];
 
 test("a save names its pass in the usual fields, nested, or as a bare string; closed passes are refused", () => {
+    assert.equal(PickHuntPassId({ progression_id: "season45" }, OPEN), "season45"); // what the game server sends
     assert.equal(PickHuntPassId({ huntpass_id: "season44" }, OPEN), "season44");
     assert.equal(PickHuntPassId({ selectedHuntPassId: " season45 " }, OPEN), "season45");
     assert.equal(PickHuntPassId({ payload: { anything: "season44" } }, OPEN), "season44");
