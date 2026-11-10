@@ -3,6 +3,17 @@
 Updated 2026-11-01. Launcher version 0.3.0 (released, self-updating; live server on update pack 2026-11-01_0707); server data changes are listed under "Unreleased" in CHANGELOG-MNG.md.
 
 ## Now
+- [ ] **Live server goes stale after days** (owner, 10 Nov): login into Ramsgate works, but nobody can enter a hunt or use
+      objects or NPCs there. Cause unknown: the 9 Nov client log (this PC on the live server) shows a healthy session, and
+      the server PC's logs could not be read from here. Next: apply update pack `MNG-Server-Update-2026-11-10_2356.zip` on the
+      server PC, run `Enable-Log-Sync.bat` there with the token from `live-log-sync-token.txt`, Restart-Server; when it happens
+      again, `Get-Server-Logs.bat` here (before restarting the server) and read `[Health]` over time in
+      `game__mysticparadox_dll_port8790.log` plus the backend/Director logs. Leads to check then: a runtime fix limited to the
+      first N joins or events (not only its logging), memory or UObject growth, the hub's backend calls failing.
+- [ ] **Stamina does not refill** (owner, 10 Nov): runtime 0.1.23 logs `[Stamina] STUCK` with the stamina component's state
+      on server and client. Reproduce once after the update, then read port8790/hunt logs (server) and port0.log (client).
+- [x] Event fog and Ozz's stall show in Ramsgate (owner, 10 Nov).
+- [ ] Check in game after the update: `[Health]` lines in the server logs every 5 min.
 - [x] **Windows Defender removes winmm.dll** (reported to Microsoft and launcher check shipped 1 Nov; code signing still open) (31 Oct, 12:12 on this PC): `Program:Win32/Contebrew.A!ml` (a machine-learning
       guess; the proxy-DLL loader looks like DLL hijacking). Without it the runtime never loads: the game and the local game
       servers start plain and show "Failed to create IGameClient instance". Players will hit it too. (1) Owner: report the

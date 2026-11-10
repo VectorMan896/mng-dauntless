@@ -62,8 +62,15 @@ tuningRouter.get("/game_tuning/seasonal_event_schedule", (req: any, res) => {
     });
 })
 
+// [MNG 2026-11-02] MYSTICPARADOX_HUNTPASS_XP_MULTIPLIER (default 1) scales every Hunt Pass XP award the game computes
+// (GlobalMultiplier). The live value was never captured; 1 is the neutral default. The owner chose 2 on 2 Nov.
+export function HuntPassXpMultiplier(): number {
+    const Value = Number(process.env.MYSTICPARADOX_HUNTPASS_XP_MULTIPLIER);
+    return Number.isFinite(Value) && Value > 0 && Value <= 10 ? Value : 1;
+}
+
 tuningRouter.get("/game_tuning/huntpass_xp_config", (req: any, res) => {
-    logger.info("Huntpass XP Config (stubbed)");
+    logger.info(`Huntpass XP Config (stubbed) multiplier=${HuntPassXpMultiplier()}`);
 
     res.status(200);
     res.json({
@@ -73,7 +80,7 @@ tuningRouter.get("/game_tuning/huntpass_xp_config", (req: any, res) => {
             EventConfigs: [],
             GlobalConfig: {
                 DifficultyBias: 1.000000000000000,
-                GlobalMultiplier: 1.000000000000000,
+                GlobalMultiplier: HuntPassXpMultiplier(),
                 MaxXPAwarded: 200
             }
         }

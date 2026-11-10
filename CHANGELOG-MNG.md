@@ -2,8 +2,33 @@
 
 Newest first. Launcher versions; the server, runtime and data change with them.
 
+## Unreleased - 2026-11-10 (server, client runtime 0.1.23)
+
+Logging to find the live server's bugs (owner: servers left running for days accept the login into Ramsgate, but nobody can
+enter a hunt or use objects or NPCs there; stamina stops refilling).
+- Server logs from the development PC: `GET /admin/v1/server-logs` and `/admin/v1/server-logs/file` (routes/adminServerLogs.ts)
+  list and serve the end of the server PC's own logs - the repository's `debug\` folder (backend, Director, each game server's
+  console) and the runtime logs `mysticparadox_dll_port*.log` next to the game exe. Read-only, behind
+  `LAUNCHER_LOG_SYNC_TOKEN`; a file is served only by a name from the listing. The two log sync routers (also the uploaded
+  player logs) are now mounted whenever that token is set, even with the admin API off; without it they do not exist.
+- `Enable-Log-Sync.bat` (server PC, once; in the update and server packs) writes the token into the backend's `.env`;
+  `Get-Server-Logs.bat` (this PC) pulls the logs into `logs\live-server\<date_time>\` with a SUMMARY.txt (errors, [Health],
+  [Stamina] STUCK, kicks per file). The token is `live-log-sync-token.txt` beside the repository (never committed).
+- Runtime 0.1.23, `[Health]` (servers and client, read-only): every 5 min uptime, map, player connections, UObject count,
+  memory and (client) ProcessEvent calls per minute, so a long run shows what grows or stops. `[Stamina]`: each player's
+  stamina (UArchonHealthAttributeSet +0xB4/+0xB8/+0xBC) is sampled every 2 s; below max and unmoving for 8 s is logged as
+  STUCK with the stamina component's state (active, tick settings, regen delay, last tick), again after 60 s, and when it
+  moves again - on the server and the client, so a server-side stall can be told from a replication one.
+  `NO_HEALTH_LOG.flag` turns it off. Tested on this PC: Ramsgate and the Dojo write `[Health]`; the stamina report needs a
+  player in game.
+- Hunt Pass XP multiplier (2 Nov): `MYSTICPARADOX_HUNTPASS_XP_MULTIPLIER` (default 1) is the GlobalMultiplier of
+  /game_tuning/huntpass_xp_config.
+
 ## Unreleased - 2026-11-01 / 02 (server, client runtime 0.1.22)
 
+- Hunt Pass XP multiplier: `MYSTICPARADOX_HUNTPASS_XP_MULTIPLIER` (default 1) is the GlobalMultiplier of
+  /game_tuning/huntpass_xp_config, which scales every Hunt Pass XP award the game computes. Set to 2 on 2 Nov
+  (owner's choice; the live value was never captured). Needs checking in game: a hunt gave +8 before. (Committed 10 Nov.)
 - Guilds: create, invite, accept or decline, ranks (member, officer, leader, hand-over), kick, leave, disband, guild chat.
   Up to 100 members (`MNG_GUILD_MAX_MEMBERS`). Stored in `guilds`, `guildMembers`, `guildInvites`; account deletion covers them.
 - Aetherheart limit back on: each weapon reforge pays one Heart and the server only pays Hearts for reforges actually done

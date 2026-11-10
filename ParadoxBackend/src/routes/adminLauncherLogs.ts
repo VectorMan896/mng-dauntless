@@ -31,7 +31,8 @@ function hasValidSyncToken(req: Request): boolean {
     }
 }
 
-function requireSyncToken(req: Request, res: Response, next: NextFunction): void {
+// [MNG DAUNTLESS 2026-11-10] Also guards the server's own logs (routes/adminServerLogs.ts).
+export function requireSyncToken(req: Request, res: Response, next: NextFunction): void {
     if (!hasValidSyncToken(req)) {
         res.status(401).json({ error: "Invalid sync credentials." });
         return;

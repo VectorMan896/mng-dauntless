@@ -29,6 +29,7 @@ import { friendsRouter } from "./routes/friends.js";
 import { launcherUpdatesRouter } from "./routes/launcherUpdates.js";
 import { launcherLogsRouter } from "./routes/launcherLogs.js";
 import { adminLauncherLogsRouter } from "./routes/adminLauncherLogs.js";
+import { adminServerLogsRouter } from "./routes/adminServerLogs.js";
 import { adminRouter } from "./routes/admin.js";
 import { sanitizeUrlForLog } from "./security/logRedaction.js";
 import { CreateRequestRateLimiter } from "./security/rateLimit.js";
@@ -260,6 +261,13 @@ app.use("/", friendsRouter);
 app.use("/", launcherAuthRouter);
 app.use("/", launcherUpdatesRouter);
 app.use("/", launcherLogsRouter);
+// [MNG DAUNTLESS 2026-11-10] The read-only log sync routes (players' uploaded logs and the server's own logs) carry their own
+// credential, LAUNCHER_LOG_SYNC_TOKEN, and exist only when it is set - also with the admin API off (the live server's case), so
+// the development PC can read the logs without enabling the whole admin surface.
+if (process.env.LAUNCHER_LOG_SYNC_TOKEN?.trim()) {
+    app.use("/", adminLauncherLogsRouter);
+    app.use("/", adminServerLogsRouter);
+}
 // [2026-10-15] With the admin API off, every /admin path answers 404 here, before the admin routers and before the optional
 // module's own /admin routes (mounted below), so a self-hosted backend exposes no admin surface.
 app.use("/admin", (_req, res, next) => {
@@ -270,8 +278,7 @@ app.use("/admin", (_req, res, next) => {
     res.status(404).end();
 });
 if (AdminApi.enabled) {
-    app.use("/", adminLauncherLogsRouter);
-    app.use("/", adminRouter);
+    app.use("/", adminRouter);   // [2026-11-10] the log sync routers are mounted above, by their own token
 }
 // [2026-10-13 realms S2] Paradox realms directory (src/realms), /launcher/v1/realms with its own launcher auth. Mounted only
 // when MYSTICPARADOX_REALMS_MODULE is on|true|1; off by default.

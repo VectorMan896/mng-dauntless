@@ -6966,6 +6966,168 @@ static void Tick(const char* Side) {
 }
 }   // namespace CityEventLevels
 
+// ============================================================================
+// [MNG DAUNTLESS 2026-11-10] Health log, for bugs that only show after a long run (owner: "servers left for days accept the login
+// into Ramsgate, but inside it nobody can enter a hunt or interact with objects or NPCs") and for stamina that stops refilling.
+// Read-only; nothing is written to the game and no game function is called.
+//   [Health]   every 5 min (first line 1 min after start), server and client: uptime, map, player connections (server), UObject
+//              count, memory, ProcessEvent calls per minute (client). A long run's lines show what grows or stops.
+//   [Stamina]  every 2 s: each player character's UArchonHealthAttributeSet (Stamina +0xB4, MaxStamina +0xB8, StaminaRegen
+//              +0xBC). Stamina below max that has not moved for 8 s is logged as STUCK with the character's UArchonStaminaComponent
+//              (bIsActive, bStartWithTickEnabled, TickInterval, bInfiniteStamina, StaminaRegenDelayAfterUse, StaminaLastTick),
+//              again after 60 s if it is still stuck (a StaminaLastTick that did not change means the component stopped ticking),
+//              and once more when it moves again. Server and client lines together tell a server-side stall from a replication one.
+// NO_HEALTH_LOG.flag turns both off.
+// Every client ProcessEvent call (ProcessEventClientHook counts them). [2026-11-10] Moved up here for MngHealth.
+static std::atomic<uint64_t> g_clientProcessEventCount{ 0 };
+namespace MngHealth {
+struct StaminaWatch {
+    SDK::UObject* Set = nullptr;
+    float Last = -1.0f;
+    uint64_t StuckSinceMs = 0;
+    int Reports = 0;
+};
+
+static std::vector<StaminaWatch> s_watch;
+static std::atomic<int> s_staminaLogs{ 0 };
+
+static float ReadFloat(const void* Base, uintptr_t Offset) {
+    return *reinterpret_cast<const float*>(reinterpret_cast<uintptr_t>(Base) + Offset);
+}
+
+static std::string Num(float Value) {
+    char Buf[32];
+    sprintf_s(Buf, "%.1f", Value);
+    return Buf;
+}
+
+// The character's stamina component, described in one line (a GObjects walk: only when stamina is reported stuck).
+static std::string StaminaComponentState(SDK::UObject* Character) {
+    SDK::UClass* Cls = SDK::UArchonStaminaComponent::StaticClass();
+    if (!Cls || !SDK::UObject::GObjects || !Character) return "component=?";
+    const int32_t Count = SDK::UObject::GObjects->Num();
+    for (int32_t i = 0; i < Count; ++i) {
+        SDK::UObject* Obj = SDK::UObject::GObjects->GetByIndex(i);
+        if (!Obj || Obj->Outer != Character || Obj->IsDefaultObject() || !Obj->IsA(Cls)) continue;
+        if (!IsReadablePointer(Obj, 0xE0)) return "component=unreadable";
+        const uint8_t* B = reinterpret_cast<const uint8_t*>(Obj);
+        return std::string("component active=") + std::to_string(B[0x8A] & 1)
+            + " startTick=" + std::to_string((B[0x30 + 0x0A] >> 2) & 1)
+            + " tickInterval=" + Num(ReadFloat(Obj, 0x30 + 0x0C))
+            + " infinite=" + std::to_string(B[0xB0] & 1)
+            + " regenDelay=" + Num(ReadFloat(Obj, 0xB4))
+            + " lastTick=" + Num(ReadFloat(Obj, 0xD8));
+    }
+    return "component=none";
+}
+
+static void Rescan() {
+    s_watch.erase(std::remove_if(s_watch.begin(), s_watch.end(),
+        [](const StaminaWatch& W) { return !W.Set || !IsRegisteredLiveObject(W.Set); }), s_watch.end());
+    SDK::UClass* Cls = SDK::UArchonHealthAttributeSet::StaticClass();
+    if (!Cls || !SDK::UObject::GObjects) return;
+    const int32_t Count = SDK::UObject::GObjects->Num();
+    for (int32_t i = 0; i < Count; ++i) {
+        SDK::UObject* Obj = SDK::UObject::GObjects->GetByIndex(i);
+        if (!Obj || Obj->IsDefaultObject() || !Obj->IsA(Cls) || !Obj->Outer) continue;
+        // Players only: the outer is the player character blueprint (behemoths carry the same set).
+        if (Obj->Outer->GetName().find("PlayerCharacter") == std::string::npos) continue;
+        bool Known = false;
+        for (const StaminaWatch& W : s_watch) Known = Known || W.Set == Obj;
+        if (!Known) s_watch.push_back(StaminaWatch{ Obj });
+    }
+}
+
+static void SampleStamina(const char* Side, uint64_t Now) {
+    for (StaminaWatch& W : s_watch) {
+        if (!W.Set || !IsRegisteredLiveObject(W.Set) || !IsReadablePointer(W.Set, 0xC8)) continue;
+        const float Stamina = ReadFloat(W.Set, 0xB4);
+        const float Max = ReadFloat(W.Set, 0xB8);
+        const float Regen = ReadFloat(W.Set, 0xBC);
+        const bool Below = Max > 0.0f && Stamina < Max - 0.5f;
+        const bool Still = W.Last >= 0.0f && std::fabs(Stamina - W.Last) < 0.01f;
+        W.Last = Stamina;
+        if (!(Below && Still)) {
+            if (W.Reports > 0 && s_staminaLogs.fetch_add(1, std::memory_order_relaxed) < 400) {
+                MpLog(std::string("[Stamina] ") + Side + " moving again after " + std::to_string((Now - W.StuckSinceMs) / 1000)
+                    + " s: " + SafeObjectNameForDiagnostic(W.Set->Outer) + " stamina=" + Num(Stamina) + "/" + Num(Max));
+            }
+            W.StuckSinceMs = 0;
+            W.Reports = 0;
+            continue;
+        }
+        if (W.StuckSinceMs == 0) { W.StuckSinceMs = Now; continue; }
+        const uint64_t StuckMs = Now - W.StuckSinceMs;
+        if ((W.Reports == 0 && StuckMs >= 8000) || (W.Reports == 1 && StuckMs >= 68000)) {
+            ++W.Reports;
+            if (s_staminaLogs.fetch_add(1, std::memory_order_relaxed) < 400) {
+                MpLog(std::string("[Stamina] ") + Side + " STUCK " + std::to_string(StuckMs / 1000) + " s: "
+                    + SafeObjectNameForDiagnostic(W.Set->Outer) + " stamina=" + Num(Stamina) + "/" + Num(Max)
+                    + " regen=" + Num(Regen) + " " + StaminaComponentState(W.Set->Outer));
+            }
+        }
+    }
+}
+
+static void Tick(const char* Side) {
+    static int s_disabled = -1;
+    static uint64_t s_startMs = 0;
+    if (s_disabled < 0) {
+        s_disabled = MpExeRelativeFlagPresent(L"NO_HEALTH_LOG.flag") ? 1 : 0;
+        s_startMs = GetTickCount64();
+        MpLog(std::string("[Health] ") + (s_disabled ? "OFF (NO_HEALTH_LOG.flag)"
+            : "ON: a health line every 5 min and stuck-stamina reports (read-only)"));
+    }
+    if (s_disabled) return;
+
+    static void* s_world = nullptr;
+    static uint64_t s_scanMs = 0;
+    static uint64_t s_sampleMs = 0;
+    static uint64_t s_healthMs = 0;
+    static uint64_t s_peAtLastHealth = 0;
+    const uint64_t Now = GetTickCount64();
+    void* WorldPtr = *reinterpret_cast<void**>(Globals::BaseAddress + 0x06FC7F58);
+    if (WorldPtr != s_world) {
+        s_world = WorldPtr;
+        s_watch.clear();
+        s_scanMs = 0;
+    }
+
+    if (WorldPtr && Now - s_sampleMs >= 2000) {
+        s_sampleMs = Now;
+        if (Now - s_scanMs >= 30000) { s_scanMs = Now; Rescan(); }
+        SampleStamina(Side, Now);
+    }
+
+    const bool FirstLine = s_healthMs == 0 && Now - s_startMs >= 60000;
+    if (!FirstLine && (s_healthMs == 0 || Now - s_healthMs < 300000)) return;
+    const uint64_t SinceLast = s_healthMs == 0 ? Now - s_startMs : Now - s_healthMs;
+    s_healthMs = Now;
+
+    std::string Map = "none";
+    int32_t Connections = -1;
+    auto* World = reinterpret_cast<SDK::UWorld*>(WorldPtr);
+    if (World && IsRegisteredLiveObject(World) && IsReadablePointer(World, 0x40)) {
+        Map = World->GetName();
+        SDK::UNetDriver* Driver = World->NetDriver;
+        if (Driver && IsRegisteredLiveObject(Driver) && IsReadablePointer(Driver, 0xA0)) Connections = Driver->ClientConnections.Num();
+    }
+    PROCESS_MEMORY_COUNTERS_EX Mem{};
+    const bool HaveMem = MpProcessMemory(Mem);
+    const uint64_t Pe = g_clientProcessEventCount.load(std::memory_order_relaxed);
+    const uint64_t PePerMin = SinceLast > 0 ? (Pe - s_peAtLastHealth) * 60000 / SinceLast : 0;
+    s_peAtLastHealth = Pe;
+    MpLog(std::string("[Health] ") + Side
+        + " uptime=" + std::to_string((Now - s_startMs) / 60000) + "min"
+        + " map=" + Map
+        + (Connections >= 0 ? " connections=" + std::to_string(Connections) : "")
+        + " objects=" + std::to_string(SDK::UObject::GObjects ? SDK::UObject::GObjects->Num() : -1)
+        + (HaveMem ? " workingSetMB=" + MpMiBText(Mem.WorkingSetSize) + " privateMB=" + MpMiBText(Mem.PrivateUsage) : "")
+        + (Globals::AmServer ? "" : " processEventPerMin=" + std::to_string(PePerMin))
+        + " staminaWatched=" + std::to_string(s_watch.size()));
+}
+}   // namespace MngHealth
+
 // [MNG DAUNTLESS 2026-10-31] [StoreProbe] Read-only, client only. Logs each store screen's view model once: its class, the
 // store tag it asks the server for (TagFilter, GET /product/skus/public?requiredTags=<tag>) and every tab's subTagIds (the
 // tags a SKU needs to show in that tab). Written for the event merchant's shop (event_store_view_model), whose tag no export
@@ -7565,6 +7727,7 @@ void GameEngineTickHook(UGameEngine* GameEngine, float DeltaTime, char CanRender
         g_MpReadableCacheThread = GetCurrentThreadId();
         MpReadableCacheNextEpoch();
         CityEventLevels::Tick("server");   // [MNG DAUNTLESS 2026-10-31] throttled to every 2 s inside
+        MngHealth::Tick("server");         // [MNG DAUNTLESS 2026-11-10] throttled inside
     }
     if (GameEngine != nullptr && g_GameEnginePtr == nullptr) {
         g_GameEnginePtr = GameEngine;
@@ -14280,7 +14443,7 @@ static void LogRejectedRelicClick(UObject* Screen, void* Parms) {
 // ResumeThread. Each line: the RIP, the image-.text return addresses found on the stack (heuristic chain), and
 // how many client ProcessEvent calls ran since the previous sample.
 static std::atomic<uint32_t> g_clientGameThreadId{ 0 };
-static std::atomic<uint64_t> g_clientProcessEventCount{ 0 };
+// g_clientProcessEventCount: defined before MngHealth (2026-11-10).
 
 static void MpHitchSampleOnce(HANDLE Thread, int Episode, int Sample, uint64_t StartMs, uint64_t& LastPeCount) {
     static uint8_t s_stack[0x3000];
@@ -14675,6 +14838,7 @@ void ProcessEventClientHook(UObject* Object, UFunction* Function, void* Parms) {
             s_worldCensusCheckMs = NowMs;
             MpWorldCensusTick();
             CityEventLevels::Tick("client");   // [MNG DAUNTLESS 2026-10-31]
+            MngHealth::Tick("client");         // [MNG DAUNTLESS 2026-11-10]
             StoreProbe::Tick();                // [MNG DAUNTLESS 2026-10-31]
         }
     }

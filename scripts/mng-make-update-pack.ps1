@@ -51,7 +51,7 @@ Copy-Item (Join-Path $Feed "$($Latest.version)\winmm.dll") (Join-Path $RuntimeOu
 [IO.File]::WriteAllText((Join-Path $RuntimeOut "mystic_loader.ini"), "; Extra DLLs the winmm.dll loader loads at game start (none).`r`n", [Text.Encoding]::ASCII)
 
 Write-Host "[4/4] Start files, downloader, zip..."
-foreach ($F in @("Start-Server.bat", "Stop-Server.bat", "Restart-Server.bat", "Server-Status.bat", "Make-Server-Pack.bat", "Make-Update-Pack.bat", "Set-Server-Address.bat", "Player-Currency.bat", "Set-Up-HTTPS.bat")) {
+foreach ($F in @("Start-Server.bat", "Stop-Server.bat", "Restart-Server.bat", "Server-Status.bat", "Make-Server-Pack.bat", "Make-Update-Pack.bat", "Set-Server-Address.bat", "Player-Currency.bat", "Set-Up-HTTPS.bat", "Enable-Log-Sync.bat")) {
     if (Test-Path (Join-Path $Root $F)) { Copy-Item (Join-Path $Root $F) $Pack }
 }
 Copy-Item (Join-Path $PSScriptRoot "pack\Install-Server.bat") $Pack
