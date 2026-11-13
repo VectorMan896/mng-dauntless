@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <ctime>     // [MNG 2026-11-13] time() for the open-island player count file
 #include <cstdlib>   // atof — used by BleedoutDurationFallback()
 #include <deque>
 #include <unordered_map>
@@ -7069,7 +7070,31 @@ static void SampleStamina(const char* Side, uint64_t Now) {
     }
 }
 
+// [MNG DAUNTLESS 2026-11-13] Open islands: a hunt server writes how many players are connected to
+// mng_players_port<port>.txt next to its log ("<connections> <unix seconds>") every 5 s. The Director reads it before it
+// sends a solo hunter into a running island (gameservers.ts TryReuseSharedHuntServer), so players who left free their
+// slot and an empty island that is about to close is not picked. Hubs and the client do not write it.
+static void WritePlayerCount(void* WorldPtr) {
+    static uint64_t s_lastMs = 0;
+    if (!Globals::AmServer || Globals::Port == 0 || !WorldPtr) return;
+    const uint64_t Now = GetTickCount64();
+    if (s_lastMs != 0 && Now - s_lastMs < 5000) return;
+    s_lastMs = Now;
+    auto* World = reinterpret_cast<SDK::UWorld*>(WorldPtr);
+    if (!IsRegisteredLiveObject(World) || !IsReadablePointer(World, 0x40)) return;
+    SDK::UNetDriver* Driver = World->NetDriver;
+    if (!Driver || !IsRegisteredLiveObject(Driver) || !IsReadablePointer(Driver, 0xA0)) return;
+    const int32_t Connections = Driver->ClientConnections.Num();
+    char Path[MAX_PATH];
+    sprintf_s(Path, "%smng_players_port%d.txt", MpLogDir(), static_cast<int>(Globals::Port));
+    FILE* File = nullptr;
+    if (fopen_s(&File, Path, "w") != 0 || !File) return;
+    fprintf(File, "%d %lld\n", Connections, static_cast<long long>(time(nullptr)));
+    fclose(File);
+}
+
 static void Tick(const char* Side) {
+    WritePlayerCount(*reinterpret_cast<void**>(Globals::BaseAddress + 0x06FC7F58));
     static int s_disabled = -1;
     static uint64_t s_startMs = 0;
     if (s_disabled < 0) {

@@ -104,5 +104,7 @@ export const Collections = {
     GuildMembers: "guildMembers",
     GuildInvites: "guildInvites",
     // [MNG DAUNTLESS 2026-11-02] The hunt pass each account picked (src/huntPassSelection.ts), _id = the account.
-    HuntPassSelections: "huntPassSelections"
+    HuntPassSelections: "huntPassSelections",
+    // [MNG DAUNTLESS 2026-11-13] Platinum earned by playing (src/platinumRewards.ts): one row per payment, _id = its once-only key.
+    MngRewardClaims: "mngRewardClaims"
 } as const;

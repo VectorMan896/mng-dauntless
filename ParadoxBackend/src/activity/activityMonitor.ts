@@ -9,6 +9,7 @@
 import { logger } from "../logger";
 import { GetRepositories } from "../persistence";
 import { PaySeasonalEventHunt } from "../seasonalEvents";
+import { PayFirstHuntPlatinum } from "../platinumRewards";
 import type { ActivityHuntResult, ActivityRepository } from "../persistence/contracts/ActivityRepository";
 import { LogToken } from "../diagnostics/economyLedgerMonitor";
 import {
@@ -403,6 +404,8 @@ export async function RecordDedicatedHuntEnds(userIds: readonly string[], endRea
                 if (Closed) AddDaily(UserId, DayOf(atMs), { [`${Result === "completed" ? "huntsCompleted" : "huntsAbandoned"}.dedicated`]: 1 });
                 // [MNG DAUNTLESS 2026-10-31] The running seasonal event's currency, once per completed hunt (src/seasonalEvents.ts).
                 if (Closed && Result === "completed") await PaySeasonalEventHunt(UserId, Hunt._id);
+                // [MNG DAUNTLESS 2026-11-13] The first completed hunt of the game day pays Platinum (src/platinumRewards.ts).
+                if (Closed && Result === "completed") await PayFirstHuntPlatinum(UserId);
             }
         });
     }

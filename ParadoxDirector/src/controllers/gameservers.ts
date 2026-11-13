@@ -23,6 +23,7 @@ import { gameDataDir } from "../gameData/loader";
 // [2026-10-14 M1] The hunt lookup and its tables live in shared/hunt-manifest (the Metagame resolves manifests with the same code).
 import { CreateHuntResolver, LoadHuntTables, ParseTrialsRotationMinutes, TransformExpectedPlayerArgs } from "../../../shared/hunt-manifest";
 import { PortPool } from "./portPool";
+import { OpenIslandOccupancy, OpenIslandsEnabled, ParseOpenIslandPlayerCount } from "./openIslands";
 import { CreateSerialGate, HubSupervisor, HubLogLevel, HubSwitchOn } from "./hubSupervisor";
 
 // [2026-10-14 M1] Hunt tables from ParadoxDirector/game-data (exported from the client by CatalogExporter). Trials/Arena
@@ -47,7 +48,9 @@ export type Gameserver = {
     // to the client until the injected server has emitted the matching ready marker.
     state: "starting" | "ready" | "failed",
     launchId: string,
-    readyTime?: Date
+    readyTime?: Date,
+    // [MNG DAUNTLESS 2026-11-13] When each late joiner was sent here (open islands), for the occupancy count.
+    joinTimes?: number[]
 };
 
 type ExpectedPlayer = {
@@ -206,7 +209,10 @@ const MAX_CONCURRENT_HUNT_SERVERS = Number(process.env.MAX_CONCURRENT_HUNT_SERVE
 // revert to spawn-per-player if late-joiner attribution is ever wrong. PUBLIC_HUNT_MAX_PLAYERS is the reuse
 // occupancy cap and MUST match the DLL's HUB_MAX_PLAYERS (the ?MaxPlayers the server actually accepts;
 // default 4). See Plans/PUBLIC_HUNT_SERVER_REUSE_PLAN.md.
-const ENABLE_PUBLIC_HUNT_REUSE = (process.env.ENABLE_PUBLIC_HUNT_REUSE ?? "0") === "1";
+// [MNG DAUNTLESS 2026-11-13] Open islands are ON for MNG: MNG_OPEN_ISLANDS=off turns them off (it wins over
+// ENABLE_PUBLIC_HUNT_REUSE, which the upstream .env ships as 0). Unset: ENABLE_PUBLIC_HUNT_REUSE decides when it is set to 1,
+// and otherwise they are on.
+const ENABLE_PUBLIC_HUNT_REUSE = OpenIslandsEnabled();
 const PUBLIC_HUNT_MAX_PLAYERS = Number(process.env.PUBLIC_HUNT_MAX_PLAYERS ?? "4");
 
 // Thrown when the hunt-server cap is reached; the matchmaker route catches it and falls back to
@@ -654,15 +660,22 @@ export function TryReuseSharedHuntServer(PlayerHuntId: string, JoinerUids: strin
     if(!ENABLE_PUBLIC_HUNT_REUSE) return undefined;
     if(PlayerHuntId == undefined || PlayerHuntId.trim().length === 0) return undefined;
 
-    const Candidate = Gameservers.find((Server) =>
-        Server.state === "ready"
-        && !Server.isRamsgate
-        && !Server.isTrainingDojo
-        && Server.expectedPlayers != undefined
-        && Server.expectedPlayers.length > 0
-        && Server.expectedPlayers[0].playerHuntId === PlayerHuntId
-        && Server.expectedPlayers.length < PUBLIC_HUNT_MAX_PLAYERS
-    );
+    // [MNG DAUNTLESS 2026-11-13] Occupancy from the server's own player count (OpenIslandOccupancy), and the fullest island
+    // with room wins, so hunters gather instead of spreading one per island.
+    const NowMs = Date.now();
+    let Candidate: Gameserver | undefined;
+    let CandidateOccupancy = -1;
+    for(const Server of Gameservers){
+        if(Server.state !== "ready" || Server.isRamsgate || Server.isTrainingDojo) continue;
+        if(Server.expectedPlayers == undefined || Server.expectedPlayers.length === 0) continue;
+        if(Server.expectedPlayers[0].playerHuntId !== PlayerHuntId) continue;
+        const Occupancy = OpenIslandOccupancy(Server, ReadOpenIslandPlayerCount(Server.port, NowMs), NowMs);
+        if(Occupancy === undefined || Occupancy + (JoinerUids?.length ?? 1) > PUBLIC_HUNT_MAX_PLAYERS) continue;
+        if(Occupancy > CandidateOccupancy){
+            Candidate = Server;
+            CandidateOccupancy = Occupancy;
+        }
+    }
 
     if(Candidate == undefined) return undefined;
 
@@ -671,15 +684,29 @@ export function TryReuseSharedHuntServer(PlayerHuntId: string, JoinerUids: strin
             if(!Candidate.expectedPlayers!.some((Player) => Player.playerUid === Uid)){
                 Candidate.expectedPlayers!.push({ playerUid: Uid, playerHuntId: PlayerHuntId });
             }
+            (Candidate.joinTimes ??= []).push(NowMs);
         }
     }
 
-    logger.info(`[PublicHuntReuse] joining existing server port=${Candidate.port} pid=${Candidate.processId} huntId=${PlayerHuntId} roster=${Candidate.expectedPlayers!.length}/${PUBLIC_HUNT_MAX_PLAYERS}`);
+    logger.info(`[PublicHuntReuse] joining existing server port=${Candidate.port} pid=${Candidate.processId} huntId=${PlayerHuntId} occupancy=${CandidateOccupancy}+${JoinerUids?.length ?? 1}/${PUBLIC_HUNT_MAX_PLAYERS} roster=${Candidate.expectedPlayers!.length}`);
 
     return {
         host: MY_IP,
         port: Candidate.port
     };
+}
+
+// [MNG DAUNTLESS 2026-11-13] The player count a hunt server writes every 5 s (runtime MngHealth::WritePlayerCount):
+// mng_players_port<port>.txt next to the game exe, "<connections> <unix seconds>". Undefined when missing or older than 30 s
+// (an older runtime, or a server that stopped ticking).
+function ReadOpenIslandPlayerCount(Port: number, NowMs: number): number | undefined {
+    if(!GAMESERVER_BINARY_PATH) return undefined;
+    try {
+        return ParseOpenIslandPlayerCount(fs.readFileSync(path.join(path.dirname(GAMESERVER_BINARY_PATH), `mng_players_port${Port}.txt`), "utf8"), NowMs);
+    }
+    catch {
+        return undefined;
+    }
 }
 
 function GetArgValue(GameArgs: string, Key: string){

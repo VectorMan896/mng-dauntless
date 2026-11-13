@@ -2,6 +2,26 @@
 
 Newest first. Launcher versions; the server, runtime and data change with them.
 
+## Unreleased - 2026-11-13 (server, client runtime 0.1.24)
+
+Platinum you earn by playing, and open islands (owner picked these from the roadmap ideas).
+- Platinum rewards (src/platinumRewards.ts), paid as CURRENCY_PLATINUM_UNIV: a weekly season challenge claimed 10
+  (`MNG_PLATINUM_WEEKLY_CHALLENGE`), a drafted bounty claimed 2 / 5 / 10 for bronze / silver / gold (`MNG_PLATINUM_BOUNTY`,
+  "2,5,10"), the first completed hunt of the game day 15 (`MNG_PLATINUM_FIRST_HUNT`; the day starts at 17:00 UTC like the
+  dailies), each new Escalation level 5 (`MNG_PLATINUM_ESCALATION_LEVEL`, at most 10 levels per save). 0 turns one off,
+  `MNG_PLATINUM_REWARDS=off` all of them. Each payment has a once-only key in the new `mngRewardClaims` collection (account
+  deletion covers it), so a repeated save or two servers reporting the same claim pay once; a failed payment gives its key
+  back. Only claims made after the update pay. Logged as `[Platinum]` in the backend log. Daily challenges keep paying Cache
+  Coins only.
+- Open islands (ParadoxDirector controllers/openIslands.ts, upstream's Public Hunt Server Reuse switched on): a solo hunter is
+  sent into a running Hunting Grounds island of the same hunt with room (up to 4), the fullest first, instead of a new server.
+  Parties still get their own island. Upstream counted everyone ever sent there, so an island filled up for good after 4
+  joins: runtime 0.1.24 makes each hunt server write its connected players to `mng_players_port<port>.txt` every 5 s, and
+  the Director counts those plus anyone sent in the last 2 minutes; an empty island nobody is heading to (about to close
+  itself) is skipped. Without a fresh count it falls back to upstream's roster. `MNG_OPEN_ISLANDS=off` in the Director's
+  `.env` turns it off (the old `ENABLE_PUBLIC_HUNT_REUSE=0` in existing .env files no longer does). Not yet tested with two
+  players; late joiners get the island's hunt id from upstream's runtime backfill so rewards count.
+
 ## Unreleased - 2026-11-10 (server, client runtime 0.1.23)
 
 Logging to find the live server's bugs (owner: servers left running for days accept the login into Ramsgate, but nobody can

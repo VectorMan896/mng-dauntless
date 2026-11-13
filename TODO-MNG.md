@@ -13,6 +13,13 @@ Updated 2026-11-01. Launcher version 0.3.0 (released, self-updating; live server
 - [ ] **Stamina does not refill** (owner, 10 Nov): runtime 0.1.23 logs `[Stamina] STUCK` with the stamina component's state
       on server and client. Reproduce once after the update, then read port8790/hunt logs (server) and port0.log (client).
 - [x] Event fog and Ozz's stall show in Ramsgate (owner, 10 Nov).
+- [ ] **Check in game (13 Nov update)**: claim a weekly challenge and a bounty, finish a first hunt of the day, gain an
+      Escalation level - each logs `[Platinum]` in the backend log and the Platinum shows in the wallet (may need a trip to
+      Ramsgate to refresh). Open islands: two players start the same Hunting Ground solo, a minute apart - the second should
+      land on the first's island (`[PublicHuntReuse]` in the Director log), get kill credit and the end-of-hunt rewards.
+      If late joiners get no rewards, `MNG_OPEN_ISLANDS=off` in ParadoxDirector\.env and restart.
+- [ ] Open islands next: Behemoth health does not grow when someone joins late (the game sizes it at the start);
+      Mystic Paradox scales it with the player count - a runtime change if wanted.
 - [ ] Check in game after the update: `[Health]` lines in the server logs every 5 min.
 - [x] **Windows Defender removes winmm.dll** (reported to Microsoft and launcher check shipped 1 Nov; code signing still open) (31 Oct, 12:12 on this PC): `Program:Win32/Contebrew.A!ml` (a machine-learning
       guess; the proxy-DLL loader looks like DLL hijacking). Without it the runtime never loads: the game and the local game

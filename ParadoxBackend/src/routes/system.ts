@@ -16,6 +16,7 @@ import { loadGameData } from "../gameData/loader";
 import { GauntletConfigPayload, GauntletGuildRewardsPayload, GauntletLeaderboardPayload, GauntletProgressionPayload } from "../gauntletPayloads";
 const progressionconfig = loadGameData<any>("progression_config.json");
 import { GetEscalationProgress, SaveEscalationProgress } from "../controllers/escalationProgress";
+import { PayBountyClaimPlatinum, PayEscalationLevelPlatinum } from "../platinumRewards";
 import { GetEntitlementsForUser } from "../controllers/entitlements";
 import { ACTIVE_HUNTPASS_PROGRESSION_ID } from "../controllers/progression";
 import { MonitorBountyLoad, MonitorBountySave, MonitorCooldownLoad, MonitorCooldownSave, MonitorSourceOf } from "../diagnostics/economyMonitor";
@@ -380,6 +381,8 @@ systemRouter.post("/escalation/:escalationSeason/:userId", HasParadoxBackendAuth
 	// The gameserver posts the season data it wants persisted. Take the fields we model and keep
 	// the previous value for anything it omitted, so a partial write cannot wipe progress.
 	const Body = (req.body ?? {}) as EscalationSeasonProgressUpdate;
+	// [MNG DAUNTLESS 2026-11-13] The level before this save: each new level pays Platinum (src/platinumRewards.ts).
+	const LevelBefore = (await GetRepositories().escalationProgress.get(UserId, EscalationSeason))?.escalationLevel ?? 0;
 	let Updated;
 	if (IsHostWrite) {
 		const Saved = await SaveHostEscalationProgress(UserId, EscalationSeason, Body, Limits);
@@ -393,6 +396,8 @@ systemRouter.post("/escalation/:escalationSeason/:userId", HasParadoxBackendAuth
 	else {
 		Updated = await SaveEscalationProgress(UserId, EscalationSeason, Body);
 	}
+
+	void PayEscalationLevelPlatinum(UserId, EscalationSeason, LevelBefore, Updated.escalation_level);
 
 	logger.info(`Escalation progress saved season=${EscalationSeason} user=${UserId} `
 		+ `level=${Updated.escalation_level} version=${Updated.update_version}`);
@@ -913,6 +918,8 @@ systemRouter.post("/bounty/:userId", HasParadoxBackendAuth, async (req: any, res
 			+ ` -> ${JSON.stringify(BountyGroupCounts(record))} version=${record.updateVersion}`
 			+ (summary.host ? ` host: keptClaimedWeekly=${summary.host.keptClaimedWeekly} ignoredWeekly=${summary.host.ignoredWeekly} clampedProgress=${summary.host.clampedProgress}` : ""));
 		if (IsHostWrite) await GetP2PExtension().hostWrites.record(req, { kind: "BOUNTY", targetUserId: UserId, summary: HostBountyWriteSummary(summary, record) });
+		// [MNG DAUNTLESS 2026-11-13] Weekly challenges and drafted bounties this save claimed pay Platinum (src/platinumRewards.ts).
+		void PayBountyClaimPlatinum(record);
 		// The same envelope as the GET (the full merged state), as the live service answered a save.
 		res.status(200).json({ code: null, message: "OK", payload });
 	}

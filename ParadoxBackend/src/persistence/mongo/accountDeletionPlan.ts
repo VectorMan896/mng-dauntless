@@ -183,6 +183,8 @@ export function CoreAccountDeletionSteps(): AccountDeletionStep[] {
         { kind: "delete", collection: Collections.CooldownStates, description: "cooldowns", match: (c) => ({ $or: [{ _id: c.userId }, { userId: c.userId }] }) },
         { kind: "delete", collection: Collections.EconomyDaily, description: "daily economy totals", match: (c) => ({ userId: c.userId }) },
         // [MNG DAUNTLESS 2026-10-31] The Trials leaderboard runs (src/trialRuns.ts) the account played in; a team run goes with it.
+        // [MNG DAUNTLESS 2026-11-13] The Platinum rewards the account was paid (src/platinumRewards.ts).
+        { kind: "delete", collection: Collections.MngRewardClaims, description: "Platinum reward claims", match: (c) => ({ userId: c.userId }) },
         { kind: "delete", collection: Collections.TrialRuns, description: "Trials runs the account played in", match: (c) => ({ "players.userId": c.userId }) },
         // [MNG DAUNTLESS 2026-11-01] Guilds (src/guilds.ts): the membership and the invites to or from the account. A guild it led
         // gets a new leader (or is removed when empty) the next time a member opens it.
